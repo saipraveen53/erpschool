@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
   Platform,
+  StatusBar as RNStatusBar,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PublicNavbar from '../components/common/PublicNavbar';
 
-// Lucide Icons (same as before)
+// Lucide Icons
 import {
   ArrowRight,
   Award,
@@ -53,15 +55,19 @@ const isWeb = Platform.OS === 'web';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets(); // Get safe area insets
-  
+  const insets = useSafeAreaInsets();
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const [statsCount, setStatsCount] = useState({ schools: 0, students: 0, teachers: 0 });
 
-
-
   useEffect(() => {
+    // Force status bar to blue on this screen
+    if (Platform.OS === 'android') {
+      RNStatusBar.setBackgroundColor('#2563eb');
+      RNStatusBar.setBarStyle('light-content');
+    }
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -82,7 +88,7 @@ export default function HomeScreen() {
         teachers: prev.teachers < 10000 ? prev.teachers + 500 : 10000,
       }));
     }, 30);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -93,16 +99,19 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.mainContainer}>
+      {/* StatusBar explicitly set here so it always shows blue on this screen */}
+      <StatusBar style="light" backgroundColor="#2563eb" translucent={false} />
+
       <PublicNavbar />
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        
+
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <Animated.View 
+          <Animated.View
             style={[styles.heroContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
           >
             <View style={styles.heroBadge}>
@@ -118,7 +127,7 @@ export default function HomeScreen() {
             <Text style={styles.heroDescription}>
               Automate academics, administration, communication & finance with our all-in-one solution
             </Text>
-            
+
             <View style={styles.heroButtons}>
               <TouchableOpacity
                 onPress={() => router.push('/(auth)/login')}
@@ -164,7 +173,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Why Choose Us?</Text>
           <Text style={styles.sectionSubtitle}>Trusted by 500+ schools across India</Text>
-          
+
           <View style={isWeb ? webGrid3 : styles.grid2Mobile}>
             {whyChoose.map((item, idx) => (
               <View key={idx} style={[styles.whyCard, !isWeb && { width: '48%', marginBottom: 16 }]}>
@@ -180,7 +189,7 @@ export default function HomeScreen() {
         <View style={styles.featuresSection}>
           <Text style={styles.sectionTitle}>Powerful Features</Text>
           <Text style={styles.sectionSubtitle}>Everything you need to manage your school</Text>
-          
+
           <View style={isWeb ? webGrid4 : styles.grid2Mobile}>
             {features.map((feature, idx) => (
               <View key={idx} style={[styles.featureCard, !isWeb && { width: '48%', marginBottom: 16 }]}>
@@ -196,7 +205,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>User Roles</Text>
           <Text style={styles.sectionSubtitle}>Role-based dashboards with specific permissions</Text>
-          
+
           <View style={isWeb ? webGrid5 : styles.grid3Mobile}>
             {roles.map((role, idx) => (
               <View key={idx} style={[styles.roleCard, !isWeb && { width: '31%', marginBottom: 12 }, { backgroundColor: role.bgColor }]}>
@@ -211,13 +220,13 @@ export default function HomeScreen() {
         <View style={styles.testimonialsSection}>
           <Text style={[styles.sectionTitle, styles.whiteText]}>What Schools Say</Text>
           <Text style={[styles.sectionSubtitle, styles.indigoText]}>Trusted by educators nationwide</Text>
-          
+
           {isWeb ? (
             <View style={webGrid3}>
               {testimonials.map((item, idx) => (
                 <View key={idx} style={styles.testimonialCard}>
                   <View style={styles.starsRow}>
-                    {[1,2,3,4,5].map((star) => (
+                    {[1, 2, 3, 4, 5].map((star) => (
                       <Star key={star} size={16} color="#facc15" fill="#facc15" />
                     ))}
                   </View>
@@ -239,7 +248,7 @@ export default function HomeScreen() {
               {testimonials.map((item, idx) => (
                 <View key={idx} style={styles.testimonialCardMobile}>
                   <View style={styles.starsRow}>
-                    {[1,2,3,4,5].map((star) => (
+                    {[1, 2, 3, 4, 5].map((star) => (
                       <Star key={star} size={16} color="#facc15" fill="#facc15" />
                     ))}
                   </View>
@@ -264,7 +273,7 @@ export default function HomeScreen() {
           <View style={styles.ctaCard}>
             <Text style={styles.ctaTitle}>Ready to Transform Your School?</Text>
             <Text style={styles.ctaSubtitle}>Join 500+ schools already using our ERP</Text>
-            
+
             <View style={styles.ctaButtons}>
               <TouchableOpacity
                 onPress={() => router.push('/(auth)/register')}
@@ -307,7 +316,7 @@ export default function HomeScreen() {
   );
 }
 
-// Data arrays (same as before)
+// Data arrays
 const whyChoose = [
   { title: 'Cloud Based', description: 'Access anywhere, anytime', icon: <Globe size={24} color="#2563eb" /> },
   { title: 'Secure', description: 'Bank-level data security', icon: <Lock size={24} color="#2563eb" /> },
@@ -348,8 +357,8 @@ const roles = [
 
 const testimonials = [
   { name: 'Dr. Suresh Kumar', role: 'Principal, Delhi Public School', text: 'SVPS ERP transformed our school management completely. Highly recommended!' },
-  { name: 'Mrs. Priya Sharma', role: 'Admin, St. Mary\'s School', text: 'Amazing platform! Fee collection and attendance tracking is now effortless.' },
-  { name: 'Mr. Rajesh Verma', role: 'Parent', text: 'I can track my child\'s progress, fees, and bus location in real-time.' },
+  { name: 'Mrs. Priya Sharma', role: "Admin, St. Mary's School", text: 'Amazing platform! Fee collection and attendance tracking is now effortless.' },
+  { name: 'Mr. Rajesh Verma', role: 'Parent', text: "I can track my child's progress, fees, and bus location in real-time." },
 ];
 
 const styles = StyleSheet.create({
@@ -363,7 +372,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
-  
+
   // Hero Section
   heroSection: { backgroundColor: '#2563eb', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 80 },
   heroContent: { alignItems: 'center' },
@@ -378,7 +387,7 @@ const styles = StyleSheet.create({
   loginBtnText: { color: '#1d4ed8', fontWeight: 'bold', fontSize: 16, marginRight: 8 },
   getStartedBtn: { backgroundColor: 'transparent', borderWidth: 2, borderColor: 'white', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 999, marginLeft: 16 },
   getStartedBtnText: { color: 'white', fontWeight: '600', fontSize: 16 },
-  
+
   // Stats Section
   statsContainer: { paddingHorizontal: 16, marginTop: -32 },
   statsContainerWeb: { paddingHorizontal: 24, marginTop: -32 },
@@ -389,17 +398,17 @@ const styles = StyleSheet.create({
   greenText: { color: '#16a34a' },
   orangeText: { color: '#ea580c' },
   statLabel: { color: '#6b7280', fontSize: 12, marginTop: 4 },
-  
+
   // Section Common
   section: { paddingHorizontal: 24, paddingVertical: 48 },
   sectionTitle: { fontSize: 30, fontWeight: 'bold', color: '#111827', textAlign: 'center', marginBottom: 8 },
   sectionSubtitle: { color: '#6b7280', textAlign: 'center', marginBottom: 40 },
   featuresSection: { backgroundColor: '#f3f4f6', paddingHorizontal: 24, paddingVertical: 48, marginTop: 16 },
-  
+
   // Grid Layouts (mobile only)
   grid2Mobile: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   grid3Mobile: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  
+
   // Cards
   whyCard: { backgroundColor: '#f9fafb', padding: 20, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
   iconCircle: { width: 48, height: 48, backgroundColor: '#dbeafe', borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
@@ -411,7 +420,7 @@ const styles = StyleSheet.create({
   featureDescription: { color: '#6b7280', fontSize: 12, marginTop: 4 },
   roleCard: { padding: 12, borderRadius: 12, alignItems: 'center' },
   roleTitle: { fontWeight: '600', color: '#1f2937', fontSize: 12, textAlign: 'center', marginTop: 4 },
-  
+
   // Testimonials
   testimonialsSection: { backgroundColor: '#312e81', paddingHorizontal: 24, paddingVertical: 48 },
   whiteText: { color: 'white' },
@@ -427,7 +436,7 @@ const styles = StyleSheet.create({
   authorName: { color: 'white', fontWeight: '600', fontSize: 14 },
   authorRole: { color: '#c7d2fe', fontSize: 12 },
   horizontalScroll: { marginHorizontal: -8 },
-  
+
   // CTA
   ctaCard: { backgroundColor: '#2563eb', borderRadius: 24, padding: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 8 },
   ctaTitle: { fontSize: 24, fontWeight: 'bold', color: 'white', textAlign: 'center', marginBottom: 8 },
@@ -437,7 +446,7 @@ const styles = StyleSheet.create({
   ctaPrimaryText: { color: '#1d4ed8', fontWeight: 'bold', marginRight: 8 },
   ctaSecondaryBtn: { backgroundColor: 'transparent', borderWidth: 2, borderColor: 'white', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, flexDirection: 'row', alignItems: 'center' },
   ctaSecondaryText: { color: 'white', fontWeight: '600', marginLeft: 8 },
-  
+
   // Footer
   footer: { backgroundColor: '#111827', paddingHorizontal: 24, paddingVertical: 32, marginTop: 16 },
   footerTitle: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 18, marginBottom: 8 },
