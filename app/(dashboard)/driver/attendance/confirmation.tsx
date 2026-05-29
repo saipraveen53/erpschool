@@ -1,22 +1,8 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import {
-    AlertCircle,
-    ArrowLeft,
-    CheckCircle,
-    Search,
-    User,
-    XCircle,
-} from "lucide-react-native";
-import { useState } from "react";
-import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { AlertCircle, ArrowLeft, CheckCircle, Search, User, XCircle } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const attendanceData = [
@@ -34,6 +20,15 @@ export default function AttendanceConfirmation() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [attendance, setAttendance] = useState(attendanceData);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const cardAnimations = useRef(attendanceData.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    cardAnimations.forEach((anim, idx) => {
+      Animated.spring(anim, { toValue: 1, delay: idx * 80, useNativeDriver: true, tension: 50 }).start();
+    });
+  }, []);
 
   const toggleStatus = (id: number) => {
     setAttendance((prev) =>
@@ -42,22 +37,14 @@ export default function AttendanceConfirmation() {
           ? {
               ...student,
               status: student.status === "present" ? "absent" : "present",
-              time:
-                student.status === "present"
-                  ? "-"
-                  : new Date().toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }),
+              time: student.status === "present" ? "-" : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             }
-          : student,
-      ),
+          : student
+      )
     );
   };
 
-  const filteredStudents = attendance.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filteredStudents = attendance.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
   const presentCount = attendance.filter((s) => s.status === "present").length;
   const totalCount = attendance.length;
 
@@ -72,7 +59,7 @@ export default function AttendanceConfirmation() {
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.summaryCard}>
+      <Animated.View style={[styles.summaryCard, { opacity: fadeAnim }]}>
         <View style={styles.summaryItem}>
           <CheckCircle size={24} color="#16a34a" />
           <Text style={styles.summaryValue}>{presentCount}</Text>
@@ -90,7 +77,7 @@ export default function AttendanceConfirmation() {
           <Text style={styles.summaryValue}>0</Text>
           <Text style={styles.summaryLabel}>Late</Text>
         </View>
-      </View>
+      </Animated.View>
 
       <View style={styles.searchContainer}>
         <Search size={20} color="#9ca3af" />
@@ -104,35 +91,27 @@ export default function AttendanceConfirmation() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {filteredStudents.map((student) => (
-          <View key={student.id} style={styles.studentCard}>
+        {filteredStudents.map((student, idx) => (
+          <Animated.View key={student.id} style={[styles.studentCard, { opacity: cardAnimations[idx] }]}>
             <View style={styles.studentAvatar}>
               <User size={24} color="#6b7280" />
             </View>
             <View style={styles.studentInfo}>
               <Text style={styles.studentName}>{student.name}</Text>
-              {student.status === "present" && (
-                <Text style={styles.studentTime}>Picked at {student.time}</Text>
-              )}
+              {student.status === "present" && <Text style={styles.studentTime}>Picked at {student.time}</Text>}
             </View>
             <TouchableOpacity
-              style={[
-                styles.statusBtn,
-                student.status === "present"
-                  ? styles.presentBtn
-                  : styles.absentBtn,
-              ]}
+              style={[styles.statusBtn, student.status === "present" ? styles.presentBtn : styles.absentBtn]}
               onPress={() => toggleStatus(student.id)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.statusBtnText}>
-                {student.status === "present" ? "Present" : "Absent"}
-              </Text>
+              <Text style={styles.statusBtnText}>{student.status === "present" ? "Present" : "Absent"}</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.submitBtn}>
+      <TouchableOpacity style={styles.submitBtn} activeOpacity={0.8}>
         <Text style={styles.submitBtnText}>Submit Attendance</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -141,65 +120,18 @@ export default function AttendanceConfirmation() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f3f4f6" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
   backBtn: { padding: 8 },
   headerTitle: { fontSize: 18, fontWeight: "600", color: "#111827" },
-  summaryCard: {
-    flexDirection: "row",
-    backgroundColor: "#ffffff",
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    justifyContent: "space-around",
-  },
+  summaryCard: { flexDirection: "row", backgroundColor: "#ffffff", margin: 16, padding: 16, borderRadius: 12, justifyContent: "space-around" },
   summaryItem: { alignItems: "center", flex: 1 },
-  summaryValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    marginTop: 4,
-  },
+  summaryValue: { fontSize: 20, fontWeight: "bold", color: "#111827", marginTop: 4 },
   summaryLabel: { fontSize: 12, color: "#6b7280", marginTop: 2 },
   summaryDivider: { width: 1, backgroundColor: "#e5e7eb" },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    marginHorizontal: 16,
-    marginBottom: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#ffffff", marginHorizontal: 16, marginBottom: 16, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb" },
   searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: "#111827" },
-  studentCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    marginHorizontal: 16,
-    marginBottom: 8,
-    padding: 12,
-    borderRadius: 12,
-  },
-  studentAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  studentCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#ffffff", marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 12 },
+  studentAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#f3f4f6", alignItems: "center", justifyContent: "center" },
   studentInfo: { flex: 1, marginLeft: 12 },
   studentName: { fontSize: 16, fontWeight: "600", color: "#111827" },
   studentTime: { fontSize: 12, color: "#6b7280", marginTop: 2 },
@@ -207,12 +139,6 @@ const styles = StyleSheet.create({
   presentBtn: { backgroundColor: "#dcfce7" },
   absentBtn: { backgroundColor: "#fee2e2" },
   statusBtnText: { fontSize: 12, fontWeight: "500" },
-  submitBtn: {
-    backgroundColor: "#2563eb",
-    margin: 16,
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
+  submitBtn: { backgroundColor: "#2563eb", margin: 16, padding: 14, borderRadius: 12, alignItems: "center" },
   submitBtnText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
 });
