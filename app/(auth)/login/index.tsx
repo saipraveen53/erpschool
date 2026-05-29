@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -21,8 +22,14 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showOTP, setShowOTP] = useState(false);
+
+  // OTP Modal states
+  const [showOTPModal, setShowOTPModal] = useState(false);
   const [otp, setOtp] = useState("");
+  const [tempCredentials, setTempCredentials] = useState({
+    email: "",
+    password: "",
+  });
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,37 +40,8 @@ export default function LoginScreen() {
     setError("");
     try {
       await login(email, password);
-      // Show OTP verification popup
-      Alert.alert(
-        "OTP Verification",
-        "A verification code has been sent to your email.\n\nDemo OTP: 123456",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Verify",
-            onPress: () => {
-              Alert.prompt(
-                "Enter OTP",
-                "Please enter the 6-digit code",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Submit",
-                    onPress: (enteredOtp: any) => {
-                      if (enteredOtp === "123456") {
-                        // Login successful, AuthContext will redirect
-                      } else {
-                        Alert.alert("Error", "Invalid OTP");
-                      }
-                    },
-                  },
-                ],
-                "secure-text",
-              );
-            },
-          },
-        ],
-      );
+      setTempCredentials({ email, password });
+      setShowOTPModal(true);
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
@@ -71,7 +49,22 @@ export default function LoginScreen() {
     }
   };
 
-  // Fake credentials for demo
+  const handleVerifyOTP = () => {
+    if (otp === "123456") {
+      setShowOTPModal(false);
+      setOtp("");
+      router.replace("/");
+    } else {
+      Alert.alert("Error", "Invalid OTP. Please try again.");
+      setOtp("");
+    }
+  };
+
+  const handleResendOTP = () => {
+    Alert.alert("OTP Sent", "Demo OTP: 123456 has been resent");
+  };
+
+  // Complete list of demo credentials for all dashboard roles
   const demoCredentials = [
     {
       role: "Super Admin",
@@ -84,14 +77,25 @@ export default function LoginScreen() {
       email: "principal@school.com",
       password: "principal123",
     },
+    { role: "Vice Principal", email: "vice@school.com", password: "vice123" },
     { role: "Teacher", email: "teacher@school.com", password: "teacher123" },
-    { role: "Parent", email: "parent@school.com", password: "parent123" },
     { role: "Student", email: "student@school.com", password: "student123" },
+    { role: "Parent", email: "parent@school.com", password: "parent123" },
     { role: "Driver", email: "driver@school.com", password: "driver123" },
     {
-      role: "House Keeping",
+      role: "Housekeeping",
       email: "housekeeping@school.com",
-      password: "housekeeping123",
+      password: "house123",
+    },
+    {
+      role: "Receptionist",
+      email: "receptionist@school.com",
+      password: "reception123",
+    },
+    {
+      role: "Librarian",
+      email: "librarian@school.com",
+      password: "librarian123",
     },
   ];
 
@@ -170,9 +174,9 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Demo Credentials Section */}
+          {/* Demo Credentials Section - All Roles */}
           <View style={styles.demoSection}>
-            <Text style={styles.demoTitle}>Demo Credentials</Text>
+            <Text style={styles.demoTitle}>Demo Credentials (All Roles)</Text>
             <View style={styles.demoGrid}>
               {demoCredentials.map((cred, idx) => (
                 <TouchableOpacity
@@ -188,6 +192,56 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* OTP Modal */}
+      <Modal
+        visible={showOTPModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowOTPModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>OTP Verification</Text>
+              <TouchableOpacity onPress={() => setShowOTPModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Please enter the 6-digit verification code sent to your email
+            </Text>
+
+            <TextInput
+              style={styles.otpInput}
+              placeholder="Enter OTP"
+              placeholderTextColor="#9ca3af"
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              maxLength={6}
+              textAlign="center"
+            />
+
+            <Text style={styles.otpHint}>Demo OTP: 123456</Text>
+
+            <TouchableOpacity
+              style={styles.verifyBtn}
+              onPress={handleVerifyOTP}
+            >
+              <Text style={styles.verifyBtnText}>Verify & Login</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.resendBtn}
+              onPress={handleResendOTP}
+            >
+              <Text style={styles.resendBtnText}>Resend OTP</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -313,5 +367,84 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     fontSize: 11,
     marginTop: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 24,
+    width: "85%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+  modalClose: {
+    fontSize: 20,
+    color: "#6b7280",
+    fontWeight: "bold",
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  otpInput: {
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
+    textAlign: "center",
+    letterSpacing: 8,
+  },
+  otpHint: {
+    fontSize: 12,
+    color: "#9ca3af",
+    textAlign: "center",
+    marginTop: 12,
+  },
+  verifyBtn: {
+    backgroundColor: "#2563eb",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  verifyBtnText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  resendBtn: {
+    alignItems: "center",
+    marginTop: 16,
+  },
+  resendBtnText: {
+    color: "#2563eb",
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
