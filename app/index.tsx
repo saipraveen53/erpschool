@@ -1,16 +1,22 @@
-import { useRouter } from "expo-router";
+import { useRouter, useRootNavigationState } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useAuth } from "./contexts/AuthContext";
 
 export default function Index() {
   const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
+
   const { isAuthenticated, isLoading, user } = useAuth();
 
   useEffect(() => {
+    // Wait until navigation is fully mounted
+    if (!rootNavigationState?.key) return;
+
     if (!isLoading) {
       if (isAuthenticated && user) {
         const role = user.role?.toUpperCase();
+
         if (role === "SUPER_ADMIN") {
           router.replace("/(dashboard)/super-admin");
         } else if (role === "ADMIN") {
@@ -26,7 +32,6 @@ export default function Index() {
         } else if (role === "PARENT") {
           router.replace("/(dashboard)/parent");
         } else if (role === "DRIVER") {
-          // Timeout theesesaam & route fix chesam
           router.replace("/(dashboard)/driver");
         } else if (role === "HOUSEKEEPING") {
           router.replace("/(dashboard)/housekeeping");
@@ -41,7 +46,12 @@ export default function Index() {
         router.replace("/(public)/home");
       }
     }
-  }, [isAuthenticated, isLoading, user]);
+  }, [
+    rootNavigationState?.key,
+    isAuthenticated,
+    isLoading,
+    user,
+  ]);
 
   return (
     <View style={styles.container}>
