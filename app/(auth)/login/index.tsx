@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,61 +11,61 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
+} from "react-native";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showOTP, setShowOTP] = useState(false);
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState("");
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setError('Please fill all fields');
+      setError("Please fill all fields");
       return;
     }
     setLoading(true);
-    setError('');
+    setError("");
     try {
       await login(email, password);
       // Show OTP verification popup
       Alert.alert(
-        'OTP Verification',
-        'A verification code has been sent to your email.\n\nDemo OTP: 123456',
+        "OTP Verification",
+        "A verification code has been sent to your email.\n\nDemo OTP: 123456",
         [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Verify', 
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Verify",
             onPress: () => {
               Alert.prompt(
-                'Enter OTP',
-                'Please enter the 6-digit code',
+                "Enter OTP",
+                "Please enter the 6-digit code",
                 [
-                  { text: 'Cancel', style: 'cancel' },
+                  { text: "Cancel", style: "cancel" },
                   {
-                    text: 'Submit',
-                    onPress: (enteredOtp) => {
-                      if (enteredOtp === '123456') {
+                    text: "Submit",
+                    onPress: (enteredOtp: any) => {
+                      if (enteredOtp === "123456") {
                         // Login successful, AuthContext will redirect
                       } else {
-                        Alert.alert('Error', 'Invalid OTP');
+                        Alert.alert("Error", "Invalid OTP");
                       }
-                    }
-                  }
+                    },
+                  },
                 ],
-                'secure-text'
+                "secure-text",
               );
-            }
-          }
-        ]
+            },
+          },
+        ],
       );
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -73,24 +73,37 @@ export default function LoginScreen() {
 
   // Fake credentials for demo
   const demoCredentials = [
-    { role: 'Super Admin', email: 'superadmin@school.com', password: 'super123' },
-    { role: 'Admin', email: 'admin@school.com', password: 'admin123' },
-    { role: 'Principal', email: 'principal@school.com', password: 'principal123' },
-    { role: 'Teacher', email: 'teacher@school.com', password: 'teacher123' },
-    { role: 'Parent', email: 'parent@school.com', password: 'parent123' },
-    { role: 'Student', email: 'student@school.com', password: 'student123' },
-    { role: 'Driver', email: 'driver@school.com', password: 'driver123' },
+    {
+      role: "Super Admin",
+      email: "superadmin@school.com",
+      password: "super123",
+    },
+    { role: "Admin", email: "admin@school.com", password: "admin123" },
+    {
+      role: "Principal",
+      email: "principal@school.com",
+      password: "principal123",
+    },
+    { role: "Teacher", email: "teacher@school.com", password: "teacher123" },
+    { role: "Parent", email: "parent@school.com", password: "parent123" },
+    { role: "Student", email: "student@school.com", password: "student123" },
+    { role: "Driver", email: "driver@school.com", password: "driver123" },
+    {
+      role: "House Keeping",
+      email: "housekeeping@school.com",
+      password: "housekeeping123",
+    },
   ];
 
   const fillDemoCredentials = (demoEmail: string, demoPassword: string) => {
     setEmail(demoEmail);
     setPassword(demoPassword);
-    setError('');
+    setError("");
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -132,7 +145,7 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            onPress={() => router.push('/(auth)/forgot-password')}
+            onPress={() => router.push("/(auth)/forgot-password")}
             style={styles.forgotButton}
           >
             <Text style={styles.forgotText}>Forgot Password?</Text>
@@ -152,7 +165,7 @@ export default function LoginScreen() {
 
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+            <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
               <Text style={styles.registerLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
@@ -182,11 +195,11 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: 24,
     paddingVertical: 48,
   },
@@ -195,53 +208,53 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#111827',
+    fontWeight: "bold",
+    textAlign: "center",
+    color: "#111827",
   },
   subtitle: {
-    textAlign: 'center',
-    color: '#6b7280',
+    textAlign: "center",
+    color: "#6b7280",
     marginTop: 8,
   },
   errorContainer: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: "#fee2e2",
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: "#fecaca",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: '#dc2626',
-    textAlign: 'center',
+    color: "#dc2626",
+    textAlign: "center",
   },
   form: {
     gap: 16,
   },
   label: {
-    color: '#374151',
+    color: "#374151",
     marginBottom: 4,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   input: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#f9fafb",
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: "#d1d5db",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    color: '#111827',
+    color: "#111827",
   },
   forgotButton: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
   },
   forgotText: {
-    color: '#2563eb',
+    color: "#2563eb",
     fontSize: 14,
   },
   loginButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: "#2563eb",
     borderRadius: 8,
     paddingVertical: 12,
     marginTop: 16,
@@ -250,54 +263,54 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   loginButtonText: {
-    color: '#ffffff',
-    textAlign: 'center',
-    fontWeight: '600',
+    color: "#ffffff",
+    textAlign: "center",
+    fontWeight: "600",
     fontSize: 16,
   },
   registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 24,
   },
   registerText: {
-    color: '#6b7280',
+    color: "#6b7280",
   },
   registerLink: {
-    color: '#2563eb',
-    fontWeight: '600',
+    color: "#2563eb",
+    fontWeight: "600",
   },
   demoSection: {
     marginTop: 32,
     paddingTop: 24,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: "#e5e7eb",
   },
   demoTitle: {
-    textAlign: 'center',
-    color: '#6b7280',
+    textAlign: "center",
+    color: "#6b7280",
     fontSize: 12,
     marginBottom: 12,
   },
   demoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     gap: 8,
   },
   demoButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: "#f3f4f6",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   demoButtonText: {
     fontSize: 12,
-    color: '#374151',
+    color: "#374151",
   },
   demoNote: {
-    textAlign: 'center',
-    color: '#9ca3af',
+    textAlign: "center",
+    color: "#9ca3af",
     fontSize: 11,
     marginTop: 12,
   },
