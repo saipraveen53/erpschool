@@ -1,144 +1,87 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AlertCircle, ArrowLeft, CheckCircle, Search, User, XCircle } from "lucide-react-native";
+import { ArrowLeft, CheckCircle, Search, User, XCircle } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const attendanceData = [
-  { id: 1, name: "Aarav Sharma", status: "present", time: "7:45 AM" },
-  { id: 2, name: "Vihaan Kumar", status: "present", time: "7:45 AM" },
-  { id: 3, name: "Sai Reddy", status: "absent", time: "-" },
-  { id: 4, name: "Ananya Singh", status: "present", time: "7:55 AM" },
-  { id: 5, name: "Diya Patel", status: "present", time: "8:05 AM" },
-  { id: 6, name: "Arjun Nair", status: "absent", time: "-" },
-  { id: 7, name: "Rohan Verma", status: "present", time: "8:15 AM" },
-  { id: 8, name: "Ishita Gupta", status: "present", time: "8:15 AM" },
-];
+import { getDriverAttendance, updateAttendanceStatus } from "../../../services/driverService";
 
 export default function AttendanceConfirmation() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [attendance, setAttendance] = useState(attendanceData);
+  const [attendance, setAttendance] = useState([]);
+  const [loading, setLoading] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const cardAnimations = useRef(attendanceData.map(() => new Animated.Value(0))).current;
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-    cardAnimations.forEach((anim, idx) => {
-      Animated.spring(anim, { toValue: 1, delay: idx * 80, useNativeDriver: true, tension: 50 }).start();
-    });
-  }, []);
-
-  const toggleStatus = (id: number) => {
-    setAttendance((prev) =>
-      prev.map((student) =>
-        student.id === id
-          ? {
-              ...student,
-              status: student.status === "present" ? "absent" : "present",
-              time: student.status === "present" ? "-" : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            }
-          : student
-      )
-    );
+  const loadData = async () => {
+    const data = await getDriverAttendance();
+    setAttendance(data);
+    setLoading(false);
   };
 
-  const filteredStudents = attendance.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
-  const presentCount = attendance.filter((s) => s.status === "present").length;
-  const totalCount = attendance.length;
+  useEffect(() => { loadData(); }, []);
+
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === "present" ? "absent" : "present";
+    await updateAttendanceStatus(id, newStatus);
+    loadData();
+  };
+
+  useEffect(() => { Animated.timing(fadeAnim, { toValue: 1, duration: 600 }).start(); }, []);
+
+  if (loading) return <SafeAreaView style={{ flex: 1, justifyContent: "center", backgroundColor: "#fff" }}><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
+
+  const filtered = attendance.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+  const present = attendance.filter(s => s.status === "present").length;
+  const total = attendance.length;
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="dark" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Attendance</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
+      <View style={styles.header}><TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity><Text style={styles.headerTitle}>Attendance</Text><View style={{ width: 40 }} /></View>
       <Animated.View style={[styles.summaryCard, { opacity: fadeAnim }]}>
-        <View style={styles.summaryItem}>
-          <CheckCircle size={24} color="#16a34a" />
-          <Text style={styles.summaryValue}>{presentCount}</Text>
-          <Text style={styles.summaryLabel}>Present</Text>
-        </View>
+        <View style={styles.summaryItem}><CheckCircle size={24} color="#00a652" /><Text style={styles.summaryValue}>{present}</Text><Text>Present</Text></View>
         <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <XCircle size={24} color="#dc2626" />
-          <Text style={styles.summaryValue}>{totalCount - presentCount}</Text>
-          <Text style={styles.summaryLabel}>Absent</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <AlertCircle size={24} color="#f59e0b" />
-          <Text style={styles.summaryValue}>0</Text>
-          <Text style={styles.summaryLabel}>Late</Text>
-        </View>
+        <View style={styles.summaryItem}><XCircle size={24} color="#ff4b00" /><Text style={styles.summaryValue}>{total - present}</Text><Text>Absent</Text></View>
       </Animated.View>
-
-      <View style={styles.searchContainer}>
-        <Search size={20} color="#9ca3af" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search student"
-          placeholderTextColor="#9ca3af"
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {filteredStudents.map((student, idx) => (
-          <Animated.View key={student.id} style={[styles.studentCard, { opacity: cardAnimations[idx] }]}>
-            <View style={styles.studentAvatar}>
-              <User size={24} color="#6b7280" />
-            </View>
+      <View style={styles.searchContainer}><Search size={20} color="#0065ea" /><TextInput placeholder="Search student" placeholderTextColor="#0065ea" value={search} onChangeText={setSearch} style={styles.searchInput} /></View>
+      <ScrollView>
+        {filtered.map((student) => (
+          <View key={student.id} style={styles.studentCard}>
+            <View style={styles.studentAvatar}><User size={24} color="#0065ea" /></View>
             <View style={styles.studentInfo}>
               <Text style={styles.studentName}>{student.name}</Text>
-              {student.status === "present" && <Text style={styles.studentTime}>Picked at {student.time}</Text>}
+              {student.status === "present" && <Text style={styles.studentTime}>Boarded at {student.time}</Text>}
             </View>
-            <TouchableOpacity
-              style={[styles.statusBtn, student.status === "present" ? styles.presentBtn : styles.absentBtn]}
-              onPress={() => toggleStatus(student.id)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.statusBtnText}>{student.status === "present" ? "Present" : "Absent"}</Text>
+            <TouchableOpacity style={[styles.statusBtn, student.status === "present" ? styles.presentBtn : styles.absentBtn]} onPress={() => toggleStatus(student.id, student.status)}>
+              <Text>{student.status === "present" ? "Present" : "Absent"}</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         ))}
       </ScrollView>
-
-      <TouchableOpacity style={styles.submitBtn} activeOpacity={0.8}>
-        <Text style={styles.submitBtnText}>Submit Attendance</Text>
-      </TouchableOpacity>
+      <TouchableOpacity style={styles.submitBtn} onPress={() => { Alert.alert("Submitted", "Attendance saved"); router.back(); }}><Text style={styles.submitBtnText}>Submit Attendance</Text></TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3f4f6" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
-  backBtn: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#111827" },
-  summaryCard: { flexDirection: "row", backgroundColor: "#ffffff", margin: 16, padding: 16, borderRadius: 12, justifyContent: "space-around" },
+  container: { flex: 1, backgroundColor: "#fff" },
+  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#0065ea" },
+  headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
+  summaryCard: { flexDirection: "row", backgroundColor: "#fff", margin: 16, padding: 16, borderRadius: 12, justifyContent: "space-around" },
   summaryItem: { alignItems: "center", flex: 1 },
-  summaryValue: { fontSize: 20, fontWeight: "bold", color: "#111827", marginTop: 4 },
-  summaryLabel: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  summaryDivider: { width: 1, backgroundColor: "#e5e7eb" },
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#ffffff", marginHorizontal: 16, marginBottom: 16, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb" },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: "#111827" },
-  studentCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#ffffff", marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 12 },
-  studentAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#f3f4f6", alignItems: "center", justifyContent: "center" },
+  summaryValue: { fontSize: 20, fontWeight: "bold", marginTop: 4, color: "#0065ea" },
+  summaryDivider: { width: 1, backgroundColor: "#e2e8f0" },
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 16, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#0065ea" },
+  searchInput: { flex: 1, marginLeft: 8, color: "#0065ea" },
+  studentCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 12 },
+  studentAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#f5f5f5", alignItems: "center", justifyContent: "center" },
   studentInfo: { flex: 1, marginLeft: 12 },
-  studentName: { fontSize: 16, fontWeight: "600", color: "#111827" },
-  studentTime: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  studentName: { fontSize: 16, fontWeight: "600", color: "#0065ea" },
+  studentTime: { fontSize: 12, color: "#00a652", marginTop: 2 },
   statusBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  presentBtn: { backgroundColor: "#dcfce7" },
-  absentBtn: { backgroundColor: "#fee2e2" },
-  statusBtnText: { fontSize: 12, fontWeight: "500" },
-  submitBtn: { backgroundColor: "#2563eb", margin: 16, padding: 14, borderRadius: 12, alignItems: "center" },
-  submitBtnText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
+  presentBtn: { backgroundColor: "#00a652" },
+  absentBtn: { backgroundColor: "#ff4b00" },
+  submitBtn: { backgroundColor: "#0065ea", margin: 16, padding: 14, borderRadius: 12, alignItems: "center" },
+  submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });
