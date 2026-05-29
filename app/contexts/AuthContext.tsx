@@ -29,56 +29,84 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Fake users data for demo
+// Fake users data for demo – includes all dashboard roles
 const fakeUsers = [
   {
     id: 1,
+    email: "superadmin@school.com",
+    password: "super123",
+    name: "Super Admin",
+    role: "SUPER_ADMIN",
+  },
+  {
+    id: 2,
     email: "admin@school.com",
     password: "admin123",
     name: "Admin User",
     role: "ADMIN",
   },
   {
-    id: 2,
+    id: 3,
     email: "principal@school.com",
     password: "principal123",
     name: "Principal",
     role: "PRINCIPAL",
   },
   {
-    id: 3,
+    id: 4,
+    email: "vice@school.com",
+    password: "vice123",
+    name: "Vice Principal",
+    role: "VICE_PRINCIPAL",
+  },
+  {
+    id: 5,
     email: "teacher@school.com",
     password: "teacher123",
     name: "Teacher",
     role: "TEACHER",
   },
   {
-    id: 4,
-    email: "parent@school.com",
-    password: "parent123",
-    name: "Parent",
-    role: "PARENT",
-  },
-  {
-    id: 5,
+    id: 6,
     email: "student@school.com",
     password: "student123",
     name: "Student",
     role: "STUDENT",
   },
   {
-    id: 6,
+    id: 7,
+    email: "parent@school.com",
+    password: "parent123",
+    name: "Parent",
+    role: "PARENT",
+  },
+  {
+    id: 8,
     email: "driver@school.com",
     password: "driver123",
     name: "Driver",
     role: "DRIVER",
   },
   {
-    id: 7,
-    email: "superadmin@school.com",
-    password: "super123",
-    name: "Super Admin",
-    role: "SUPER_ADMIN",
+    id: 9,
+    email: "housekeeping@school.com",
+    password: "house123",
+    name: "Housekeeping Staff",
+    role: "HOUSEKEEPING",
+  },
+  {
+    id: 10,
+    email: "receptionist@school.com",
+    password: "reception123",
+    name: "Receptionist",
+    role: "RECEPTIONIST",
+  },
+  {
+    id: 11,
+    email: "librarian@school.com",
+    password: "librarian123",
+    name: "Librarian",
+    role: "LIBRARIAN",
   },
 ];
 
@@ -94,7 +122,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       const foundUser = fakeUsers.find(
