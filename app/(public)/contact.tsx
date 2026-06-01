@@ -26,7 +26,7 @@ export default function ContactScreen() {
     }
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       Alert.alert('Success', 'We will get back to you soon.');
       setName('');

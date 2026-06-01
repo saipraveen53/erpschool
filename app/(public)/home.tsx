@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PublicNavbar from '../components/common/PublicNavbar';
 
-// Lucide Icons
+
 import {
   ArrowRight,
   Award,
@@ -93,9 +93,9 @@ export default function HomeScreen() {
   }, []);
 
   // Web grid styles
-  const webGrid3 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 } : {};
-  const webGrid4 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 } : {};
-  const webGrid5 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 } : {};
+  const webGrid3 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 } as any : {};
+  const webGrid4 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 } as any : {};
+  const webGrid5 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 } as any : {};
 
   return (
     <View style={styles.mainContainer}>
