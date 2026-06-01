@@ -1,51 +1,76 @@
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useRootNavigationState, useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useAuth } from "./contexts/AuthContext";
 
 export default function Index() {
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuth();
+  const rootNavigationState = useRootNavigationState();
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isLoading) {
-      const navigate = () => {
-        if (isAuthenticated && user) {
-          const role = user.role?.toUpperCase();
-          if (role === "SUPER_ADMIN") {
+    // Cleanup timeout on unmount
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Wait for root navigation to be ready AND auth to finish loading
+    if (!rootNavigationState?.key || isLoading) return;
+    if (hasNavigated) return;
+
+    // Defer navigation to next event loop to ensure router is fully ready
+    timeoutRef.current = setTimeout(() => {
+      if (!rootNavigationState?.key) return; // safety check again
+
+      if (isAuthenticated && user) {
+        const role = user.role?.toUpperCase();
+        switch (role) {
+          case "SUPER_ADMIN":
             router.replace("/(dashboard)/super-admin");
-          } else if (role === "ADMIN") {
+            break;
+          case "ADMIN":
             router.replace("/(dashboard)/admin");
-          } else if (role === "PRINCIPAL") {
+            break;
+          case "PRINCIPAL":
             router.replace("/(dashboard)/principal");
-          } else if (role === "VICE_PRINCIPAL") {
+            break;
+          case "VICE_PRINCIPAL":
             router.replace("/(dashboard)/vice-principal");
-          } else if (role === "TEACHER") {
+            break;
+          case "TEACHER":
             router.replace("/(dashboard)/teacher");
-          } else if (role === "STUDENT") {
+            break;
+          case "STUDENT":
             router.replace("/(dashboard)/student");
-          } else if (role === "PARENT") {
+            break;
+          case "PARENT":
             router.replace("/(dashboard)/parent");
-          } else if (role === "DRIVER") {
+            break;
+          case "DRIVER":
             router.replace("/(dashboard)/driver");
-          } else if (role === "HOUSEKEEPING") {
+            break;
+          case "HOUSEKEEPING":
             router.replace("/(dashboard)/housekeeping");
-          } else if (role === "RECEPTIONIST") {
+            break;
+          case "RECEPTIONIST":
             router.replace("/(dashboard)/receptionist");
-          } else if (role === "LIBRARIAN") {
+            break;
+          case "LIBRARIAN":
             router.replace("/(dashboard)/librarian");
-          } else {
+            break;
+          default:
             router.replace("/(dashboard)/admin");
-          }
-        } else {
-          router.replace("/(public)/home");
         }
-      };
-      // Defer navigation until after root layout has mounted
-      const timer = setTimeout(navigate, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, isLoading, user]);
+      } else {
+        router.replace("/(public)/home");
+      }
+      setHasNavigated(true);
+    }, 0);
+  }, [isAuthenticated, isLoading, user, rootNavigationState?.key, hasNavigated]);
 
   return (
     <View style={styles.container}>

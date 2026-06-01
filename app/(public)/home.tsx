@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PublicNavbar from '../components/common/PublicNavbar';
 
-
+// Lucide Icons
 import {
   ArrowRight,
   Award,
@@ -93,9 +93,9 @@ export default function HomeScreen() {
   }, []);
 
   // Web grid styles
-  const webGrid3 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 } as any : {};
-  const webGrid4 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 } as any : {};
-  const webGrid5 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 } as any : {};
+  const webGrid3 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 } : {};
+  const webGrid4 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 } : {};
+  const webGrid5 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 } : {};
 
   return (
     <View style={styles.mainContainer}>
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  
+  // Hero Section
   heroSection: { backgroundColor: '#2563eb', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 80 },
   heroContent: { alignItems: 'center' },
   heroBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 4, marginBottom: 16, flexDirection: 'row' },
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   getStartedBtn: { backgroundColor: 'transparent', borderWidth: 2, borderColor: 'white', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 999, marginLeft: 16 },
   getStartedBtnText: { color: 'white', fontWeight: '600', fontSize: 16 },
 
-  
+  // Stats Section
   statsContainer: { paddingHorizontal: 16, marginTop: -32 },
   statsContainerWeb: { paddingHorizontal: 24, marginTop: -32 },
   statsCard: { backgroundColor: 'white', borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, padding: 20, flexDirection: 'row', justifyContent: 'space-around' },
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   orangeText: { color: '#ea580c' },
   statLabel: { color: '#6b7280', fontSize: 12, marginTop: 4 },
 
-  
+  // Section Common
   section: { paddingHorizontal: 24, paddingVertical: 48 },
   sectionTitle: { fontSize: 30, fontWeight: 'bold', color: '#111827', textAlign: 'center', marginBottom: 8 },
   sectionSubtitle: { color: '#6b7280', textAlign: 'center', marginBottom: 40 },

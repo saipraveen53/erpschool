@@ -23,7 +23,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-
+  // OTP Modal states
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [otp, setOtp] = useState("");
   const [tempCredentials, setTempCredentials] = useState({
@@ -40,7 +40,6 @@ export default function LoginScreen() {
     setError("");
     try {
       await login(email, password);
-      // Store temp credentials and show OTP modal instead of Alert
       setTempCredentials({ email, password });
       setShowOTPModal(true);
     } catch (err: any) {
@@ -54,7 +53,6 @@ export default function LoginScreen() {
     if (otp === "123456") {
       setShowOTPModal(false);
       setOtp("");
-      // Login successful – redirect to root index which will handle role-based navigation
       router.replace("/");
     } else {
       Alert.alert("Error", "Invalid OTP. Please try again.");
@@ -66,23 +64,19 @@ export default function LoginScreen() {
     Alert.alert("OTP Sent", "Demo OTP: 123456 has been resent");
   };
 
-  // Fake credentials for demo
+  // Complete list of demo credentials for all dashboard roles
   const demoCredentials = [
-    {
-      role: "Super Admin",
-      email: "superadmin@school.com",
-      password: "super123",
-    },
+    { role: "Super Admin", email: "superadmin@school.com", password: "super123" },
     { role: "Admin", email: "admin@school.com", password: "admin123" },
-    {
-      role: "Principal",
-      email: "principal@school.com",
-      password: "principal123",
-    },
+    { role: "Principal", email: "principal@school.com", password: "principal123" },
+    { role: "Vice Principal", email: "vice@school.com", password: "vice123" },
     { role: "Teacher", email: "teacher@school.com", password: "teacher123" },
-    { role: "Parent", email: "parent@school.com", password: "parent123" },
     { role: "Student", email: "student@school.com", password: "student123" },
+    { role: "Parent", email: "parent@school.com", password: "parent123" },
     { role: "Driver", email: "driver@school.com", password: "driver123" },
+    { role: "Housekeeping", email: "housekeeping@school.com", password: "house123" },
+    { role: "Receptionist", email: "receptionist@school.com", password: "reception123" },
+    { role: "Librarian", email: "librarian@school.com", password: "librarian123" },
   ];
 
   const fillDemoCredentials = (demoEmail: string, demoPassword: string) => {
@@ -160,9 +154,9 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Demo Credentials Section */}
+          {/* Demo Credentials Section - All Roles */}
           <View style={styles.demoSection}>
-            <Text style={styles.demoTitle}>Demo Credentials</Text>
+            <Text style={styles.demoTitle}>Demo Credentials (All Roles)</Text>
             <View style={styles.demoGrid}>
               {demoCredentials.map((cred, idx) => (
                 <TouchableOpacity
@@ -354,7 +348,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 12,
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",

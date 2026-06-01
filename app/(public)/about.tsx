@@ -8,12 +8,13 @@ export default function AboutScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView showsVerticalScrollIndicator={false} className="px-6 py-8">
+        {/* Header */}
         <View className="mb-8">
           <Text className="text-3xl font-bold text-gray-900 text-center">About Us</Text>
           <View className="w-20 h-1 bg-blue-600 self-center mt-2 rounded-full" />
         </View>
 
-        
+        {/* Company Intro */}
         <View className="mb-8">
           <Text className="text-gray-700 leading-6 text-center">
             We are a team of education technology experts dedicated to transforming schools
