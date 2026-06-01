@@ -3,18 +3,22 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,53 +49,85 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Reset Password</Text>
-          <Text style={styles.subtitle}>
-            Enter your email and we'll send you an OTP to reset your password.
-          </Text>
+      <View style={styles.mainBackground}>
+        
+        <View style={styles.centerWrapper}>
+          <View style={styles.mainCard}>
+            
+            <ImageBackground
+              source={require('../../../assets/images/erp_login_cover.png')}
+              style={[styles.cardBackgroundImage, { flexDirection: isMobile ? "column" : "row" }]}
+              resizeMode="cover"
+            >
+              {/* LEFT SIDE: Responsive Wrapper */}
+              <View style={[
+                styles.leftContentArea, 
+                isMobile && styles.mobileContentArea 
+              ]}>
+                
+                <View style={styles.formContainer}>
+                  
+                  {/* Edvance Logo */}
+                  <View style={styles.logoContainer}>
+                    <Text style={styles.logoText}>
+                      Edvance<Text style={styles.logoHighlight}>.</Text>
+                    </Text>
+                    <Text style={styles.subtitle}>SCHOOL ERP</Text>
+                  </View>
+
+                  <Text style={styles.welcomeText}>Reset Password 🔒</Text>
+                  <Text style={styles.instructionText}>
+                    Enter your email and we'll send you an OTP to reset your password.
+                  </Text>
+                  
+                  {error ? (
+                    <View style={styles.errorWrapper}>
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Email</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="you@school.com"
+                      placeholderTextColor="#9ca3af"
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={handleSendOTP}
+                    disabled={loading}
+                    style={[styles.actionButton, loading && styles.actionButtonDisabled]}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="white" size="small" />
+                    ) : (
+                      <Text style={styles.actionButtonText}>Send OTP</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={styles.backContainer}>
+                    <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                      <Text style={styles.backText}>← Back to Login</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                </View>
+              </View>
+
+              {/* RIGHT SIDE: Kept empty for illustration on desktop, hidden on mobile */}
+              {!isMobile && <View style={styles.rightContentArea} />}
+
+            </ImageBackground>
+          </View>
         </View>
 
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.form}>
-          <View>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-
-          <TouchableOpacity
-            onPress={handleSendOTP}
-            disabled={loading}
-            style={[styles.sendButton, loading && styles.sendButtonDisabled]}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.sendButtonText}>Send OTP</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.backContainer}>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text style={styles.backText}>Back to Login</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -99,71 +135,154 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 48,
+  mainBackground: {
+    flex: 1,
+    backgroundColor: "#F3F4F6", 
+    justifyContent: "center", 
+    alignItems: "center",
   },
-  header: {
-    marginBottom: 32,
+  centerWrapper: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    width: "100%",
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#111827',
+  mainCard: {
+    width: "100%",
+    maxWidth: 1100, 
+    height: 560,    
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    overflow: "hidden", 
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.15,
+    shadowRadius: 30,
+    elevation: 20,
+  },
+  cardBackgroundImage: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+
+  // LEFT CONTENT AREA
+  leftContentArea: {
+    flex: 1, 
+    justifyContent: "center",
+    alignItems: "center",
+    paddingLeft: Platform.OS === 'web' ? 40 : 20,
+  },
+  mobileContentArea: {
+    paddingLeft: 0,
+    paddingHorizontal: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.85)", 
+  },
+  rightContentArea: {
+    flex: 1.1, 
+  },
+  formContainer: {
+    width: "100%",
+    maxWidth: 400, 
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+
+  // LOGO
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  logoText: {
+    fontSize: 42, 
+    fontWeight: "900",
+    color: "#5C2E14", 
+    letterSpacing: -1,
+  },
+  logoHighlight: {
+    color: "#E35336", 
   },
   subtitle: {
-    textAlign: 'center',
-    color: '#6b7280',
-    marginTop: 8,
+    fontSize: 14,
+    color: "#A0522D", 
+    marginTop: 2,
+    letterSpacing: 4,
+    fontWeight: "800",
   },
-  errorContainer: {
-    backgroundColor: '#fee2e2',
-    borderWidth: 1,
-    borderColor: '#fecaca',
+
+  // FORM TEXTS
+  welcomeText: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  instructionText: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  errorWrapper: {
+    backgroundColor: "#FEE2E2",
+    padding: 10,
     borderRadius: 8,
-    padding: 12,
     marginBottom: 16,
   },
   errorText: {
-    color: '#dc2626',
-    textAlign: 'center',
+    color: "#DC2626",
+    fontWeight: "600",
+    fontSize: 13,
+    textAlign: "center",
   },
-  form: {
-    gap: 16,
+
+  // INPUTS
+  inputGroup: {
+    marginBottom: 24, // Added extra margin for better spacing
   },
-  label: {
-    color: '#374151',
-    marginBottom: 4,
-    fontWeight: '500',
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
   },
   input: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: "#D1D5DB",
     borderRadius: 8,
+    height: 48,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: '#111827',
+    color: "#111827",
+    fontSize: 15,
+    fontWeight: "500",
   },
-  sendButton: {
-    backgroundColor: '#2563eb',
+
+  // ACTIONS & BUTTONS
+  actionButton: {
+    backgroundColor: "#E35336", // Matched with login theme
+    paddingVertical: 14,
     borderRadius: 8,
-    paddingVertical: 12,
-    marginTop: 16,
+    width: "100%", 
+    alignItems: "center",
+    shadowColor: "#E35336",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 4,
   },
-  sendButtonDisabled: {
+  actionButtonDisabled: {
     opacity: 0.7,
   },
-  sendButtonText: {
-    color: '#ffffff',
-    textAlign: 'center',
-    fontWeight: '600',
+  actionButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
     fontSize: 16,
+    letterSpacing: 1,
   },
   backContainer: {
     flexDirection: 'row',
@@ -171,6 +290,8 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   backText: {
-    color: '#2563eb',
+    color: '#2563eb', // Blue link color
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
