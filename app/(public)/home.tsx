@@ -3,455 +3,725 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
+  Easing,
+  Image,
   Platform,
-  StatusBar as RNStatusBar,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  useWindowDimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import PublicFooter from '../components/common/PublicFooter';
 import PublicNavbar from '../components/common/PublicNavbar';
 
-// Lucide Icons
 import {
   ArrowRight,
-  Award,
-  BarChart3,
-  BookOpen,
-  Bus,
-  Calendar,
-  CheckCircle,
-  ClipboardList,
-  CreditCard,
-  DollarSign,
-  FileText,
-  Gift,
-  Globe,
-  GraduationCap,
-  Headphones,
-  Heart,
-  LayoutDashboard,
-  Library,
-  Lock,
-  MessageSquare,
-  Phone,
-  RefreshCw,
+  CheckCircle2,
   Rocket,
-  School,
-  Settings,
-  Smartphone,
-  Sparkles,
-  Star,
-  UserCheck,
-  UserCog,
-  Users
+  ShieldCheck
 } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
+
+const COLORS = {
+  bgWhite: '#FFFFFF',
+  darkBg: '#2A1308',       // Deep Brown
+  cardDark: '#3E1F0D',     // Slightly lighter brown for cards
+  cardLight: '#FFFCF8',    // Soft off-white for cards on white bg
+  accent: '#F4A460',       // Sandy Orange
+  primary: '#E35336',      // Terracotta
+  textSecondary: '#A0522D',// Sienna
+  textPrimary: '#5C2E14',  // Dark Brown
+  white: '#FFFFFF',
+};
+
+// Orbiting Images Data
+const objectivesData = [
+  { title: 'Digitize', img: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=300&q=80' },
+  { title: 'Paperless', img: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=300&q=80' },
+  { title: 'Communicate', img: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=300&q=80' },
+  { title: 'Transparent', img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=300&q=80' },
+  { title: 'Centralize', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=300&q=80' },
+  { title: 'Efficiency', img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=300&q=80' },
+  { title: 'Reports', img: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&q=80' },
+  { title: 'Monitoring', img: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=300&q=80' }
+];
+
+// Updated DPR Modules with Images and Tags for the new Card UI
+const dprModules = [
+  { title: 'Academic Management', tag: 'ACADEMICS', desc: 'Manage classes, subjects, and complete academic workflow.', img: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=500&q=80' },
+  { title: 'Student Lifecycle', tag: 'STUDENTS', desc: 'From admission to alumni, track every student detail.', img: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&q=80' },
+  { title: 'Attendance Monitoring', tag: 'TRACKING', desc: 'Real-time tracking for students and staff with reports.', img: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=500&q=80' },
+  { title: 'Examination', tag: 'ASSESSMENTS', desc: 'Hall tickets, grading, and automated report cards.', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMpHBxFPitN4k2Ll4h6as14zCly_SvSxqLIQ&s' },
+  { title: 'Fee & Finance', tag: 'PAYMENTS', desc: 'Online payments, receipts, and pending dues tracking.', img: 'https://www.timeshighereducation.com/sites/default/files/styles/the_breaking_news_image_style/public/fees_increase.jpg?itok=9XGaMAk6' },
+  { title: 'Communication', tag: 'NOTICES', desc: 'Instant notices, circulars, and parent messaging.', img: 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=500&q=80' },
+  { title: 'Transport', tag: 'LOGISTICS', desc: 'Live bus tracking, route mapping, and driver app.', img: 'https://5.imimg.com/data5/WP/UB/GLADMIN-9221148/tata-marcopolo-school-variant.png' },
+  { title: 'Parent Portal', tag: 'ENGAGEMENT', desc: 'Dedicated portal for parents to monitor child progress.', img: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&q=80' },
+  { title: 'Reports & Analytics', tag: 'DASHBOARDS', desc: 'Comprehensive dashboards for principal and admin.', img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=500&q=80' },
+];
+
+const whyChooseUsBullets = [
+  "Seamless Integration across all departments.",
+  "Real-time analytics and dynamic reporting.",
+  "Highly secure and data privacy compliant.",
+  "User-friendly mobile and web interfaces."
+];
 
 export default function HomeScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { height, width } = useWindowDimensions();
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const [statsCount, setStatsCount] = useState({ schools: 0, students: 0, teachers: 0 });
+  // Responsive Breakpoints
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
 
+  // Hero Entrance Animations
+  const fadeAnimBadge = useRef(new Animated.Value(0)).current;
+  const slideAnimTitle = useRef(new Animated.Value(50)).current;
+  const fadeAnimTitle = useRef(new Animated.Value(0)).current;
+  const fadeAnimSub = useRef(new Animated.Value(0)).current;
+  const fadeAnimBtns = useRef(new Animated.Value(0)).current;
+  const scaleAnimImage = useRef(new Animated.Value(0.8)).current;
+  const fadeAnimImage = useRef(new Animated.Value(0)).current;
+  const floatAnimImage = useRef(new Animated.Value(0)).current;
+
+  // Scroll Triggered Animation Values
+  const statsAnim = useRef(new Animated.Value(0)).current;
+  const objAnim = useRef(new Animated.Value(0)).current;
+  const infoAnim = useRef(new Animated.Value(0)).current;
+  const modAnim = useRef(new Animated.Value(0)).current;
+  const ctaAnim = useRef(new Animated.Value(0)).current;
+
+  // Card Grid Staggered Animations
+  const cardSlideAnims = useRef(dprModules.map(() => new Animated.Value(50))).current;
+  const cardFadeAnims = useRef(dprModules.map(() => new Animated.Value(0))).current;
+
+  // Infinite Spin Animation Logic
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const isPaused = useRef(false);
+  const currentSpin = useRef(0);
+
+  // Track Layout Positions
+  const sectionLayouts = useRef({ stats: 0, obj: 0, mod: 0, cta: 0 }).current;
+  const triggered = useRef({ stats: false, obj: false, mod: false, cta: false }).current;
+
+  const [hoveredObj, setHoveredObj] = useState<number | null>(null);
+  const [statsCount, setStatsCount] = useState({ schools: 0, students: 0, paperless: 0 });
+  const [isStatsVisible, setIsStatsVisible] = useState(false);
+
+  // Continuous Rotation Effect
   useEffect(() => {
-    // Force status bar to blue on this screen
-    if (Platform.OS === 'android') {
-      RNStatusBar.setBackgroundColor('#2563eb');
-      RNStatusBar.setBarStyle('light-content');
-    }
-
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    const interval = setInterval(() => {
-      setStatsCount(prev => ({
-        schools: prev.schools < 500 ? prev.schools + 25 : 500,
-        students: prev.students < 50000 ? prev.students + 2500 : 50000,
-        teachers: prev.teachers < 10000 ? prev.teachers + 500 : 10000,
-      }));
-    }, 30);
-
-    return () => clearInterval(interval);
+    spinAnim.addListener(({ value }) => {
+      currentSpin.current = value;
+    });
+    return () => spinAnim.removeAllListeners();
   }, []);
 
-  // Web grid styles
-  const webGrid3 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 } : {};
-  const webGrid4 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 } : {};
-  const webGrid5 = isWeb ? { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 } : {};
+  const startSpin = () => {
+    if (isPaused.current) return;
+    const remaining = 1 - currentSpin.current;
+    const duration = remaining * 30000; // 30 seconds for a full rotation (smooth & slow)
+
+    Animated.timing(spinAnim, {
+      toValue: 1,
+      duration: duration,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        spinAnim.setValue(0);
+        currentSpin.current = 0;
+        startSpin(); // Loop continuously
+      }
+    });
+  };
+
+  useEffect(() => {
+    startSpin();
+  }, []);
+
+  const handleHoverIn = () => {
+    isPaused.current = true;
+    spinAnim.stopAnimation();
+  };
+
+  const handleHoverOut = () => {
+    isPaused.current = false;
+    startSpin();
+  };
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
+
+  const reverseSpin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['360deg', '0deg']
+  });
+
+  // Hero Entrance
+  useEffect(() => {
+    Animated.stagger(150, [
+      Animated.spring(fadeAnimBadge, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.spring(fadeAnimTitle, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
+        Animated.spring(slideAnimTitle, { toValue: 0, friction: 7, tension: 40, useNativeDriver: true }),
+      ]),
+      Animated.spring(fadeAnimSub, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
+      Animated.spring(fadeAnimBtns, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.spring(fadeAnimImage, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
+        Animated.spring(scaleAnimImage, { toValue: 1, friction: 6, tension: 40, useNativeDriver: true }),
+      ])
+    ]).start(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(floatAnimImage, { toValue: -15, duration: 2500, useNativeDriver: true }),
+          Animated.timing(floatAnimImage, { toValue: 0, duration: 2500, useNativeDriver: true }),
+        ])
+      ).start();
+    });
+  }, []);
+
+  // Run Counters ONLY when section is visible
+  useEffect(() => {
+    if (!isStatsVisible) return;
+
+    let schoolCount = 0;
+    let studentCount = 0;
+    let paperlessCount = 0;
+    const interval = setInterval(() => {
+      schoolCount = schoolCount < 500 ? schoolCount + 10 : 500;
+      studentCount = studentCount < 50000 ? studentCount + 1000 : 50000;
+      paperlessCount = paperlessCount < 100 ? paperlessCount + 2 : 100;
+
+      setStatsCount({ schools: schoolCount, students: studentCount, paperless: paperlessCount });
+
+      if (schoolCount >= 500 && studentCount >= 50000 && paperlessCount >= 100) clearInterval(interval);
+    }, 40);
+
+    return () => clearInterval(interval);
+  }, [isStatsVisible]);
+
+  // Scroll Handler (Fixed Trigger Logic)
+  const handleScroll = (event: any) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    const triggerPoint = scrollY + height * 0.85;
+
+    if (sectionLayouts.stats > 0 && !triggered.stats && triggerPoint > sectionLayouts.stats) {
+      Animated.spring(statsAnim, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }).start();
+      triggered.stats = true;
+      setIsStatsVisible(true);
+    }
+    if (sectionLayouts.obj > 0 && !triggered.obj && triggerPoint > sectionLayouts.obj) {
+      Animated.parallel([
+        Animated.spring(objAnim, { toValue: 1, friction: 5, tension: 30, useNativeDriver: true }),
+        Animated.spring(infoAnim, { toValue: 1, friction: 7, tension: 30, delay: 200, useNativeDriver: true })
+      ]).start();
+      triggered.obj = true;
+    }
+    if (sectionLayouts.mod > 0 && !triggered.mod && triggerPoint > sectionLayouts.mod) {
+      Animated.parallel([
+        Animated.spring(modAnim, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }),
+        Animated.stagger(150, cardSlideAnims.map(anim => Animated.spring(anim, { toValue: 0, friction: 8, tension: 40, useNativeDriver: true }))),
+        Animated.stagger(150, cardFadeAnims.map(anim => Animated.timing(anim, { toValue: 1, duration: 400, useNativeDriver: true })))
+      ]).start();
+      triggered.mod = true;
+    }
+    if (sectionLayouts.cta > 0 && !triggered.cta && triggerPoint > sectionLayouts.cta) {
+      Animated.spring(ctaAnim, { toValue: 1, friction: 8, tension: 40, useNativeDriver: true }).start();
+      triggered.cta = true;
+    }
+  };
+
+  // Math for Responsive Circular Layout
+  const circleSize = isDesktop ? 130 : Math.max(Math.min(width * 0.22, 90), 60);
+  const circleRadius = isDesktop ? 220 : Math.max(Math.min(width * 0.35, 140), 100);
+  const angleStep = (2 * Math.PI) / objectivesData.length;
+  const circleContainerHeight = isDesktop ? 550 : (circleRadius * 2) + circleSize + 40;
 
   return (
     <View style={styles.mainContainer}>
-      {/* StatusBar explicitly set here so it always shows blue on this screen */}
-      <StatusBar style="light" backgroundColor="#2563eb" translucent={false} />
+      <StatusBar style="dark" backgroundColor={COLORS.bgWhite} translucent={false} />
 
-      <PublicNavbar />
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
 
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <Animated.View
-            style={[styles.heroContent, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
-          >
-            <View style={styles.heroBadge}>
-              <Sparkles size={14} color="white" />
-              <Text style={styles.heroBadgeText}>NEXT-GEN SCHOOL MANAGEMENT</Text>
-            </View>
-            <Text style={styles.heroTitle}>
-              Smart <Text style={styles.heroTitleHighlight}>ERP</Text>
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              Complete School Management System
-            </Text>
-            <Text style={styles.heroDescription}>
-              Automate academics, administration, communication & finance with our all-in-one solution
-            </Text>
+        {/* --- 1. HERO SECTION (WHITE) --- */}
+        <View style={[styles.heroWrapper, { minHeight: height }]}>
+          <View style={[styles.heroOverlay, { paddingTop: 140, paddingBottom: 60 }]}>
+            <View style={[styles.splitContainer, { flexDirection: isDesktop ? 'row' : 'column' }]}>
+              <View style={[styles.leftContent, { alignItems: isDesktop ? 'flex-start' : 'center' }]}>
+                <Animated.View style={[styles.heroBadge, { opacity: fadeAnimBadge }]}>
+                  <ShieldCheck size={14} color={COLORS.primary} />
+                  <Text style={styles.heroBadgeText}>SMART SCHOOL ERP MANAGEMENT SYSTEM</Text>
+                </Animated.View>
 
-            <View style={styles.heroButtons}>
-              <TouchableOpacity
-                onPress={() => router.push('/(auth)/login')}
-                style={styles.loginBtn}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.loginBtnText}>Login</Text>
-                <ArrowRight size={18} color="#1d4ed8" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/(auth)/register')}
-                style={styles.getStartedBtn}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.getStartedBtnText}>Get Started</Text>
-              </TouchableOpacity>
+                <Animated.Text style={[
+                  styles.heroTitle,
+                  {
+                    opacity: fadeAnimTitle,
+                    transform: [{ translateY: slideAnimTitle }],
+                    fontSize: isDesktop ? 64 : (isTablet ? 48 : 36),
+                    lineHeight: isDesktop ? 74 : (isTablet ? 58 : 46),
+                    textAlign: isDesktop ? 'left' : 'center'
+                  }
+                ]}>
+                  Centralized Digital{'\n'}
+                  <Text style={styles.heroTitleHighlight}>Platform.</Text>
+                </Animated.Text>
+
+                <Animated.Text style={[styles.heroSubtitle, {
+                  opacity: fadeAnimSub,
+                  textAlign: isDesktop ? 'left' : 'center'
+                }]}>
+                  A complete cloud-based School ERP solution for managing academics, administration, communication, finance, staff, students, and parents.
+                </Animated.Text>
+
+                <Animated.View style={[styles.heroButtons, {
+                  opacity: fadeAnimBtns,
+                  flexDirection: isDesktop ? 'row' : (width < 380 ? 'column' : 'row'),
+                  justifyContent: isDesktop ? 'flex-start' : 'center'
+                }]}>
+                  <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.primaryBtn} activeOpacity={0.8}>
+                    <Text style={styles.primaryBtnText}>Get Started</Text>
+                    <ArrowRight size={18} color={COLORS.white} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push('/(public)/contact')} style={styles.secondaryBtn} activeOpacity={0.8}>
+                    <Text style={styles.secondaryBtnText}>Request Demo</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+
+              <View style={styles.rightContent}>
+                <Animated.Image
+                  source={require('../../assets/images/hero-illustration.png')}
+                  style={[styles.heroImage, { opacity: fadeAnimImage, transform: [{ scale: scaleAnimImage }, { translateY: floatAnimImage }] }]}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* --- 2. STATS SECTION (DARK BROWN) --- */}
+        <View
+          style={[styles.section, { backgroundColor: COLORS.darkBg, paddingVertical: isDesktop ? 100 : 60 }]}
+          onLayout={(e) => { sectionLayouts.stats = e.nativeEvent.layout.y; }}
+        >
+          <Animated.View style={{ opacity: statsAnim, transform: [{ translateY: statsAnim.interpolate({ inputRange: [0, 1], outputRange: [50, 0] }) }] }}>
+            {/* Increased Heading Size */}
+            <Text style={[styles.sectionTitle, { color: COLORS.white, fontSize: isDesktop ? 48 : 36 }]}>Trusted Worldwide</Text>
+            <Text style={[styles.sectionSubtitle, { color: COLORS.accent }]}>Delivering measurable impact through our comprehensive ERP platform.</Text>
+
+            <View style={[styles.statsContainer, { flexDirection: isDesktop || isTablet ? 'row' : 'column', gap: isDesktop ? 80 : 40 }]}>
+              <View style={styles.statBox}>
+                <Text style={styles.statBoxValue}>{statsCount.schools}+</Text>
+                <Text style={styles.statBoxLabel}>Institutions</Text>
+              </View>
+              <View style={[styles.statDivider, { width: isDesktop || isTablet ? 1 : '80%', height: isDesktop || isTablet ? 80 : 1 }]} />
+              <View style={styles.statBox}>
+                <Text style={styles.statBoxValue}>{statsCount.students.toLocaleString()}+</Text>
+                <Text style={styles.statBoxLabel}>Active Students</Text>
+              </View>
+              <View style={[styles.statDivider, { width: isDesktop || isTablet ? 1 : '80%', height: isDesktop || isTablet ? 80 : 1 }]} />
+              <View style={styles.statBox}>
+                <Text style={styles.statBoxValue}>{statsCount.paperless}%</Text>
+                <Text style={styles.statBoxLabel}>Paperless Ops</Text>
+              </View>
             </View>
           </Animated.View>
         </View>
 
-        {/* Stats Counter Section */}
-        <View style={isWeb ? styles.statsContainerWeb : styles.statsContainer}>
-          <View style={styles.statsCard}>
-            <View style={styles.statItem}>
-              <School size={32} color="#2563eb" />
-              <Text style={styles.statValue}>{statsCount.schools}+</Text>
-              <Text style={styles.statLabel}>Schools</Text>
-            </View>
-            <View style={styles.statDivider}>
-              <GraduationCap size={32} color="#16a34a" />
-              <Text style={[styles.statValue, styles.greenText]}>{statsCount.students.toLocaleString()}+</Text>
-              <Text style={styles.statLabel}>Students</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Users size={32} color="#ea580c" />
-              <Text style={[styles.statValue, styles.orangeText]}>{statsCount.teachers.toLocaleString()}+</Text>
-              <Text style={styles.statLabel}>Teachers</Text>
-            </View>
-          </View>
-        </View>
+        {/* --- 3. PROJECT OBJECTIVES CIRCULAR (WHITE) --- */}
+        <View
+          style={[styles.section, { backgroundColor: COLORS.bgWhite, paddingVertical: isDesktop ? 120 : 80, overflow: 'hidden' }]}
+          onLayout={(e) => { sectionLayouts.obj = e.nativeEvent.layout.y; }}
+        >
+          <View style={styles.centeredObjContainer}>
+            {/* Increased Heading Size */}
+            <Text style={[styles.sectionTitle, { fontSize: isDesktop ? 48 : 36 }]}>Why Choose Edvance?</Text>
+            <Text style={styles.sectionSubtitle}>
+              We bring innovation to your fingertips. Hover over the interactive spheres to explore our core values.
+            </Text>
 
-        {/* Why Choose Us Section - Grid 3 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Why Choose Us?</Text>
-          <Text style={styles.sectionSubtitle}>Trusted by 500+ schools across India</Text>
+            {/* Split Layout: Circles on Left, Information on Right */}
+            <View style={[styles.objSplitWrapper, { flexDirection: isDesktop ? 'row' : 'column' }]}>
 
-          <View style={isWeb ? webGrid3 : styles.grid2Mobile}>
-            {whyChoose.map((item, idx) => (
-              <View key={idx} style={[styles.whyCard, !isWeb && { width: '48%', marginBottom: 16 }]}>
-                <View style={styles.iconCircle}>{item.icon}</View>
-                <Text style={styles.whyTitle}>{item.title}</Text>
-                <Text style={styles.whyDescription}>{item.description}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Features Section - Grid 4 */}
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Powerful Features</Text>
-          <Text style={styles.sectionSubtitle}>Everything you need to manage your school</Text>
-
-          <View style={isWeb ? webGrid4 : styles.grid2Mobile}>
-            {features.map((feature, idx) => (
-              <View key={idx} style={[styles.featureCard, !isWeb && { width: '48%', marginBottom: 16 }]}>
-                <View style={styles.featureIconBox}>{feature.icon}</View>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDescription}>{feature.description}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* User Roles Section - Grid 5 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>User Roles</Text>
-          <Text style={styles.sectionSubtitle}>Role-based dashboards with specific permissions</Text>
-
-          <View style={isWeb ? webGrid5 : styles.grid3Mobile}>
-            {roles.map((role, idx) => (
-              <View key={idx} style={[styles.roleCard, !isWeb && { width: '31%', marginBottom: 12 }, { backgroundColor: role.bgColor }]}>
-                {role.icon}
-                <Text style={styles.roleTitle}>{role.title}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Testimonials Section - Grid 3 */}
-        <View style={styles.testimonialsSection}>
-          <Text style={[styles.sectionTitle, styles.whiteText]}>What Schools Say</Text>
-          <Text style={[styles.sectionSubtitle, styles.indigoText]}>Trusted by educators nationwide</Text>
-
-          {isWeb ? (
-            <View style={webGrid3}>
-              {testimonials.map((item, idx) => (
-                <View key={idx} style={styles.testimonialCard}>
-                  <View style={styles.starsRow}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} size={16} color="#facc15" fill="#facc15" />
-                    ))}
-                  </View>
-                  <Text style={styles.testimonialText}>{item.text}</Text>
-                  <View style={styles.testimonialAuthor}>
-                    <View style={styles.authorAvatar}>
-                      <Text style={styles.authorInitial}>{item.name[0]}</Text>
+              {/* Left Side: Circular Explosion Layout with Infinite Spin & Hover Pause */}
+              <Pressable
+                style={[styles.circleContainer, { height: circleContainerHeight, width: isDesktop ? '55%' : '100%' }]}
+                onHoverIn={handleHoverIn}
+                onHoverOut={handleHoverOut}
+                onPressIn={handleHoverIn}
+                onPressOut={handleHoverOut}
+              >
+                <Animated.View style={{
+                  ...StyleSheet.absoluteFillObject,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transform: [{ rotate: spin }]
+                }}>
+                  {/* Center Circle with Edvance Image & Text */}
+                  <Animated.View style={[
+                    styles.orbitCircle,
+                    {
+                      width: circleSize,
+                      height: circleSize,
+                      borderRadius: circleSize / 2,
+                      zIndex: 10,
+                      borderColor: COLORS.primary,
+                      borderWidth: 4,
+                      transform: [{ rotate: reverseSpin }] // Counter-rotate so it stays upright
+                    }
+                  ]}>
+                    <Image
+                      source={{ uri: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&q=80' }}
+                      style={styles.orbitImage}
+                    />
+                    <View style={styles.orbitImageOverlay}>
+                      <Text style={[styles.orbitTextHovered, { fontSize: isDesktop ? 18 : 14, color: COLORS.accent, fontWeight: '900' }]}>Edvance</Text>
                     </View>
-                    <View style={styles.authorInfo}>
-                      <Text style={styles.authorName}>{item.name}</Text>
-                      <Text style={styles.authorRole}>{item.role}</Text>
-                    </View>
+                  </Animated.View>
+
+                  {/* Surrounding Objective Orbits Animating OUT from the center */}
+                  {objectivesData.map((obj, i) => {
+                    const x = Math.cos(i * angleStep) * circleRadius;
+                    const y = Math.sin(i * angleStep) * circleRadius;
+
+                    return (
+                      <Animated.View
+                        key={i}
+                        style={[
+                          styles.orbitItem,
+                          {
+                            zIndex: 1,
+                            transform: [
+                              { translateX: objAnim.interpolate({ inputRange: [0, 1], outputRange: [0, x] }) },
+                              { translateY: objAnim.interpolate({ inputRange: [0, 1], outputRange: [0, y] }) },
+                              { scale: objAnim.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) },
+                              { rotate: reverseSpin } // Counter-rotate so images/text stay upright!
+                            ]
+                          }
+                        ]}
+                      >
+                        <Pressable
+                          onHoverIn={() => setHoveredObj(i)}
+                          onHoverOut={() => setHoveredObj(null)}
+                          onPressIn={() => setHoveredObj(i)}
+                          onPressOut={() => setHoveredObj(null)}
+                          style={[
+                            styles.orbitCircle,
+                            { width: circleSize, height: circleSize, borderRadius: circleSize / 2 },
+                            hoveredObj === i && styles.orbitCircleHovered
+                          ]}
+                        >
+                          <Image source={{ uri: obj.img }} style={styles.orbitImage} />
+                          <View style={styles.orbitImageOverlay}>
+                            <Text style={[styles.orbitTextHovered, { fontSize: isDesktop ? 14 : 10 }]}>{obj.title}</Text>
+                          </View>
+                        </Pressable>
+                      </Animated.View>
+                    );
+                  })}
+                </Animated.View>
+              </Pressable>
+
+              {/* Right Side: Additional Information Animated via infoAnim */}
+              <Animated.View style={[
+                styles.objRightContent,
+                {
+                  width: isDesktop ? '40%' : '100%',
+                  marginTop: isDesktop ? 0 : 40,
+                  opacity: infoAnim,
+                  transform: [{ translateX: infoAnim.interpolate({ inputRange: [0, 1], outputRange: [100, 0] }) }]
+                }
+              ]}>
+                <Text style={styles.objRightTitle}>Transforming Education with Technology</Text>
+                <Text style={styles.objRightDesc}>
+                  Edvance ERP is built from the ground up to empower educational institutions. Our platform ensures that every stakeholder—from administrators to parents—experiences a seamless, transparent, and highly efficient workflow.
+                </Text>
+
+                {whyChooseUsBullets.map((bullet, idx) => (
+                  <View key={idx} style={styles.bulletRow}>
+                    <CheckCircle2 size={20} color={COLORS.primary} />
+                    <Text style={styles.bulletText}>{bullet}</Text>
                   </View>
-                </View>
+                ))}
+
+                {/* Routed to features instead of about */}
+                <TouchableOpacity
+                  style={styles.objLearnMoreBtn}
+                  activeOpacity={0.8}
+                  onPress={() => router.push('/(public)/features')}
+                >
+                  <Text style={styles.objLearnMoreText}>Discover More</Text>
+                  <ArrowRight size={18} color={COLORS.primary} />
+                </TouchableOpacity>
+              </Animated.View>
+
+            </View>
+          </View>
+        </View>
+
+        {/* --- 4. COMPREHENSIVE MODULES (DARK BROWN) --- */}
+        <View
+          style={[styles.section, { backgroundColor: COLORS.darkBg, paddingVertical: 100 }]}
+          onLayout={(e) => { sectionLayouts.mod = e.nativeEvent.layout.y; }}
+        >
+          <Animated.View style={{ opacity: modAnim, transform: [{ translateY: modAnim.interpolate({ inputRange: [0, 1], outputRange: [50, 0] }) }] }}>
+            {/* Increased Heading Size */}
+            <Text style={[styles.sectionTitle, { color: COLORS.white, textAlign: 'center', fontSize: isDesktop ? 48 : 36 }]}>Comprehensive Modules</Text>
+            <Text style={[styles.sectionSubtitle, { color: COLORS.accent, textAlign: 'center', marginBottom: 60 }]}>Role-based access with separate dashboards and permissions.</Text>
+
+            <View style={styles.modulesGrid}>
+              {dprModules.map((module, idx) => (
+                <Animated.View
+                  key={idx}
+                  style={[
+                    styles.imageModuleCardWrapper,
+                    { width: isDesktop ? '31%' : (isTablet ? '48%' : '100%') },
+                    {
+                      opacity: cardFadeAnims[idx],
+                      transform: [{ translateY: cardSlideAnims[idx] }]
+                    }
+                  ]}
+                >
+                  <TouchableOpacity activeOpacity={0.95} style={styles.imageModuleCard}>
+                    {/* Image height adjusted and width set to 90% to match screenshot offset */}
+                    <Image source={{ uri: module.img }} style={styles.imageModuleImg} resizeMode="cover" />
+
+                    {/* Overlapping White Card UI offset to the right */}
+                    <View style={styles.imageModuleOverlayCard}>
+                      <Text style={styles.imageModuleTag}>{module.tag}</Text>
+                      <Text style={styles.imageModuleTitle}>{module.title}</Text>
+                      <Text style={styles.imageModuleDesc}>{module.desc}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
               ))}
             </View>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-              {testimonials.map((item, idx) => (
-                <View key={idx} style={styles.testimonialCardMobile}>
-                  <View style={styles.starsRow}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} size={16} color="#facc15" fill="#facc15" />
-                    ))}
-                  </View>
-                  <Text style={styles.testimonialText}>{item.text}</Text>
-                  <View style={styles.testimonialAuthor}>
-                    <View style={styles.authorAvatar}>
-                      <Text style={styles.authorInitial}>{item.name[0]}</Text>
-                    </View>
-                    <View style={styles.authorInfo}>
-                      <Text style={styles.authorName}>{item.name}</Text>
-                      <Text style={styles.authorRole}>{item.role}</Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          )}
+          </Animated.View>
         </View>
 
-        {/* Contact Section with CTA */}
-        <View style={styles.section}>
-          <View style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>Ready to Transform Your School?</Text>
-            <Text style={styles.ctaSubtitle}>Join 500+ schools already using our ERP</Text>
-
-            <View style={styles.ctaButtons}>
-              <TouchableOpacity
-                onPress={() => router.push('/(auth)/register')}
-                style={styles.ctaPrimaryBtn}
-              >
-                <Text style={styles.ctaPrimaryText}>Start Free Trial</Text>
-                <Rocket size={18} color="#1d4ed8" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/(public)/contact')}
-                style={styles.ctaSecondaryBtn}
-              >
-                <Headphones size={18} color="white" />
-                <Text style={styles.ctaSecondaryText}>Contact Sales</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+        {/* --- 5. CTA SECTION (WHITE) --- */}
+        <View
+          style={styles.ctaSection}
+          onLayout={(e) => { sectionLayouts.cta = e.nativeEvent.layout.y; }}
+        >
+          <Animated.View style={[styles.ctaContent, { opacity: ctaAnim, transform: [{ translateY: ctaAnim.interpolate({ inputRange: [0, 1], outputRange: [50, 0] }) }] }]}>
+            {/* Increased Heading Size */}
+            <Text style={[styles.ctaTitle, { fontSize: isDesktop ? 48 : 36 }]}>Ready to Transform Your Campus?</Text>
+            <Text style={styles.ctaSubtitle}>Join forward-thinking schools using Edvance ERP today and step into the future of education.</Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.ctaBtn} activeOpacity={0.9}>
+              <Text style={styles.ctaBtnText}>Start Your Free Trial</Text>
+              <Rocket size={18} color={COLORS.white} />
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerTitle}>SVPS School ERP</Text>
-          <Text style={styles.footerText}>Complete School Management Solution</Text>
-          <View style={styles.footerLinks}>
-            <TouchableOpacity onPress={() => router.push('/(public)/home')}>
-              <Text style={styles.footerLink}>Home</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text style={styles.footerLink}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={styles.footerLink}>Register</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.copyright}>© 2025 SVPS School. All rights reserved.</Text>
-        </View>
+        {/* --- 6. FOOTER (DARK BROWN) --- */}
+        <PublicFooter />
 
       </ScrollView>
+      <PublicNavbar />
     </View>
   );
 }
 
-// Data arrays
-const whyChoose = [
-  { title: 'Cloud Based', description: 'Access anywhere, anytime', icon: <Globe size={24} color="#2563eb" /> },
-  { title: 'Secure', description: 'Bank-level data security', icon: <Lock size={24} color="#2563eb" /> },
-  { title: 'Mobile App', description: 'iOS & Android support', icon: <Smartphone size={24} color="#2563eb" /> },
-  { title: 'Fast Support', description: '24/7 dedicated support', icon: <Headphones size={24} color="#2563eb" /> },
-  { title: 'Affordable', description: 'Best pricing in market', icon: <Gift size={24} color="#2563eb" /> },
-  { title: 'Regular Updates', description: 'Monthly feature updates', icon: <RefreshCw size={24} color="#2563eb" /> },
-];
-
-const features = [
-  { title: 'Student Management', description: 'Admissions, profiles, documents', icon: <GraduationCap size={20} color="white" /> },
-  { title: 'Staff Management', description: 'Teachers & non-teaching staff', icon: <Users size={20} color="white" /> },
-  { title: 'Smart Attendance', description: 'Biometric, QR, offline sync', icon: <UserCheck size={20} color="white" /> },
-  { title: 'Timetable', description: 'Auto-generated schedules', icon: <Calendar size={20} color="white" /> },
-  { title: 'Examination', description: 'Online exams, marks entry', icon: <FileText size={20} color="white" /> },
-  { title: 'Fee Management', description: 'Online payments, receipts', icon: <CreditCard size={20} color="white" /> },
-  { title: 'Transport', description: 'Live GPS tracking', icon: <Bus size={20} color="white" /> },
-  { title: 'Communication', description: 'SMS, email, in-app chat', icon: <MessageSquare size={20} color="white" /> },
-  { title: 'Library', description: 'Book catalog, issue/return', icon: <Library size={20} color="white" /> },
-  { title: 'Analytics', description: 'Reports & insights', icon: <BarChart3 size={20} color="white" /> },
-  { title: 'Payroll', description: 'Staff salary management', icon: <DollarSign size={20} color="white" /> },
-  { title: 'Inventory', description: 'Asset & stock management', icon: <Settings size={20} color="white" /> },
-];
-
-const roles = [
-  { title: 'Super Admin', icon: <UserCog size={24} color="#6b21a5" />, bgColor: '#f3e8ff' },
-  { title: 'Admin', icon: <LayoutDashboard size={24} color="#2563eb" />, bgColor: '#dbeafe' },
-  { title: 'Principal', icon: <Award size={24} color="#4f46e5" />, bgColor: '#e0e7ff' },
-  { title: 'Vice Principal', icon: <ClipboardList size={24} color="#0891b2" />, bgColor: '#cffafe' },
-  { title: 'Teacher', icon: <Users size={24} color="#16a34a" />, bgColor: '#dcfce7' },
-  { title: 'Student', icon: <GraduationCap size={24} color="#ca8a04" />, bgColor: '#fef9c3' },
-  { title: 'Parent', icon: <Heart size={24} color="#ea580c" />, bgColor: '#ffedd5' },
-  { title: 'Driver', icon: <Bus size={24} color="#dc2626" />, bgColor: '#fee2e2' },
-  { title: 'Librarian', icon: <BookOpen size={24} color="#0d9488" />, bgColor: '#ccfbf1' },
-  { title: 'Receptionist', icon: <Phone size={24} color="#db2777" />, bgColor: '#fce7f3' },
-  { title: 'Housekeeping', icon: <CheckCircle size={24} color="#4b5563" />, bgColor: '#e5e7eb' },
-];
-
-const testimonials = [
-  { name: 'Dr. Suresh Kumar', role: 'Principal, Delhi Public School', text: 'SVPS ERP transformed our school management completely. Highly recommended!' },
-  { name: 'Mrs. Priya Sharma', role: "Admin, St. Mary's School", text: 'Amazing platform! Fee collection and attendance tracking is now effortless.' },
-  { name: 'Mr. Rajesh Verma', role: 'Parent', text: "I can track my child's progress, fees, and bus location in real-time." },
-];
-
 const styles = StyleSheet.create({
-  mainContainer: {
+  mainContainer: { flex: 1, backgroundColor: COLORS.bgWhite },
+  scrollView: { flex: 1 },
+
+  // --- HERO SECTION ---
+  heroWrapper: { width: '100%', position: 'relative', overflow: 'hidden', backgroundColor: COLORS.bgWhite },
+  
+  // FIX APPLIED HERE: Removing 'position: absolute' allows content to naturally stretch downwards
+  heroOverlay: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: 24, 
+    justifyContent: 'center', 
+    zIndex: 10,
   },
-  scrollView: {
-    flex: 1,
+  
+  splitContainer: {
+    alignItems: 'center', justifyContent: 'space-between',
+    width: '100%', maxWidth: 1400, alignSelf: 'center', gap: 40,
   },
-  scrollContent: {
-    paddingBottom: 40,
+  leftContent: { flex: 1, width: '100%' },
+  rightContent: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
+  heroImage: { width: '100%', height: 350, minHeight: 350, maxWidth: 700 },
+  heroBadge: {
+    backgroundColor: 'rgba(227, 83, 54, 0.1)', borderRadius: 999,
+    paddingHorizontal: 16, paddingVertical: 8, marginBottom: 24,
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(227, 83, 54, 0.3)', alignSelf: 'flex-start'
+  },
+  heroBadgeText: { color: COLORS.primary, fontSize: 10, fontWeight: '700', marginLeft: 8, letterSpacing: 1 },
+  heroTitle: {
+    fontWeight: '900', color: COLORS.textPrimary,
+    letterSpacing: -1.5, marginBottom: 20,
+  },
+  heroTitleHighlight: { color: COLORS.primary },
+  heroSubtitle: {
+    fontSize: 16, color: COLORS.textSecondary,
+    lineHeight: 28, fontWeight: '500', maxWidth: 600, marginBottom: 36,
+  },
+  heroButtons: { gap: 16, width: '100%' },
+  primaryBtn: {
+    backgroundColor: COLORS.primary, paddingHorizontal: 32, paddingVertical: 16,
+    borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
+  },
+  primaryBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: 16, marginRight: 8 },
+  secondaryBtn: {
+    backgroundColor: 'transparent', borderWidth: 2, borderColor: COLORS.primary,
+    paddingHorizontal: 32, paddingVertical: 16, borderRadius: 999, justifyContent: 'center', alignItems: 'center'
+  },
+  secondaryBtnText: { color: COLORS.primary, fontWeight: '700', fontSize: 16 },
+
+  // --- STATS SECTION ---
+  statsContainer: {
+    justifyContent: 'center', alignItems: 'center',
+    marginTop: 40,
+  },
+  statBox: { alignItems: 'center', width: '100%', maxWidth: 200 },
+  statBoxValue: { fontSize: 48, fontWeight: '900', color: COLORS.primary, textAlign: 'center' },
+  statBoxLabel: { fontSize: 16, color: COLORS.white, marginTop: 8, fontWeight: '600', letterSpacing: 1, textAlign: 'center' },
+  statDivider: { backgroundColor: 'rgba(255,255,255,0.1)' },
+
+  // --- INTERACTIVE CIRCLE OBJECTIVES SPLIT LAYOUT ---
+  centeredObjContainer: {
+    alignItems: 'center', justifyContent: 'center',
+    width: '100%', maxWidth: 1400, alignSelf: 'center',
+  },
+  objSplitWrapper: {
+    width: '100%', alignItems: 'center', justifyContent: 'space-between', marginTop: 20
+  },
+  circleContainer: {
+    alignItems: 'center', justifyContent: 'center', position: 'relative',
+  },
+  orbitItem: { position: 'absolute' },
+  orbitCircle: {
+    backgroundColor: COLORS.cardLight,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: COLORS.textPrimary, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2, shadowRadius: 15, elevation: 8,
+    borderWidth: 3, borderColor: COLORS.bgWhite, overflow: 'hidden',
+  },
+  orbitCircleHovered: {
+    transform: [{ scale: 1.15 }],
+    shadowOpacity: 0.4, shadowRadius: 20,
+    borderColor: COLORS.primary, zIndex: 20,
+  },
+  orbitImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  orbitImageOverlay: {
+    ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(42, 19, 8, 0.5)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  orbitTextHovered: {
+    color: COLORS.white, fontWeight: '800', textAlign: 'center', paddingHorizontal: 4, letterSpacing: 0.5,
   },
 
-  // Hero Section
-  heroSection: { backgroundColor: '#2563eb', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 80 },
-  heroContent: { alignItems: 'center' },
-  heroBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 4, marginBottom: 16, flexDirection: 'row' },
-  heroBadgeText: { color: 'white', fontSize: 12, fontWeight: '600', marginLeft: 8 },
-  heroTitle: { fontSize: 48, fontWeight: '800', color: 'white', textAlign: 'center' },
-  heroTitleHighlight: { color: '#facc15' },
-  heroSubtitle: { fontSize: 20, color: '#bfdbfe', textAlign: 'center', marginTop: 12, fontWeight: '300' },
-  heroDescription: { color: '#bfdbfe', textAlign: 'center', marginTop: 8, fontSize: 14, maxWidth: 400, opacity: 0.9 },
-  heroButtons: { flexDirection: 'row', justifyContent: 'center', marginTop: 32 },
-  loginBtn: { backgroundColor: 'white', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 999, flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 4 },
-  loginBtnText: { color: '#1d4ed8', fontWeight: 'bold', fontSize: 16, marginRight: 8 },
-  getStartedBtn: { backgroundColor: 'transparent', borderWidth: 2, borderColor: 'white', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 999, marginLeft: 16 },
-  getStartedBtnText: { color: 'white', fontWeight: '600', fontSize: 16 },
+  // Right side Info Styling
+  objRightContent: {
+    justifyContent: 'center', paddingHorizontal: 16,
+  },
+  objRightTitle: {
+    fontSize: 28, fontWeight: '900', color: COLORS.textPrimary, marginBottom: 16, letterSpacing: -0.5,
+  },
+  objRightDesc: {
+    fontSize: 16, color: COLORS.textSecondary, lineHeight: 26, marginBottom: 24,
+  },
+  bulletRow: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12,
+  },
+  bulletText: {
+    fontSize: 16, color: COLORS.textPrimary, fontWeight: '600', flex: 1,
+  },
+  objLearnMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', marginTop: 16, gap: 8, alignSelf: 'flex-start'
+  },
+  objLearnMoreText: {
+    fontSize: 16, fontWeight: '800', color: COLORS.primary, letterSpacing: 0.5,
+  },
 
-  // Stats Section
-  statsContainer: { paddingHorizontal: 16, marginTop: -32 },
-  statsContainerWeb: { paddingHorizontal: 24, marginTop: -32 },
-  statsCard: { backgroundColor: 'white', borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4, padding: 20, flexDirection: 'row', justifyContent: 'space-around' },
-  statItem: { alignItems: 'center', flex: 1 },
-  statDivider: { alignItems: 'center', flex: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#e5e7eb', paddingHorizontal: 16 },
-  statValue: { fontSize: 24, fontWeight: 'bold', color: '#2563eb', marginTop: 8 },
-  greenText: { color: '#16a34a' },
-  orangeText: { color: '#ea580c' },
-  statLabel: { color: '#6b7280', fontSize: 12, marginTop: 4 },
+  // --- SECTIONS ---
+  section: { paddingHorizontal: 24 },
+  sectionTitle: { fontWeight: '900', color: COLORS.textPrimary, textAlign: 'center', marginBottom: 16, letterSpacing: -0.5 },
+  sectionSubtitle: { color: COLORS.textSecondary, textAlign: 'center', marginBottom: 24, fontSize: 16, maxWidth: 600, alignSelf: 'center', lineHeight: 24 },
 
-  // Section Common
-  section: { paddingHorizontal: 24, paddingVertical: 48 },
-  sectionTitle: { fontSize: 30, fontWeight: 'bold', color: '#111827', textAlign: 'center', marginBottom: 8 },
-  sectionSubtitle: { color: '#6b7280', textAlign: 'center', marginBottom: 40 },
-  featuresSection: { backgroundColor: '#f3f4f6', paddingHorizontal: 24, paddingVertical: 48, marginTop: 16 },
+  // --- NEW MODULES GRID (OVERLAPPING CARDS UI) ---
+  modulesGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, width: '100%',
+  },
+  imageModuleCardWrapper: {
+    marginBottom: 40,
+  },
+  imageModuleCard: {
+    flexDirection: 'column',
+    position: 'relative',
+    width: '100%',
+    alignItems: 'flex-start', // Ensures image stays left-aligned
+  },
+  imageModuleImg: {
+    width: '90%', // Reduced width so card can stick out on the right
+    height: 350,
+    borderRadius: 24,
+    backgroundColor: '#3E1F0D',
+  },
+  imageModuleOverlayCard: {
+    backgroundColor: COLORS.bgWhite,
+    alignSelf: 'flex-end', // Aligns the card to the right edge of the container
+    width: '90%', // Same width as image but shifted
+    marginTop: -70, // Overlap deeply into the image
+    borderRadius: 24, // Matches the smooth rounded corners
+    padding: 28,
+    minHeight: 150, // Ensures a minimum white space area
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.1,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  imageModuleTag: {
+    color: COLORS.primary,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  imageModuleTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  imageModuleDesc: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
+  },
 
-  // Grid Layouts (mobile only)
-  grid2Mobile: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  grid3Mobile: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-
-  // Cards
-  whyCard: { backgroundColor: '#f9fafb', padding: 20, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-  iconCircle: { width: 48, height: 48, backgroundColor: '#dbeafe', borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  whyTitle: { fontWeight: 'bold', color: '#111827', fontSize: 16 },
-  whyDescription: { color: '#6b7280', fontSize: 12, marginTop: 4 },
-  featureCard: { backgroundColor: 'white', padding: 16, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, borderWidth: 1, borderColor: '#e5e7eb' },
-  featureIconBox: { width: 40, height: 40, backgroundColor: '#2563eb', borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  featureTitle: { fontWeight: 'bold', color: '#1f2937' },
-  featureDescription: { color: '#6b7280', fontSize: 12, marginTop: 4 },
-  roleCard: { padding: 12, borderRadius: 12, alignItems: 'center' },
-  roleTitle: { fontWeight: '600', color: '#1f2937', fontSize: 12, textAlign: 'center', marginTop: 4 },
-
-  // Testimonials
-  testimonialsSection: { backgroundColor: '#312e81', paddingHorizontal: 24, paddingVertical: 48 },
-  whiteText: { color: 'white' },
-  indigoText: { color: '#a5b4fc' },
-  testimonialCard: { backgroundColor: 'rgba(255,255,255,0.1)', padding: 20, borderRadius: 16 },
-  testimonialCardMobile: { width: 288, backgroundColor: 'rgba(255,255,255,0.1)', padding: 20, borderRadius: 16, marginHorizontal: 8 },
-  starsRow: { flexDirection: 'row', marginBottom: 8 },
-  testimonialText: { color: 'white', fontSize: 14, lineHeight: 20 },
-  testimonialAuthor: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
-  authorAvatar: { width: 40, height: 40, backgroundColor: '#6366f1', borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  authorInitial: { color: 'white', fontWeight: 'bold' },
-  authorInfo: { marginLeft: 12 },
-  authorName: { color: 'white', fontWeight: '600', fontSize: 14 },
-  authorRole: { color: '#c7d2fe', fontSize: 12 },
-  horizontalScroll: { marginHorizontal: -8 },
-
-  // CTA
-  ctaCard: { backgroundColor: '#2563eb', borderRadius: 24, padding: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 8 },
-  ctaTitle: { fontSize: 24, fontWeight: 'bold', color: 'white', textAlign: 'center', marginBottom: 8 },
-  ctaSubtitle: { color: '#bfdbfe', textAlign: 'center', marginBottom: 24 },
-  ctaButtons: { flexDirection: 'row', justifyContent: 'center' },
-  ctaPrimaryBtn: { backgroundColor: 'white', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, flexDirection: 'row', alignItems: 'center', marginRight: 16 },
-  ctaPrimaryText: { color: '#1d4ed8', fontWeight: 'bold', marginRight: 8 },
-  ctaSecondaryBtn: { backgroundColor: 'transparent', borderWidth: 2, borderColor: 'white', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 999, flexDirection: 'row', alignItems: 'center' },
-  ctaSecondaryText: { color: 'white', fontWeight: '600', marginLeft: 8 },
-
-  // Footer
-  footer: { backgroundColor: '#111827', paddingHorizontal: 24, paddingVertical: 32, marginTop: 16 },
-  footerTitle: { color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: 18, marginBottom: 8 },
-  footerText: { color: '#9ca3af', textAlign: 'center', fontSize: 12, marginBottom: 16 },
-  footerLinks: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginBottom: 16 },
-  footerLink: { color: '#9ca3af', fontSize: 12 },
-  copyright: { color: '#6b7280', textAlign: 'center', fontSize: 12 },
+  // --- CTA SECTION (WHITE BG) ---
+  ctaSection: { backgroundColor: COLORS.bgWhite, paddingVertical: 100, paddingHorizontal: 24, alignItems: 'center' },
+  ctaContent: { maxWidth: 800, alignItems: 'center' },
+  ctaTitle: { fontWeight: '900', color: COLORS.textPrimary, textAlign: 'center', marginBottom: 16, letterSpacing: -1 },
+  ctaSubtitle: { fontSize: 18, color: COLORS.textSecondary, textAlign: 'center', marginBottom: 40, lineHeight: 28 },
+  ctaBtn: {
+    backgroundColor: COLORS.primary, paddingHorizontal: 36, paddingVertical: 18,
+    borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 12,
+    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3, shadowRadius: 16, elevation: 8,
+  },
+  ctaBtnText: { color: COLORS.white, fontWeight: '800', fontSize: 18 },
 });
