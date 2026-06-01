@@ -44,7 +44,7 @@ export default function ReportIncident() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#0065ea" },
+  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
   headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
   label: { fontSize: 14, fontWeight: "500", marginTop: 16, marginBottom: 8, color: "#0065ea" },
   typeContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

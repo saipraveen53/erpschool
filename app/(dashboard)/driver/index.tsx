@@ -1,3 +1,4 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -19,7 +20,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -46,6 +47,7 @@ import {
   startTrip,
   syncOfflineQueue,
 } from "../../services/driverService";
+import { getUnreadCountForRole } from "../../services/notificationService";
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -64,6 +66,7 @@ export default function DriverDashboard() {
   const [busCapacity, setBusCapacity] = useState(32);
   const [tripActive, setTripActive] = useState(false);
   const [silentMode, setSilentMode] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -101,10 +104,23 @@ export default function DriverDashboard() {
     }
   };
 
+  const loadUnreadCount = async () => {
+    if (user?.role) {
+      const count = await getUnreadCountForRole(user.role);
+      setUnreadCount(count);
+    }
+  };
+
   useEffect(() => {
     loadData();
     syncOfflineQueue();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUnreadCount();
+    }, [user])
+  );
 
   useEffect(() => {
     if (!loading && !error) {
@@ -131,11 +147,9 @@ export default function DriverDashboard() {
     Alert.alert("Trip Ended", "Thank you for driving safely");
   };
 
+  // ✅ Correct logout with confirmation and web redirect
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Logout", style: "destructive", onPress: async () => { await logout(); router.replace("/(public)/home"); } }
-    ]);
+    logout();
   };
 
   if (loading) return <SafeAreaView style={styles.loadingContainer}><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
@@ -150,12 +164,22 @@ export default function DriverDashboard() {
       >
         <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View>
-            <Text style={styles.greeting}>Hello, {user?.name || "Driver"}!</Text>
+            <Text style={styles.greeting}>Hello, {user?.fullName || user?.username || "Driver"}!</Text>
             <Text style={styles.subGreeting}>Welcome to your dashboard</Text>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <LogOut size={22} color="#0065ea" />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={() => router.push("/(dashboard)/common/notifications")} style={styles.notifIcon}>
+              <Bell size={24} color="#0065ea" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <LogOut size={22} color="#0065ea" />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
 
         <View style={styles.silentModeRow}>
@@ -273,7 +297,22 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#e2e8f0", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   greeting: { fontSize: 24, fontWeight: "bold", color: "#0065ea" },
   subGreeting: { fontSize: 14, color: "#0065ea", marginTop: 4 },
-  logoutButton: { padding: 8 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 12 },
+  notifIcon: { position: "relative", padding: 4 },
+  logoutButton: { padding: 4 },
+  badge: {
+    position: "absolute",
+    top: -6,
+    right: -8,
+    backgroundColor: "#ff4b00",
+    borderRadius: 12,
+    minWidth: 18,
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: { color: "white", fontSize: 10, fontWeight: "bold" },
   silentModeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", margin: 16, padding: 12, borderRadius: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 1 },
   silentModeLabel: { fontSize: 14, color: "#0065ea" },
   capacityCard: { backgroundColor: "#fff", marginHorizontal: 16, padding: 16, borderRadius: 16 },

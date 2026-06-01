@@ -66,7 +66,7 @@ export default function AttendanceConfirmation() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#0065ea" },
+  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
   headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
   summaryCard: { flexDirection: "row", backgroundColor: "#fff", margin: 16, padding: 16, borderRadius: 12, justifyContent: "space-around" },
   summaryItem: { alignItems: "center", flex: 1 },

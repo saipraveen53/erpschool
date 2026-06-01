@@ -75,7 +75,7 @@ export default function GPSTracking() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#0065ea" },
+  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
   headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
   mapPlaceholder: { height: 350, backgroundColor: "#e2e8f0", margin: 16, borderRadius: 16, justifyContent: "center", alignItems: "center" },
   mapOverlay: { alignItems: "center" },
