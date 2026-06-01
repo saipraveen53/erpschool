@@ -1,0 +1,695 @@
+[
+  {
+    "id": "1",
+    "role": "SUPER_ADMIN",
+    "title": "New School Registration",
+    "message": "Green Valley School has registered for the ERP platform.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-06-01T08:30:00Z"
+  },
+  {
+    "id": "2",
+    "role": "SUPER_ADMIN",
+    "title": "Subscription Renewal",
+    "message": "Sunrise Public School subscription expires in 7 days.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-06-01T07:15:00Z"
+  },
+  {
+    "id": "3",
+    "role": "SUPER_ADMIN",
+    "title": "System Update",
+    "message": "New version 3.2.0 is available. Click to update.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-31T22:00:00Z"
+  },
+  {
+    "id": "4",
+    "role": "SUPER_ADMIN",
+    "title": "Payment Failed",
+    "message": "Monthly invoice payment for XYZ School failed. Please check.",
+    "type": "error",
+    "read": false,
+    "createdAt": "2025-05-31T14:20:00Z"
+  },
+  {
+    "id": "5",
+    "role": "SUPER_ADMIN",
+    "title": "Support Ticket",
+    "message": "High priority ticket #3421 raised by Blue Bells School.",
+    "type": "error",
+    "read": false,
+    "createdAt": "2025-05-30T09:45:00Z"
+  },
+  {
+    "id": "6",
+    "role": "SUPER_ADMIN",
+    "title": "New Feature Released",
+    "message": "Live bus tracking is now available for all schools.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-29T16:00:00Z"
+  },
+  {
+    "id": "7",
+    "role": "SUPER_ADMIN",
+    "title": "Weekly Report",
+    "message": "System usage increased by 15% this week.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-28T23:59:00Z"
+  },
+  {
+    "id": "8",
+    "role": "ADMIN",
+    "title": "STUDENT Admission",
+    "message": "New STUDENT admission request from PARENT Priya Sharma.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-06-01T09:00:00Z"
+  },
+  {
+    "id": "9",
+    "role": "ADMIN",
+    "title": "Staff Leave Request",
+    "message": "Mrs. Kavya (TEACHER) requested leave for 3 days.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-06-01T08:15:00Z"
+  },
+  {
+    "id": "10",
+    "role": "ADMIN",
+    "title": "Fee Payment",
+    "message": "₹25,000 fee received from Aarav Sharma (Class 5A).",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-31T18:30:00Z"
+  },
+  {
+    "id": "11",
+    "role": "ADMIN",
+    "title": "Low Attendance Alert",
+    "message": "Class 8B attendance below 70% this week.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-31T12:00:00Z"
+  },
+  {
+    "id": "12",
+    "role": "ADMIN",
+    "title": "Bus Breakdown",
+    "message": "Bus No. AP28 AB 1234 reported breakdown on Route 101.",
+    "type": "error",
+    "read": false,
+    "createdAt": "2025-05-30T07:45:00Z"
+  },
+  {
+    "id": "13",
+    "role": "ADMIN",
+    "title": "Exam Schedule",
+    "message": "Final exam timetable has been published.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T10:30:00Z"
+  },
+  {
+    "id": "14",
+    "role": "ADMIN",
+    "title": "Library Fine Report",
+    "message": "5 STUDENTs have overdue books with total fine ₹350.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-28T09:00:00Z"
+  },
+  {
+    "id": "15",
+    "role": "PRINCIPAL",
+    "title": "Staff Meeting",
+    "message": "Monthly staff meeting scheduled for tomorrow at 3 PM.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-06-01T10:00:00Z"
+  },
+  {
+    "id": "16",
+    "role": "PRINCIPAL",
+    "title": "PARENT Complaint",
+    "message": "Complaint regarding class 7A TEACHER's behavior.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-31T15:20:00Z"
+  },
+  {
+    "id": "17",
+    "role": "PRINCIPAL",
+    "title": "Exam Results",
+    "message": "Mid-term results are ready for review.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T08:00:00Z"
+  },
+  {
+    "id": "18",
+    "role": "PRINCIPAL",
+    "title": "Annual Day Planning",
+    "message": "Submit your department's program details by Friday.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T11:45:00Z"
+  },
+  {
+    "id": "19",
+    "role": "PRINCIPAL",
+    "title": "CBSE Inspection",
+    "message": "CBSE inspection scheduled on June 10th. Prepare documents.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-28T14:00:00Z"
+  },
+  {
+    "id": "20",
+    "role": "PRINCIPAL",
+    "title": "STUDENT Performance",
+    "message": "Class 10 average improved by 8% compared to last term.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-27T09:30:00Z"
+  },
+  {
+    "id": "21",
+    "role": "PRINCIPAL",
+    "title": "Grant Application",
+    "message": "Government grant deadline is approaching on June 15.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-26T16:00:00Z"
+  },
+  {
+    "id": "22",
+    "role": "VICE-PRINCIPAL",
+    "title": "Disciplinary Action",
+    "message": "STUDENT involved in campus fight. Action required.",
+    "type": "error",
+    "read": false,
+    "createdAt": "2025-06-01T09:30:00Z"
+  },
+  {
+    "id": "23",
+    "role": "VICE-PRINCIPAL",
+    "title": "Attendance Summary",
+    "message": "Weekly attendance report: 92% overall.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-31T17:00:00Z"
+  },
+  {
+    "id": "24",
+    "role": "VICE-PRINCIPAL",
+    "title": "Exam Supervision",
+    "message": "Duty roster for final exams attached.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T12:15:00Z"
+  },
+  {
+    "id": "25",
+    "role": "VICE-PRINCIPAL",
+    "title": "Staff Appraisal",
+    "message": "Submit TEACHER self-appraisal forms by June 5.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-29T10:00:00Z"
+  },
+  {
+    "id": "26",
+    "role": "VICE-PRINCIPAL",
+    "title": "Sports Meet",
+    "message": "Inter-house sports competition registration open.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-28T08:30:00Z"
+  },
+  {
+    "id": "27",
+    "role": "VICE-PRINCIPAL",
+    "title": "PARENT Meeting",
+    "message": "PTA meeting rescheduled to June 12.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-27T14:45:00Z"
+  },
+  {
+    "id": "28",
+    "role": "VICE-PRINCIPAL",
+    "title": "Academic Calendar",
+    "message": "Revised academic calendar for June-August uploaded.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-26T11:00:00Z"
+  },
+  {
+    "id": "29",
+    "role": "TEACHER",
+    "title": "Homework Submission",
+    "message": "5 STUDENTs haven't submitted maths homework.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-06-01T08:45:00Z"
+  },
+  {
+    "id": "30",
+    "role": "TEACHER",
+    "title": "Class Test Schedule",
+    "message": "Science test postponed to Friday.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-31T09:20:00Z"
+  },
+  {
+    "id": "31",
+    "role": "TEACHER",
+    "title": "New STUDENT Added",
+    "message": "A new STUDENT, Riya Mehta, has joined your class 6B.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T10:00:00Z"
+  },
+  {
+    "id": "32",
+    "role": "TEACHER",
+    "title": "PARENT Message",
+    "message": "Message from PARENT: 'My child is sick today'.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T07:30:00Z"
+  },
+  {
+    "id": "33",
+    "role": "TEACHER",
+    "title": "Staff Meeting",
+    "message": "Department meeting at 2 PM in staff room.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-28T11:15:00Z"
+  },
+  {
+    "id": "34",
+    "role": "TEACHER",
+    "title": "Leave Approved",
+    "message": "Your leave request for June 10-12 has been approved.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-27T16:00:00Z"
+  },
+  {
+    "id": "35",
+    "role": "TEACHER",
+    "title": "Lesson Plan Reminder",
+    "message": "Upload lesson plans for next week by Friday.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-26T13:00:00Z"
+  },
+  {
+    "id": "36",
+    "role": "STUDENT",
+    "title": "Homework Due",
+    "message": "Math homework (Chapter 5) due tomorrow.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-06-01T07:00:00Z"
+  },
+  {
+    "id": "37",
+    "role": "STUDENT",
+    "title": "Exam Result",
+    "message": "Your mid-term results are now available.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-31T14:30:00Z"
+  },
+  {
+    "id": "38",
+    "role": "STUDENT",
+    "title": "Library Book Due",
+    "message": "Return 'The Secret Garden' by June 5.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T09:00:00Z"
+  },
+  {
+    "id": "39",
+    "role": "STUDENT",
+    "title": "Class Cancelled",
+    "message": "Physics class cancelled today due to TEACHER training.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T08:15:00Z"
+  },
+  {
+    "id": "40",
+    "role": "STUDENT",
+    "title": "Fee Reminder",
+    "message": "Your tuition fee for June is due by June 10.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-28T10:00:00Z"
+  },
+  {
+    "id": "41",
+    "role": "STUDENT",
+    "title": "Holiday Announcement",
+    "message": "School closed on June 15 for state election.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-27T12:00:00Z"
+  },
+  {
+    "id": "42",
+    "role": "STUDENT",
+    "title": "Sports Selection",
+    "message": "Cricket trials on June 8 at 4 PM.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-26T15:30:00Z"
+  },
+  {
+    "id": "43",
+    "role": "PARENT",
+    "title": "Child Absent",
+    "message": "Your child Aarav was marked absent today.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-06-01T08:30:00Z"
+  },
+  {
+    "id": "44",
+    "role": "PARENT",
+    "title": "Fee Payment Reminder",
+    "message": "Fee for June is pending. Pay by June 10.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-31T16:00:00Z"
+  },
+  {
+    "id": "45",
+    "role": "PARENT",
+    "title": "Bus Tracking",
+    "message": "Your child's bus is 10 minutes late today.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T07:45:00Z"
+  },
+  {
+    "id": "46",
+    "role": "PARENT",
+    "title": "PARENT-TEACHER Meeting",
+    "message": "PTM scheduled on June 20. Book your slot.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T10:30:00Z"
+  },
+  {
+    "id": "47",
+    "role": "PARENT",
+    "title": "Exam Report",
+    "message": "Your child's exam report card is ready.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-28T11:00:00Z"
+  },
+  {
+    "id": "48",
+    "role": "PARENT",
+    "title": "School Event",
+    "message": "Annual Day celebration on June 25. Register to attend.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-27T09:00:00Z"
+  },
+  {
+    "id": "49",
+    "role": "PARENT",
+    "title": "Holiday Notice",
+    "message": "School remains closed on June 15.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-26T14:00:00Z"
+  },
+  {
+    "id": "50",
+    "role": "DRIVER",
+    "title": "Route Change",
+    "message": "Route 102 has a new stop at Lake View Colony.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-06-01T06:00:00Z"
+  },
+  {
+    "id": "51",
+    "role": "DRIVER",
+    "title": "Vehicle Inspection",
+    "message": "Monthly vehicle inspection due tomorrow.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-31T17:30:00Z"
+  },
+  {
+    "id": "52",
+    "role": "DRIVER",
+    "title": "Traffic Alert",
+    "message": "Heavy traffic expected on NH44 from 8-10 AM.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T20:00:00Z"
+  },
+  {
+    "id": "53",
+    "role": "DRIVER",
+    "title": "STUDENT Pickup",
+    "message": "New STUDENT added at Indira Nagar stop.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T09:00:00Z"
+  },
+  {
+    "id": "54",
+    "role": "DRIVER",
+    "title": "Fuel Alert",
+    "message": "Fuel level below 20%. Refuel soon.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-28T16:15:00Z"
+  },
+  {
+    "id": "55",
+    "role": "DRIVER",
+    "title": "Emergency Drill",
+    "message": "Emergency evacuation drill on June 5.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-27T10:00:00Z"
+  },
+  {
+    "id": "56",
+    "role": "DRIVER",
+    "title": "Attendance Bonus",
+    "message": "You received a 100% attendance bonus for May.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-26T12:30:00Z"
+  },
+  {
+    "id": "57",
+    "role": "HOUSEKEEPING",
+    "title": "Cleaning Schedule",
+    "message": "Deep cleaning of science labs on June 3.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-06-01T07:00:00Z"
+  },
+  {
+    "id": "58",
+    "role": "HOUSEKEEPING",
+    "title": "Supplies Low",
+    "message": "Floor cleaner stock is running low. Reorder soon.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-31T11:00:00Z"
+  },
+  {
+    "id": "59",
+    "role": "HOUSEKEEPING",
+    "title": "Complaint Resolved",
+    "message": "Restroom cleanliness complaint resolved.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-30T14:20:00Z"
+  },
+  {
+    "id": "60",
+    "role": "HOUSEKEEPING",
+    "title": "Event Setup",
+    "message": "Annual Day setup requires extra manpower on June 24.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T09:45:00Z"
+  },
+  {
+    "id": "61",
+    "role": "HOUSEKEEPING",
+    "title": "Inventory Audit",
+    "message": "Monthly inventory check scheduled for June 10.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-28T08:00:00Z"
+  },
+  {
+    "id": "62",
+    "role": "HOUSEKEEPING",
+    "title": "Shift Change",
+    "message": "Your shift for next week changed to 6 AM - 2 PM.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-27T15:00:00Z"
+  },
+  {
+    "id": "63",
+    "role": "HOUSEKEEPING",
+    "title": "Training Session",
+    "message": "Mandatory hygiene training on June 12 at 10 AM.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-26T13:30:00Z"
+  },
+  {
+    "id": "64",
+    "role": "RECEPTIONIST",
+    "title": "Visitor Appointment",
+    "message": "Mr. Suresh (PARENT) appointment at 11 AM.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-06-01T08:00:00Z"
+  },
+  {
+    "id": "65",
+    "role": "RECEPTIONIST",
+    "title": "Inquiry Call",
+    "message": "New admission inquiry from Ms. Meera. Follow up needed.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-31T16:30:00Z"
+  },
+  {
+    "id": "66",
+    "role": "RECEPTIONIST",
+    "title": "Courier Delivery",
+    "message": "Courier for PRINCIPAL received at front desk.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T10:15:00Z"
+  },
+  {
+    "id": "67",
+    "role": "RECEPTIONIST",
+    "title": "Meeting Room Booking",
+    "message": "Conference room booked for 3 PM tomorrow.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T12:00:00Z"
+  },
+  {
+    "id": "68",
+    "role": "RECEPTIONIST",
+    "title": "Lost & Found",
+    "message": "STUDENT lost a blue water bottle. Report at reception.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-28T14:45:00Z"
+  },
+  {
+    "id": "69",
+    "role": "RECEPTIONIST",
+    "title": "Staff Credentials",
+    "message": "New ID cards for staff are ready for collection.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-27T09:00:00Z"
+  },
+  {
+    "id": "70",
+    "role": "RECEPTIONIST",
+    "title": "Fire Drill",
+    "message": "Fire alarm test tomorrow at 9:30 AM.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-26T11:30:00Z"
+  },
+  {
+    "id": "71",
+    "role": "LIBRARIAN",
+    "title": "Book Return",
+    "message": "5 books are overdue for more than 10 days.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-06-01T09:00:00Z"
+  },
+  {
+    "id": "72",
+    "role": "LIBRARIAN",
+    "title": "New Arrival",
+    "message": "20 new books added to the library catalog.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-31T10:30:00Z"
+  },
+  {
+    "id": "73",
+    "role": "LIBRARIAN",
+    "title": "Stock Check",
+    "message": "Annual stock verification to begin on June 15.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-30T13:00:00Z"
+  },
+  {
+    "id": "74",
+    "role": "LIBRARIAN",
+    "title": "Membership Renewal",
+    "message": "Staff library memberships expire at month end.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-29T08:45:00Z"
+  },
+  {
+    "id": "75",
+    "role": "LIBRARIAN",
+    "title": "Donation Received",
+    "message": "Received book donation from alumni association.",
+    "type": "success",
+    "read": false,
+    "createdAt": "2025-05-28T12:00:00Z"
+  },
+  {
+    "id": "76",
+    "role": "LIBRARIAN",
+    "title": "Reading Hour",
+    "message": "Reading hour event scheduled for June 5.",
+    "type": "info",
+    "read": false,
+    "createdAt": "2025-05-27T14:30:00Z"
+  },
+  {
+    "id": "77",
+    "role": "LIBRARIAN",
+    "title": "Damaged Book Report",
+    "message": "STUDENT reported damaged book. Action required.",
+    "type": "warning",
+    "read": false,
+    "createdAt": "2025-05-26T15:20:00Z"
+  }
+]

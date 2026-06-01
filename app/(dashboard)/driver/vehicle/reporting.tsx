@@ -67,7 +67,7 @@ export default function VehicleReporting() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#0065ea" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
   backBtn: { padding: 8 },
   headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
   sectionTitle: { fontSize: 16, fontWeight: "600", color: "#0065ea", marginHorizontal: 16, marginTop: 20, marginBottom: 12 },
