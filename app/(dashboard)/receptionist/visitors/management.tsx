@@ -1,17 +1,19 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  Modal,
-  ScrollView,
-  SafeAreaView,
-  Platform,
-  ActivityIndicator,
-  useWindowDimensions
+  useWindowDimensions,
+  View
 } from 'react-native';
 
 export interface VisitorRecord {
@@ -26,6 +28,13 @@ export interface VisitorRecord {
   status: 'Checked In' | 'Checked Out';
   remarks?: string;
 }
+
+const PURPOSE_OPTIONS = [
+  'Parent-Teacher Meeting',
+  'Vendor/Contractor',
+  'Official Audit',
+  'Personal Guest',
+] as const;
 
 const MOCK_VISITORS: VisitorRecord[] = [
   {
@@ -121,7 +130,7 @@ export default function VisitorManagement() {
 
   const handleCheckInSubmit = () => {
     if (!form.name.trim() || !form.hostStaff.trim() || !form.badgeNumber.trim()) {
-      alert('Security Directive: Visitor Name, Host Staff Target, and Physical Badge allocations are required.');
+      Alert.alert('Security Directive', 'Visitor Name, Host Staff, and Badge Number are required.');
       return;
     }
 
@@ -173,7 +182,7 @@ export default function VisitorManagement() {
     <SafeAreaView style={styles.viewBaseArea}>
       {/* Header */}
       <View style={styles.appTitleNavbarHeader}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.dashboardTitleText}>Visitor Control & Tracking</Text>
           <Text style={styles.dashboardSubtitleText}>Monitor campus foot traffic, authorize physical badge tags, and timestamp exits cleanly.</Text>
         </View>
@@ -211,7 +220,7 @@ export default function VisitorManagement() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <View style={styles.tabPillMatrixRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabPillMatrixRow}>
           {[
             { label: 'Comprehensive Logs', value: 'All' },
             { label: 'Inside Premises (Active)', value: 'Active' },
@@ -230,7 +239,7 @@ export default function VisitorManagement() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       {/* Visitor List */}
@@ -289,7 +298,7 @@ export default function VisitorManagement() {
       {selectedVisitor && (
         <Modal transparent visible={!!selectedVisitor} animationType="fade" onRequestClose={() => setSelectedVisitor(null)}>
           <View style={styles.darkenedBlurOverlayContainer}>
-            <View style={[styles.modalViewportCoreCardBody, isMobile && { margin: 12, maxHeight: '92%' }]}>
+            <View style={[styles.modalViewportCoreCardBody, isMobile && { margin: 12, width: '94%', maxHeight: '92%' }]}>
               <Text style={styles.modalMainHeadingTitleText}>Visitor Pass Record</Text>
               <Text style={styles.modalSubheadingReferenceId}>{selectedVisitor.id}</Text>
 
@@ -342,89 +351,181 @@ export default function VisitorManagement() {
         </Modal>
       )}
 
-      {/* Check-In Modal */}
-      <Modal transparent visible={isCheckInModalOpen} animationType="slide" onRequestClose={() => setIsCheckInModalOpen(false)}>
-        <View style={styles.darkenedBlurOverlayContainer}>
-          <View style={[styles.modalViewportCoreCardBody, isMobile && { margin: 12, maxHeight: '92%' }]}>
-            <Text style={styles.modalMainHeadingTitleText}>New Visitor Entry</Text>
-            <Text style={styles.modalSubheadingReferenceId}>Register guest and issue badge</Text>
+      {/* Check-In Modal - Enhanced for Android */}
+<Modal
+  transparent
+  visible={isCheckInModalOpen}
+  animationType="slide"
+  statusBarTranslucent={true}
+>
+  <KeyboardAvoidingView
+    style={{ flex: 1 }}
+    behavior={Platform.OS === "ios" ? "padding" : undefined}
+  >
+    <View style={styles.darkenedBlurOverlayContainer}>
+      <View
+        style={[
+          styles.androidModalContainer,
+          isMobile && {
+            width: "95%",
+          },
+        ]}
+      >
+        {/* Header */}
+        <Text style={styles.modalMainHeadingTitleText}>
+          New Visitor Entry
+        </Text>
 
-            <ScrollView style={styles.formContentScrollContainer} showsVerticalScrollIndicator={false}>
-              <Text style={styles.formInputLabelHeader}>Visitor Name <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput
-                style={styles.formInputTextControlBox}
-                placeholder="Full name"
-                placeholderTextColor="#A1A1AA"
-                value={form.name}
-                onChangeText={(val) => setForm({ ...form, name: val })}
-              />
+        <Text style={styles.modalSubheadingReferenceId}>
+          Register guest and issue badge
+        </Text>
 
-              <Text style={styles.formInputLabelHeader}>Badge Number <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput
-                style={styles.formInputTextControlBox}
-                placeholder="BADGE-XXX"
-                placeholderTextColor="#A1A1AA"
-                value={form.badgeNumber}
-                onChangeText={(val) => setForm({ ...form, badgeNumber: val })}
-              />
+        {/* Form */}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: 20,
+          }}
+        >
+          <Text style={styles.formInputLabelHeader}>
+            Visitor Name *
+          </Text>
 
-              <Text style={styles.formInputLabelHeader}>Contact Number</Text>
-              <TextInput
-                style={styles.formInputTextControlBox}
-                placeholder="+91 XXXXXXXXXX"
-                placeholderTextColor="#A1A1AA"
-                keyboardType="phone-pad"
-                value={form.contactNumber}
-                onChangeText={(val) => setForm({ ...form, contactNumber: val })}
-              />
+          <TextInput
+            style={styles.formInputTextControlBox}
+            placeholder="Full Name"
+            value={form.name}
+            onChangeText={(text) =>
+              setForm({ ...form, name: text })
+            }
+          />
 
-              <Text style={styles.formInputLabelHeader}>Purpose</Text>
-              <View style={styles.formFlexGridBadgeSelectionRow}>
-                {(['Parent-Teacher Meeting', 'Vendor/Contractor', 'Official Audit', 'Personal Guest'] as const).map((pType) => (
-                  <TouchableOpacity
-                    key={pType}
-                    style={[styles.badgeSelectorItemElement, form.purpose === pType && styles.badgeSelectorItemElementActive]}
-                    onPress={() => setForm({ ...form, purpose: pType })}
-                  >
-                    <Text style={[styles.badgeSelectorItemElementText, form.purpose === pType && styles.badgeSelectorItemElementTextActive]}>
-                      {pType}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          <Text style={styles.formInputLabelHeader}>
+            Badge Number *
+          </Text>
 
-              <Text style={styles.formInputLabelHeader}>Host Staff <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput
-                style={styles.formInputTextControlBox}
-                placeholder="Host staff name & designation"
-                placeholderTextColor="#A1A1AA"
-                value={form.hostStaff}
-                onChangeText={(val) => setForm({ ...form, hostStaff: val })}
-              />
+          <TextInput
+            style={styles.formInputTextControlBox}
+            placeholder="BADGE-001"
+            value={form.badgeNumber}
+            onChangeText={(text) =>
+              setForm({ ...form, badgeNumber: text })
+            }
+          />
 
-              <Text style={styles.formInputLabelHeader}>Remarks</Text>
-              <TextInput
-                style={[styles.formInputTextControlBox, styles.formMultiLineTextAreaElement]}
-                placeholder="Additional notes..."
-                placeholderTextColor="#A1A1AA"
-                value={form.remarks}
-                onChangeText={(val) => setForm({ ...form, remarks: val })}
-                multiline
-                numberOfLines={3}
-              />
-            </ScrollView>
+          <Text style={styles.formInputLabelHeader}>
+            Contact Number
+          </Text>
 
-            <View style={styles.formActionControlsGroupRow}>
-              <TouchableOpacity style={[styles.formActionBtnBaseElement, styles.formActionBtnCancel]} onPress={() => setIsCheckInModalOpen(false)}>
-                <Text style={styles.formActionBtnCancelText}>Cancel</Text>
+          <TextInput
+            style={styles.formInputTextControlBox}
+            placeholder="+91 XXXXXXXXXX"
+            keyboardType="phone-pad"
+            value={form.contactNumber}
+            onChangeText={(text) =>
+              setForm({ ...form, contactNumber: text })
+            }
+          />
+
+          <Text style={styles.formInputLabelHeader}>
+            Host Staff *
+          </Text>
+
+          <TextInput
+            style={styles.formInputTextControlBox}
+            placeholder="Host Staff Name"
+            value={form.hostStaff}
+            onChangeText={(text) =>
+              setForm({ ...form, hostStaff: text })
+            }
+          />
+
+          <Text style={styles.formInputLabelHeader}>
+            Purpose
+          </Text>
+
+          <View style={styles.formFlexGridBadgeSelectionRow}>
+            {PURPOSE_OPTIONS.map((purpose) => (
+              <TouchableOpacity
+                key={purpose}
+                style={[
+                  styles.badgeSelectorItemElement,
+                  form.purpose === purpose &&
+                    styles.badgeSelectorItemElementActive,
+                ]}
+                onPress={() =>
+                  setForm({
+                    ...form,
+                    purpose,
+                  })
+                }
+              >
+                <Text
+                  style={[
+                    styles.badgeSelectorItemElementText,
+                    form.purpose === purpose &&
+                      styles.badgeSelectorItemElementTextActive,
+                  ]}
+                >
+                  {purpose}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.formActionBtnBaseElement, styles.formActionBtnSubmit]} onPress={handleCheckInSubmit}>
-                <Text style={styles.formActionBtnSubmitText}>Check In Visitor</Text>
-              </TouchableOpacity>
-            </View>
+            ))}
           </View>
+
+          <Text style={styles.formInputLabelHeader}>
+            Remarks
+          </Text>
+
+          <TextInput
+            multiline
+            textAlignVertical="top"
+            numberOfLines={4}
+            style={[
+              styles.formInputTextControlBox,
+              {
+                height: 100,
+              },
+            ]}
+            placeholder="Additional Notes"
+            value={form.remarks}
+            onChangeText={(text) =>
+              setForm({ ...form, remarks: text })
+            }
+          />
+        </ScrollView>
+
+        {/* Footer Buttons */}
+        <View style={styles.formActionControlsGroupRow}>
+          <TouchableOpacity
+            style={[
+              styles.formActionBtnBaseElement,
+              styles.formActionBtnCancel,
+            ]}
+            onPress={() => setIsCheckInModalOpen(false)}
+          >
+            <Text style={styles.formActionBtnCancelText}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.formActionBtnBaseElement,
+              styles.formActionBtnSubmit,
+            ]}
+            onPress={handleCheckInSubmit}
+          >
+            <Text style={styles.formActionBtnSubmitText}>
+              Check In Visitor
+            </Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </View>
+    </View>
+  </KeyboardAvoidingView>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -440,20 +541,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderColor: '#E2E8F0',
   },
-  dashboardTitleText: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
+  dashboardTitleText: { fontSize: 22, fontWeight: '700', color: '#0F172A' },
   dashboardSubtitleText: { fontSize: 13.5, color: '#64748B', marginTop: 4 },
 
   headerPrimaryTriggerBtn: {
     backgroundColor: '#10B981',
-    paddingVertical: 11,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
   },
   headerPrimaryTriggerBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
 
@@ -465,7 +566,7 @@ const styles = StyleSheet.create({
   },
   securityMetricsCard: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 135,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
@@ -473,10 +574,10 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderLeftWidth: 5,
   },
-  metricsLabelMini: { fontSize: 12.5, color: '#64748B', fontWeight: '600', textTransform: 'uppercase' },
+  metricsLabelMini: { fontSize: 12, color: '#64748B', fontWeight: '600', textTransform: 'uppercase' },
   metricsCounterValue: { fontSize: 26, fontWeight: '700', marginTop: 8, color: '#0F172A' },
 
-  filterControlDeckWrapper: { padding: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0' },
+  filterControlDeckWrapper: { padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0' },
   searchBarBoxInput: {
     backgroundColor: '#F1F5F9',
     borderRadius: 12,
@@ -486,8 +587,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  tabPillMatrixRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 14, gap: 8 },
-  tabFilterPillItem: { paddingVertical: 8, paddingHorizontal: 18, borderRadius: 22, backgroundColor: '#F1F5F9' },
+  tabPillMatrixRow: { flexDirection: 'row', marginTop: 12 },
+  tabFilterPillItem: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 22, backgroundColor: '#F1F5F9', marginRight: 8 },
   tabFilterPillItemActive: { backgroundColor: '#0F172A' },
   tabFilterPillItemText: { fontSize: 13.5, color: '#475569', fontWeight: '500' },
   tabFilterPillItemTextActive: { color: '#FFFFFF', fontWeight: '600' },
@@ -522,20 +623,20 @@ const styles = StyleSheet.create({
 
   darkenedBlurOverlayContainer: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
   },
   modalViewportCoreCardBody: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 24,
+    padding: 20,
     width: '100%',
     maxWidth: 520,
     maxHeight: '90%',
   },
-  modalMainHeadingTitleText: { fontSize: 22, fontWeight: '700', color: '#0F172A' },
+  modalMainHeadingTitleText: { fontSize: 21, fontWeight: '700', color: '#0F172A' },
   modalSubheadingReferenceId: { fontSize: 13.5, color: '#10B981', marginTop: 4 },
 
   modalDossierContentScroller: { marginVertical: 12 },
@@ -565,7 +666,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   instantCheckoutTriggerBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
-
+androidModalContainer: {
+  backgroundColor: "#FFFFFF",
+  width: "92%",
+  maxHeight: "85%",
+  borderRadius: 20,
+  padding: 20,
+},
   closeDossierViewBtn: {
     backgroundColor: '#0F172A',
     paddingVertical: 14,
@@ -575,7 +682,9 @@ const styles = StyleSheet.create({
   },
   closeDossierViewBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
 
-  formContentScrollContainer: { flex: 1 },
+ formContentScrollContainer: {
+  maxHeight: 500,
+},
   formInputLabelHeader: { fontSize: 13.5, fontWeight: '600', color: '#475569', marginTop: 14, marginBottom: 6 },
   formInputTextControlBox: {
     borderWidth: 1,

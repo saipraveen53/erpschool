@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
@@ -11,7 +13,9 @@ import {
   SafeAreaView,
   Platform,
   ActivityIndicator,
-  useWindowDimensions
+  useWindowDimensions,
+  Alert,
+  KeyboardAvoidingView
 } from 'react-native';
 
 export interface Appointment {
@@ -119,7 +123,7 @@ export default function Scheduling() {
 
   const handleCreateAppointment = () => {
     if (!form.visitorName.trim() || !form.phone.trim() || !form.timeSlot.trim() || !form.assignedTo.trim() || !form.date) {
-      alert('Validation Error: Please fill all required fields.');
+      Alert.alert('Validation Error', 'Please fill all required fields.');
       return;
     }
 
@@ -171,7 +175,7 @@ export default function Scheduling() {
     <SafeAreaView style={styles.screenContainer}>
       {/* Header */}
       <View style={styles.topNavbar}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.brandTitle}>Appointment Booking</Text>
           <Text style={styles.brandSubtitle}>Front Desk Management & Visitor Coordination Console</Text>
         </View>
@@ -213,7 +217,7 @@ export default function Scheduling() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <View style={styles.filterTabsWrapper}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterTabsWrapper}>
           {[
             { label: 'All Operations', value: 'All' },
             { label: 'Upcoming', value: 'Scheduled' },
@@ -233,7 +237,7 @@ export default function Scheduling() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       {/* List */}
@@ -288,7 +292,7 @@ export default function Scheduling() {
       {selectedAppointment && (
         <Modal transparent visible={!!selectedAppointment} animationType="fade" onRequestClose={() => setSelectedAppointment(null)}>
           <View style={styles.overlayGlass}>
-            <View style={[styles.modalBaseCard, isMobile && { margin: 12, maxHeight: '92%' }]}>
+            <View style={[styles.modalBaseCard, isMobile && { margin: 12, width: '94%', maxHeight: '92%' }]}>
               <View style={styles.modalHeaderRow}>
                 <Text style={styles.modalHeadingText}>Booking Details</Text>
                 <Text style={styles.modalSubheadingText}>{selectedAppointment.id}</Text>
@@ -342,66 +346,197 @@ export default function Scheduling() {
         </Modal>
       )}
 
-      {/* Create Modal */}
-      <Modal transparent visible={isCreateModalOpen} animationType="slide" onRequestClose={() => setIsCreateModalOpen(false)}>
-        <View style={styles.overlayGlass}>
-          <View style={[styles.modalBaseCard, isMobile && { margin: 12, maxHeight: '92%' }]}>
-            <Text style={styles.modalHeadingText}>New Appointment</Text>
-            <Text style={styles.modalFormInstruction}>Schedule a visitor meeting</Text>
-            
-            <ScrollView 
-              style={styles.formInnerScrollContainer} 
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <Text style={styles.formInputLabel}>Visitor Name <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput style={styles.formInputField} value={form.visitorName} onChangeText={(val) => setForm({ ...form, visitorName: val })} placeholder="Full name" placeholderTextColor="#A1A1AA" />
+      {/* Create Modal - Improved for Android & Web */}
+     <Modal
+  transparent
+  visible={isCreateModalOpen}
+  animationType="slide"
+  onRequestClose={() => setIsCreateModalOpen(false)}
+>
+  <KeyboardAvoidingView
+    style={{ flex: 1 }}
+    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+  >
+    <View style={styles.overlayGlass}>
+      <View
+        style={[
+          styles.createModalContainer,
+          isMobile && styles.createModalMobile,
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.createModalHeader}>
+          <Text style={styles.modalHeadingText}>
+            New Appointment
+          </Text>
 
-              <Text style={styles.formInputLabel}>Phone Number <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput style={styles.formInputField} value={form.phone} onChangeText={(val) => setForm({ ...form, phone: val })} keyboardType="phone-pad" placeholder="+91 XXXXX XXXXX" placeholderTextColor="#A1A1AA" />
-
-              <Text style={styles.formInputLabel}>Purpose</Text>
-              <View style={styles.pickerAlternativeRow}>
-                {(['Admission Discussion', 'Principal Meeting', 'Grievance Drop', 'Vendor Discussion'] as const).map((p) => (
-                  <TouchableOpacity key={p} style={[styles.pickerAlternativeBadge, form.purpose === p && styles.pickerAlternativeActive]} onPress={() => setForm({ ...form, purpose: p })}>
-                    <Text style={[styles.pickerAlternativeText, form.purpose === p && styles.pickerAlternativeTextActive]}>{p}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.formInputLabel}>Assigned To <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput style={styles.formInputField} value={form.assignedTo} onChangeText={(val) => setForm({ ...form, assignedTo: val })} placeholder="Staff / Department" placeholderTextColor="#A1A1AA" />
-
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.formInputLabel}>Date <Text style={{color:'#EF4444'}}>*</Text></Text>
-                  {Platform.OS === 'web' ? (
-                    <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ width: '100%', padding: 12, borderRadius: 10, border: '1px solid #CBD5E1', fontSize: 15 }} />
-                  ) : (
-                    <TextInput style={styles.formInputField} value={form.date} onChangeText={(val) => setForm({ ...form, date: val })} placeholder="YYYY-MM-DD" />
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.formInputLabel}>Time <Text style={{color:'#EF4444'}}>*</Text></Text>
-                  <TextInput style={styles.formInputField} value={form.timeSlot} onChangeText={(val) => setForm({ ...form, timeSlot: val })} placeholder="02:30 PM" />
-                </View>
-              </View>
-
-              <Text style={styles.formInputLabel}>Notes</Text>
-              <TextInput style={[styles.formInputField, styles.formMultiLineTextArea]} value={form.notes} onChangeText={(val) => setForm({ ...form, notes: val })} multiline numberOfLines={4} placeholder="Additional details..." />
-            </ScrollView>
-
-            <View style={styles.modalActionButtonsGroup}>
-              <TouchableOpacity style={[styles.modalButtonBase, styles.modalButtonCancel]} onPress={() => setIsCreateModalOpen(false)}>
-                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButtonBase, styles.modalButtonSubmit]} onPress={handleCreateAppointment}>
-                <Text style={styles.modalButtonTextSubmit}>Book Appointment</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <Text style={styles.modalFormInstruction}>
+            Schedule a visitor meeting
+          </Text>
         </View>
-      </Modal>
+
+        {/* Form */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 30 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.formInputLabel}>
+            Visitor Name <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+
+          <TextInput
+            style={styles.formInputField}
+            value={form.visitorName}
+            onChangeText={(val) =>
+              setForm({ ...form, visitorName: val })
+            }
+            placeholder="Full Name"
+          />
+
+          <Text style={styles.formInputLabel}>
+            Phone Number <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+
+          <TextInput
+            style={styles.formInputField}
+            value={form.phone}
+            onChangeText={(val) =>
+              setForm({ ...form, phone: val })
+            }
+            keyboardType="phone-pad"
+            placeholder="+91 XXXXX XXXXX"
+          />
+
+          <Text style={styles.formInputLabel}>
+            Purpose
+          </Text>
+
+          <View style={styles.pickerAlternativeRow}>
+            {[
+              'Admission Discussion',
+              'Principal Meeting',
+              'Grievance Drop',
+              'Vendor Discussion',
+            ].map((p) => (
+              <TouchableOpacity
+                key={p}
+                style={[
+                  styles.pickerAlternativeBadge,
+                  form.purpose === p &&
+                    styles.pickerAlternativeActive,
+                ]}
+                onPress={() =>
+                  setForm({
+                    ...form,
+                    purpose: p as Appointment['purpose'],
+                  })
+                }
+              >
+                <Text
+                  style={[
+                    styles.pickerAlternativeText,
+                    form.purpose === p &&
+                      styles.pickerAlternativeTextActive,
+                  ]}
+                >
+                  {p}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.formInputLabel}>
+            Assigned To <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+
+          <TextInput
+            style={styles.formInputField}
+            value={form.assignedTo}
+            onChangeText={(val) =>
+              setForm({ ...form, assignedTo: val })
+            }
+            placeholder="Staff / Department"
+          />
+
+          <Text style={styles.formInputLabel}>
+            Date <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+
+          <TextInput
+            style={styles.formInputField}
+            value={form.date}
+            onChangeText={(val) =>
+              setForm({ ...form, date: val })
+            }
+            placeholder="YYYY-MM-DD"
+          />
+
+          <Text style={styles.formInputLabel}>
+            Time Slot <Text style={{ color: '#EF4444' }}>*</Text>
+          </Text>
+
+          <TextInput
+            style={styles.formInputField}
+            value={form.timeSlot}
+            onChangeText={(val) =>
+              setForm({ ...form, timeSlot: val })
+            }
+            placeholder="02:30 PM"
+          />
+
+          <Text style={styles.formInputLabel}>
+            Notes
+          </Text>
+
+          <TextInput
+            style={[
+              styles.formInputField,
+              styles.formMultiLineTextArea,
+            ]}
+            value={form.notes}
+            onChangeText={(val) =>
+              setForm({ ...form, notes: val })
+            }
+            multiline
+            textAlignVertical="top"
+            placeholder="Additional details..."
+          />
+        </ScrollView>
+
+        {/* Footer Buttons */}
+        <View style={styles.modalActionButtonsGroup}>
+          <TouchableOpacity
+            style={[
+              styles.modalButtonBase,
+              styles.modalButtonCancel,
+            ]}
+            onPress={() =>
+              setIsCreateModalOpen(false)
+            }
+          >
+            <Text style={styles.modalButtonTextCancel}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.modalButtonBase,
+              styles.modalButtonSubmit,
+            ]}
+            onPress={handleCreateAppointment}
+          >
+            <Text style={styles.modalButtonTextSubmit}>
+              Book Appointment
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </KeyboardAvoidingView>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -414,20 +549,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderColor: '#BAE6FD',
   },
-  brandTitle: { fontSize: 24, fontWeight: '700', color: '#0C4A6E' },
+  brandTitle: { fontSize: 22, fontWeight: '700', color: '#0C4A6E' },
   brandSubtitle: { fontSize: 13, color: '#64748B', marginTop: 2 },
+createModalContainer: {
+  backgroundColor: '#FFFFFF',
+  width: '95%',
+  maxWidth: 550,
+  height: '90%',
+  borderRadius: 20,
+  padding: 20,
+},
 
+createModalMobile: {
+  width: '96%',
+  height: '94%',
+},
+
+createModalHeader: {
+  marginBottom: 15,
+},
+
+modalActionButtonsGroup: {
+  flexDirection: 'row',
+  marginTop: 15,
+  gap: 10,
+},
+
+overlayGlass: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.55)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   primaryActionButton: {
     backgroundColor: '#0EA5E9',
-    paddingVertical: 11,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
   },
   primaryActionButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
 
@@ -439,7 +603,7 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 135,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
@@ -454,7 +618,7 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: 12, color: '#64748B', fontWeight: '600', textTransform: 'uppercase' },
   metricValue: { fontSize: 26, fontWeight: '700', marginTop: 8, color: '#0C4A6E' },
 
-  controlContainer: { padding: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#BAE6FD' },
+  controlContainer: { padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#BAE6FD' },
   searchInputElement: {
     backgroundColor: '#E0F2FE',
     borderRadius: 12,
@@ -464,8 +628,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BAE6FD',
   },
-  filterTabsWrapper: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 14, gap: 8 },
-  tabItem: { paddingVertical: 8, paddingHorizontal: 18, borderRadius: 22, backgroundColor: '#E0F2FE' },
+  filterTabsWrapper: { 
+    flexDirection: 'row', 
+    marginTop: 12,
+    paddingBottom: 4 
+  },
+  tabItem: { 
+    paddingVertical: 8, 
+    paddingHorizontal: 18, 
+    borderRadius: 22, 
+    backgroundColor: '#E0F2FE',
+    marginRight: 8 
+  },
   tabItemActive: { backgroundColor: '#0C4A6E' },
   tabItemText: { fontSize: 13.5, color: '#475569', fontWeight: '500' },
   tabItemTextActive: { color: '#FFFFFF', fontWeight: '600' },
@@ -499,15 +673,14 @@ const styles = StyleSheet.create({
 
   overlayGlass: {
     flex: 1,
-    backgroundColor: 'rgba(12, 74, 110, 0.6)',
+    backgroundColor: 'rgba(12, 74, 110, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
   },
   modalBaseCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 24,
+    padding: 20,
     width: '100%',
     maxWidth: 520,
     maxHeight: '90%',
@@ -572,7 +745,7 @@ const styles = StyleSheet.create({
   formMultiLineTextArea: { height: 110, textAlignVertical: 'top' },
 
   modalActionButtonsGroup: { flexDirection: 'row', gap: 12, marginTop: 24 },
-  modalButtonBase: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  modalButtonBase: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems:'center' },
   modalButtonCancel: { backgroundColor: '#E0F2FE' },
   modalButtonSubmit: { backgroundColor: '#0EA5E9' },
   modalButtonTextCancel: { color: '#0C4A6E', fontWeight: '600', fontSize: 15 },

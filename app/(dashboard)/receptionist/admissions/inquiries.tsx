@@ -10,7 +10,9 @@ import {
   ScrollView,
   SafeAreaView,
   Platform,
-  useWindowDimensions
+  useWindowDimensions,
+  Alert,
+  KeyboardAvoidingView
 } from 'react-native';
 
 export interface Inquiry {
@@ -108,7 +110,7 @@ export default function InquiriesScreen() {
 
   const handleCreateInquiry = () => {
     if (!form.studentName.trim() || !form.parentName.trim() || !form.phone.trim()) {
-      alert('Error: Please complete all required fields (*).');
+      Alert.alert('Error', 'Please complete all required fields (*).');
       return;
     }
 
@@ -134,9 +136,8 @@ export default function InquiriesScreen() {
 
   return (
     <SafeAreaView style={styles.screenContainer}>
-      {/* Header */}
       <View style={styles.topNavbar}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.brandTitle}>Admission Inquiries</Text>
           <Text style={styles.brandSubtitle}>Reception Desk & Prospect Management Dashboard</Text>
         </View>
@@ -149,7 +150,6 @@ export default function InquiriesScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Analytics - Responsive Grid */}
       <View style={styles.analyticsRow}>
         <View style={[styles.metricCard, styles.borderLeftTotal]}>
           <Text style={styles.metricLabel}>TOTAL VOLUME</Text>
@@ -169,7 +169,6 @@ export default function InquiriesScreen() {
         </View>
       </View>
 
-      {/* Search & Filters */}
       <View style={styles.controlContainer}>
         <TextInput
           style={styles.searchInputElement}
@@ -178,7 +177,7 @@ export default function InquiriesScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <View style={styles.filterTabsWrapper}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterTabsWrapper}>
           {['All', 'Pending', 'In Progress', 'Resolved'].map((status) => {
             const isSelected = activeFilter === status;
             return (
@@ -193,20 +192,14 @@ export default function InquiriesScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
-      {/* List */}
       <FlatList
         data={filteredInquiries}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainerStyles}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyStateText}>No inquiry logs match the current search filters.</Text>
-          </View>
-        }
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.dataCard} 
@@ -233,9 +226,7 @@ export default function InquiriesScreen() {
                 ]}>{item.status}</Text>
               </View>
             </View>
-            
             <View style={styles.cardDivider} />
-            
             <View style={styles.dataCardFooter}>
               <Text style={styles.footerMetaItem}>🎯 {item.gradeOfInterest}</Text>
               <Text style={styles.footerMetaItem}>📅 {item.date}</Text>
@@ -245,247 +236,117 @@ export default function InquiriesScreen() {
       />
 
       {/* Detail Modal */}
-      {selectedInquiry && (
-        <Modal transparent visible={!!selectedInquiry} animationType="fade" onRequestClose={() => setSelectedInquiry(null)}>
-          <View style={styles.overlayGlass}>
-            <View style={[styles.modalBaseCard, isMobile && { margin: 12, maxHeight: '92%' }]}>
-              <View style={styles.modalHeaderRow}>
-                <Text style={styles.modalHeadingText}>Inquiry Details</Text>
-                <Text style={styles.modalSubheadingText}>{selectedInquiry.id}</Text>
-              </View>
-              
-              <ScrollView style={styles.modalScrollBody} showsVerticalScrollIndicator={false}>
-                <Text style={styles.fieldLabel}>Prospective Student</Text>
-                <Text style={styles.fieldValue}>{selectedInquiry.studentName}</Text>
-
-                <Text style={styles.fieldLabel}>Primary Parent/Guardian</Text>
-                <Text style={styles.fieldValue}>{selectedInquiry.parentName}</Text>
-
-                <Text style={styles.fieldLabel}>Telephone Channel</Text>
-                <Text style={styles.fieldValue}>{selectedInquiry.phone}</Text>
-
-                <Text style={styles.fieldLabel}>Email Endpoint</Text>
-                <Text style={styles.fieldValue}>{selectedInquiry.email || 'Not Provided'}</Text>
-
-                <Text style={styles.fieldLabel}>Target Academic Class</Text>
-                <Text style={styles.fieldValue}>{selectedInquiry.gradeOfInterest}</Text>
-
-                <Text style={styles.fieldLabel}>Logged Date</Text>
-                <Text style={styles.fieldValue}>{selectedInquiry.date}</Text>
-
-                <Text style={styles.fieldLabel}>Detailed Communication Log</Text>
-                <Text style={styles.fieldValueNotes}>{selectedInquiry.notes || 'No custom descriptive summary provided.'}</Text>
-              </ScrollView>
-
-              <TouchableOpacity style={styles.dismissDetailsButton} onPress={() => setSelectedInquiry(null)}>
-                <Text style={styles.dismissDetailsButtonText}>Close View</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {/* Create Modal */}
-      <Modal transparent visible={isCreateModalOpen} animationType="slide" onRequestClose={() => setIsCreateModalOpen(false)}>
+      <Modal transparent visible={!!selectedInquiry} animationType="fade" onRequestClose={() => setSelectedInquiry(null)}>
         <View style={styles.overlayGlass}>
-          <View style={[styles.modalBaseCard, isMobile && { margin: 12, maxHeight: '92%' }]}>
-            <Text style={styles.modalHeadingText}>Log New Inquiry</Text>
-            <Text style={styles.modalFormInstruction}>Provide prospect and contact details</Text>
-            
-            <ScrollView 
-              style={styles.formInnerScrollContainer} 
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <Text style={styles.formInputLabel}>Student Name <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput style={styles.formInputField} value={form.studentName} onChangeText={(val) => setForm({ ...form, studentName: val })} placeholder="Enter complete full name" placeholderTextColor="#A1A1AA" />
-
-              <Text style={styles.formInputLabel}>Parent or Guardian Name <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput style={styles.formInputField} value={form.parentName} onChangeText={(val) => setForm({ ...form, parentName: val })} placeholder="Enter guardian full name" placeholderTextColor="#A1A1AA" />
-
-              <Text style={styles.formInputLabel}>Primary Phone Contact <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput style={styles.formInputField} value={form.phone} onChangeText={(val) => setForm({ ...form, phone: val })} keyboardType="phone-pad" placeholder="e.g. +91 99999 88888" placeholderTextColor="#A1A1AA" />
-
-              <Text style={styles.formInputLabel}>Email Address</Text>
-              <TextInput style={styles.formInputField} value={form.email} onChangeText={(val) => setForm({ ...form, email: val })} keyboardType="email-address" autoCapitalize="none" placeholder="parent@domain.com" placeholderTextColor="#A1A1AA" />
-
-              <Text style={styles.formInputLabel}>Target Grade Level</Text>
-              <TextInput style={styles.formInputField} value={form.gradeOfInterest} onChangeText={(val) => setForm({ ...form, gradeOfInterest: val })} placeholder="e.g. Grade 4, Nursery, Grade 12" placeholderTextColor="#A1A1AA" />
-
-              <Text style={styles.formInputLabel}>Communication Notes</Text>
-              <TextInput
-                style={[styles.formInputField, styles.formMultiLineTextArea]}
-                value={form.notes}
-                onChangeText={(val) => setForm({ ...form, notes: val })}
-                multiline
-                numberOfLines={4}
-                placeholder="Log details concerning timing, academic background etc..."
-                placeholderTextColor="#A1A1AA"
-              />
-            </ScrollView>
-
-            <View style={styles.modalActionButtonsGroup}>
-              <TouchableOpacity style={[styles.modalButtonBase, styles.modalButtonCancel]} onPress={() => setIsCreateModalOpen(false)}>
-                <Text style={styles.modalButtonTextCancel}>Discard</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButtonBase, styles.modalButtonSubmit]} onPress={handleCreateInquiry}>
-                <Text style={styles.modalButtonTextSubmit}>Save Record</Text>
-              </TouchableOpacity>
+          <View style={[styles.modalBaseCard, isMobile && { margin: 12, width: '94%', maxHeight: '92%' }]}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalHeadingText}>Inquiry Details</Text>
+              <Text style={styles.modalSubheadingText}>{selectedInquiry?.id}</Text>
             </View>
+            <ScrollView style={styles.modalScrollBody}>
+              <Text style={styles.fieldLabel}>Prospective Student</Text>
+              <Text style={styles.fieldValue}>{selectedInquiry?.studentName}</Text>
+              <Text style={styles.fieldLabel}>Primary Parent/Guardian</Text>
+              <Text style={styles.fieldValue}>{selectedInquiry?.parentName}</Text>
+              <Text style={styles.fieldLabel}>Telephone Channel</Text>
+              <Text style={styles.fieldValue}>{selectedInquiry?.phone}</Text>
+              <Text style={styles.fieldLabel}>Email Endpoint</Text>
+              <Text style={styles.fieldValue}>{selectedInquiry?.email || 'Not Provided'}</Text>
+              <Text style={styles.fieldLabel}>Target Academic Class</Text>
+              <Text style={styles.fieldValue}>{selectedInquiry?.gradeOfInterest}</Text>
+              <Text style={styles.fieldLabel}>Logged Date</Text>
+              <Text style={styles.fieldValue}>{selectedInquiry?.date}</Text>
+              <Text style={styles.fieldLabel}>Detailed Communication Log</Text>
+              <Text style={styles.fieldValueNotes}>{selectedInquiry?.notes || 'No descriptive summary.'}</Text>
+            </ScrollView>
+            <TouchableOpacity style={styles.dismissDetailsButton} onPress={() => setSelectedInquiry(null)}>
+              <Text style={styles.dismissDetailsButtonText}>Close View</Text>
+            </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+
+      {/* Create Modal - Optimized for Android */}
+      <Modal 
+        transparent 
+        visible={isCreateModalOpen} 
+        animationType="slide" 
+        onRequestClose={() => setIsCreateModalOpen(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalKeyboardWrapper}
+        >
+          <View style={styles.overlayGlass}>
+            <View style={[styles.modalBaseCard, isMobile && { margin: 10, width: '95%', maxHeight: '90%' }]}>
+              <Text style={styles.modalHeadingText}>Log New Inquiry</Text>
+              <Text style={styles.modalFormInstruction}>Provide prospect and contact details</Text>
+              
+              <ScrollView 
+                contentContainerStyle={{ paddingBottom: 40 }}
+                style={styles.formInnerScrollContainer} 
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={styles.formInputLabel}>Student Name <Text style={{color:'#EF4444'}}>*</Text></Text>
+                <TextInput style={styles.formInputField} value={form.studentName} onChangeText={(val) => setForm({ ...form, studentName: val })} placeholder="Enter full name" placeholderTextColor="#A1A1AA" />
+                <Text style={styles.formInputLabel}>Parent or Guardian Name <Text style={{color:'#EF4444'}}>*</Text></Text>
+                <TextInput style={styles.formInputField} value={form.parentName} onChangeText={(val) => setForm({ ...form, parentName: val })} placeholder="Enter guardian name" placeholderTextColor="#A1A1AA" />
+                <Text style={styles.formInputLabel}>Primary Phone Contact <Text style={{color:'#EF4444'}}>*</Text></Text>
+                <TextInput style={styles.formInputField} value={form.phone} onChangeText={(val) => setForm({ ...form, phone: val })} keyboardType="phone-pad" placeholder="e.g. +91 99999 88888" placeholderTextColor="#A1A1AA" />
+                <Text style={styles.formInputLabel}>Email Address</Text>
+                <TextInput style={styles.formInputField} value={form.email} onChangeText={(val) => setForm({ ...form, email: val })} keyboardType="email-address" autoCapitalize="none" placeholder="parent@domain.com" placeholderTextColor="#A1A1AA" />
+                <Text style={styles.formInputLabel}>Target Grade Level</Text>
+                <TextInput style={styles.formInputField} value={form.gradeOfInterest} onChangeText={(val) => setForm({ ...form, gradeOfInterest: val })} placeholder="e.g. Grade 4" placeholderTextColor="#A1A1AA" />
+                <Text style={styles.formInputLabel}>Communication Notes</Text>
+                <TextInput style={[styles.formInputField, styles.formMultiLineTextArea]} value={form.notes} onChangeText={(val) => setForm({ ...form, notes: val })} multiline textAlignVertical="top" placeholder="Log details..." placeholderTextColor="#A1A1AA" />
+              </ScrollView>
+
+              <View style={styles.modalActionButtonsGroup}>
+                <TouchableOpacity style={[styles.modalButtonBase, styles.modalButtonCancel]} onPress={() => setIsCreateModalOpen(false)}>
+                  <Text style={styles.modalButtonTextCancel}>Discard</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalButtonBase, styles.modalButtonSubmit]} onPress={handleCreateInquiry}>
+                  <Text style={styles.modalButtonTextSubmit}>Save Record</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
 }
 
-// Responsive & Premium Styling
 const styles = StyleSheet.create({
-  screenContainer: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  topNavbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  brandTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  brandSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  primaryActionButton: {
-    backgroundColor: '#0EA5E9',
-    paddingVertical: 11,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  primaryActionButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  analyticsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 16,
-    gap: 12,
-  },
-  metricCard: {
-    flex: 1,
-    minWidth: 140,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderLeftWidth: 5,
-  },
+  screenContainer: { flex: 1, backgroundColor: '#F8FAFC' },
+  topNavbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0' },
+  brandTitle: { fontSize: 22, fontWeight: '700', color: '#0F172A' },
+  brandSubtitle: { fontSize: 13, color: '#64748B', marginTop: 2 },
+  primaryActionButton: { backgroundColor: '#0EA5E9', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10 },
+  primaryActionButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14.5 },
+  analyticsRow: { flexDirection: 'row', flexWrap: 'wrap', padding: 16, gap: 12 },
+  metricCard: { flex: 1, minWidth: 135, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#E2E8F0', borderLeftWidth: 5 },
   borderLeftTotal: { borderLeftColor: '#0F172A' },
   borderLeftPending: { borderLeftColor: '#F59E0B' },
   borderLeftProgress: { borderLeftColor: '#3B82F6' },
   borderLeftResolved: { borderLeftColor: '#10B981' },
-  metricLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  metricValue: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginTop: 8,
-    color: '#0F172A',
-  },
-  controlContainer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  searchInputElement: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    fontSize: 15,
-    color: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  filterTabsWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 14,
-    gap: 8,
-  },
-  tabItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
-  },
-  tabItemActive: {
-    backgroundColor: '#0F172A',
-  },
-  tabItemText: {
-    fontSize: 13.5,
-    color: '#475569',
-    fontWeight: '500',
-  },
-  tabItemTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  listContainerStyles: {
-    padding: 16,
-    gap: 12,
-  },
-  dataCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  dataCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  cardIdBadge: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-  },
-  cardStudentName: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginTop: 6,
-  },
-  cardParentLabel: {
-    fontSize: 13.5,
-    color: '#64748B',
-    marginTop: 3,
-  },
-  badgeContainer: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-  },
+  metricLabel: { fontSize: 12, color: '#64748B', fontWeight: '600', textTransform: 'uppercase' },
+  metricValue: { fontSize: 26, fontWeight: '700', marginTop: 8, color: '#0F172A' },
+  controlContainer: { padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0' },
+  searchInputElement: { backgroundColor: '#F1F5F9', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, color: '#1E293B', borderWidth: 1, borderColor: '#E2E8F0' },
+  filterTabsWrapper: { marginTop: 12 },
+  tabItem: { paddingVertical: 8, paddingHorizontal: 18, borderRadius: 22, backgroundColor: '#F1F5F9', marginRight: 8 },
+  tabItemActive: { backgroundColor: '#0F172A' },
+  tabItemText: { fontSize: 13.5, color: '#475569', fontWeight: '500' },
+  tabItemTextActive: { color: '#FFFFFF', fontWeight: '600' },
+  listContainerStyles: { padding: 16, gap: 12 },
+  dataCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 18, borderWidth: 1, borderColor: '#E2E8F0' },
+  dataCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardIdBadge: { fontSize: 12, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase' },
+  cardStudentName: { fontSize: 17, fontWeight: '600', color: '#0F172A', marginTop: 6 },
+  cardParentLabel: { fontSize: 13.5, color: '#64748B', marginTop: 3 },
+  badgeContainer: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20 },
   badgePending: { backgroundColor: '#FEF3C7' },
   badgeProgress: { backgroundColor: '#DBEAFE' },
   badgeResolved: { backgroundColor: '#D1FAE5' },
@@ -493,155 +354,30 @@ const styles = StyleSheet.create({
   textPending: { color: '#B45309' },
   textProgress: { color: '#1D4ED8' },
   textResolved: { color: '#047857' },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 14,
-  },
-  dataCardFooter: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  footerMetaItem: {
-    fontSize: 13.5,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateText: {
-    fontSize: 15,
-    color: '#94A3B8',
-    textAlign: 'center',
-  },
-  overlayGlass: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  modalBaseCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
-    maxWidth: 520,
-    maxHeight: '90%',
-  },
-  modalHeaderRow: {
-    borderBottomWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingBottom: 14,
-    marginBottom: 12,
-  },
-  modalHeadingText: {
-    fontSize: 21,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  modalSubheadingText: {
-    fontSize: 13.5,
-    color: '#3B82F6',
-    marginTop: 4,
-  },
-  modalFormInstruction: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 6,
-    marginBottom: 16,
-  },
-  modalScrollBody: {
-    marginVertical: 8,
-  },
-  fieldLabel: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    marginTop: 16,
-  },
-  fieldValue: {
-    fontSize: 16,
-    color: '#1E293B',
-    marginTop: 4,
-  },
-  fieldValueNotes: {
-    fontSize: 15,
-    color: '#475569',
-    lineHeight: 22,
-    marginTop: 6,
-    backgroundColor: '#F8FAFC',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  dismissDetailsButton: {
-    backgroundColor: '#0F172A',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  dismissDetailsButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  formInnerScrollContainer: {
-    flex: 1,
-  },
-  formInputLabel: {
-    fontSize: 13.5,
-    fontWeight: '600',
-    color: '#475569',
-    marginTop: 14,
-    marginBottom: 6,
-  },
-  formInputField: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#1E293B',
-    backgroundColor: '#FFFFFF',
-  },
-  formMultiLineTextArea: {
-    height: 110,
-    textAlignVertical: 'top',
-  },
-  modalActionButtonsGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    gap: 12,
-  },
-  modalButtonBase: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  modalButtonCancel: {
-    backgroundColor: '#F1F5F9',
-  },
-  modalButtonSubmit: {
-    backgroundColor: '#0EA5E9',
-  },
-  modalButtonTextCancel: {
-    color: '#475569',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  modalButtonTextSubmit: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
+  cardDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 14 },
+  dataCardFooter: { flexDirection: 'row', gap: 20, marginTop: 6 },
+  footerMetaItem: { fontSize: 13.5, color: '#64748B', fontWeight: '500' },
+  overlayGlass: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.65)', justifyContent: 'center', alignItems: 'center', padding: 12 },
+  modalKeyboardWrapper: { flex: 1, width: '100%' },
+  modalBaseCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, width: '100%', maxWidth: 520 },
+  modalHeaderRow: { borderBottomWidth: 1, borderColor: '#E2E8F0', paddingBottom: 14, marginBottom: 12 },
+  modalHeadingText: { fontSize: 21, fontWeight: '700', color: '#0F172A' },
+  modalSubheadingText: { fontSize: 13.5, color: '#3B82F6', marginTop: 4 },
+  modalFormInstruction: { fontSize: 14, color: '#64748B', marginTop: 6 },
+  modalScrollBody: { marginVertical: 8 },
+  fieldLabel: { fontSize: 12.5, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', marginTop: 16 },
+  fieldValue: { fontSize: 16, color: '#1E293B', marginTop: 4 },
+  fieldValueNotes: { fontSize: 15, color: '#475569', lineHeight: 22, marginTop: 6, backgroundColor: '#F8FAFC', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  dismissDetailsButton: { backgroundColor: '#0F172A', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 24 },
+  dismissDetailsButtonText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
+  formInnerScrollContainer: { flexGrow: 0 },
+  formInputLabel: { fontSize: 13.5, fontWeight: '600', color: '#475569', marginTop: 14, marginBottom: 6 },
+  formInputField: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, color: '#1E293B' },
+  formMultiLineTextArea: { height: 80 },
+  modalActionButtonsGroup: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24, gap: 12 },
+  modalButtonBase: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  modalButtonCancel: { backgroundColor: '#F1F5F9' },
+  modalButtonSubmit: { backgroundColor: '#0EA5E9' },
+  modalButtonTextCancel: { color: '#475569', fontWeight: '600', fontSize: 15 },
+  modalButtonTextSubmit: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
 });

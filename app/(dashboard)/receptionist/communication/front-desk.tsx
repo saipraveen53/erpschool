@@ -11,7 +11,9 @@ import {
   SafeAreaView,
   Platform,
   ActivityIndicator,
-  useWindowDimensions
+  useWindowDimensions,
+  Alert,
+  KeyboardAvoidingView
 } from 'react-native';
 
 // Type declarations for data management architectures
@@ -135,7 +137,7 @@ export default function CommunicationManagement() {
 
   const handleDispatchMessage = () => {
     if (!form.targetGroup.trim() || !form.subject.trim() || !form.body.trim()) {
-      alert('Validation Error: Fill out target recipients, summary line, and context log information.');
+      Alert.alert('Validation Error', 'Fill out target recipients, summary line, and message.');
       return;
     }
 
@@ -168,7 +170,7 @@ export default function CommunicationManagement() {
     <SafeAreaView style={styles.appViewContainer}>
       {/* Header */}
       <View style={styles.appHeaderNavbar}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.navbarDisplayTitle}>Communication Control Room</Text>
           <Text style={styles.navbarDisplaySubtitle}>Broadcast emergency dispatches, cross-notify parent cohorts, and connect internal phone nodes.</Text>
         </View>
@@ -200,24 +202,26 @@ export default function CommunicationManagement() {
 
       {/* Tabs */}
       <View style={styles.navigationTabSection}>
-        <View style={styles.navigationTabRow}>
-          <TouchableOpacity 
-            style={[styles.navigationTabItem, activeWorkspaceTab === 'Broadcast' && styles.navigationTabItemActive]}
-            onPress={() => setActiveWorkspaceTab('Broadcast')}
-          >
-            <Text style={[styles.navigationTabItemText, activeWorkspaceTab === 'Broadcast' && styles.navigationTabItemTextActive]}>
-              Transmission Logs
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.navigationTabItem, activeWorkspaceTab === 'Directory' && styles.navigationTabItemActive]}
-            onPress={() => setActiveWorkspaceTab('Directory')}
-          >
-            <Text style={[styles.navigationTabItemText, activeWorkspaceTab === 'Directory' && styles.navigationTabItemTextActive]}>
-              Staff Directory
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.navigationTabRow}>
+            <TouchableOpacity 
+              style={[styles.navigationTabItem, activeWorkspaceTab === 'Broadcast' && styles.navigationTabItemActive]}
+              onPress={() => setActiveWorkspaceTab('Broadcast')}
+            >
+              <Text style={[styles.navigationTabItemText, activeWorkspaceTab === 'Broadcast' && styles.navigationTabItemTextActive]}>
+                Transmission Logs
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.navigationTabItem, activeWorkspaceTab === 'Directory' && styles.navigationTabItemActive]}
+              onPress={() => setActiveWorkspaceTab('Directory')}
+            >
+              <Text style={[styles.navigationTabItemText, activeWorkspaceTab === 'Directory' && styles.navigationTabItemTextActive]}>
+                Staff Directory
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </View>
 
       {/* Main Content */}
@@ -324,7 +328,7 @@ export default function CommunicationManagement() {
 
                 <View style={styles.directoryActionControlsRow}>
                   <Text style={styles.extensionNumberCode}>Ext: {item.extension}</Text>
-                  <TouchableOpacity style={styles.directoryTriggerCallButton} onPress={() => alert(`Calling extension ${item.extension}`)}>
+                  <TouchableOpacity style={styles.directoryTriggerCallButton} onPress={() => Alert.alert(`Calling`, `Extension ${item.extension}`)}>
                     <Text style={styles.directoryTriggerCallButtonText}>Call</Text>
                   </TouchableOpacity>
                 </View>
@@ -338,7 +342,7 @@ export default function CommunicationManagement() {
       {selectedLog && (
         <Modal transparent visible={!!selectedLog} animationType="fade" onRequestClose={() => setSelectedLog(null)}>
           <View style={styles.glassviewModalOverlayContainer}>
-            <View style={[styles.modalViewportBaseCard, isMobile && { margin: 12, maxHeight: '92%' }]}>
+            <View style={[styles.modalViewportBaseCard, isMobile && { margin: 12, width: '94%', maxHeight: '92%' }]}>
               <Text style={styles.modalViewportHeaderTitle}>Dispatch Details</Text>
               <Text style={styles.modalViewportHeaderSubtitle}>{selectedLog.id}</Text>
 
@@ -364,68 +368,180 @@ export default function CommunicationManagement() {
         </Modal>
       )}
 
-      {/* Dispatch Modal */}
-      <Modal transparent visible={isDispatchModalOpen} animationType="slide" onRequestClose={() => setIsDispatchModalOpen(false)}>
-        <View style={styles.glassviewModalOverlayContainer}>
-          <View style={[styles.modalViewportBaseCard, isMobile && { margin: 12, maxHeight: '92%' }]}>
-            <Text style={styles.modalViewportHeaderTitle}>New Broadcast</Text>
-            <Text style={styles.modalViewportHeaderSubtitle}>Create and send a new communication</Text>
+      {/* Dispatch Modal - Improved for Android */}
+   <Modal
+  transparent
+  visible={isDispatchModalOpen}
+  animationType="slide"
+  onRequestClose={() => setIsDispatchModalOpen(false)}
+>
+  <KeyboardAvoidingView
+    style={{ flex: 1 }}
+    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+  >
+    <TouchableOpacity
+      activeOpacity={1}
+      style={styles.glassviewModalOverlayContainer}
+      onPress={() => setIsDispatchModalOpen(false)}
+    >
+      <TouchableOpacity
+        activeOpacity={1}
+        style={[
+          styles.modalViewportBaseCard,
+          isMobile && {
+            width: '95%',
+            maxHeight: '92%',
+          },
+        ]}
+      >
+        <Text style={styles.modalViewportHeaderTitle}>
+          New Broadcast
+        </Text>
 
-            <ScrollView style={styles.formInnerScrollContainer} showsVerticalScrollIndicator={false}>
-              <Text style={styles.formInputLabelText}>Channel</Text>
-              <View style={styles.pickerSelectorRow}>
-                {(['SMS', 'Email', 'App Push', 'PA System'] as const).map((mode) => (
-                  <TouchableOpacity
-                    key={mode}
-                    style={[styles.pickerSelectorItemBadge, form.channel === mode && styles.pickerSelectorActiveBadge]}
-                    onPress={() => setForm({ ...form, channel: mode })}
+        <Text style={styles.modalViewportHeaderSubtitle}>
+          Create and send a new communication
+        </Text>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            paddingBottom: 30,
+          }}
+        >
+          {/* Channel */}
+          <Text style={styles.formInputLabelText}>
+            Channel
+          </Text>
+
+          <View style={styles.pickerSelectorRow}>
+            {(['SMS', 'Email', 'App Push', 'PA System'] as const).map(
+              (mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  style={[
+                    styles.pickerSelectorItemBadge,
+                    form.channel === mode &&
+                      styles.pickerSelectorActiveBadge,
+                  ]}
+                  onPress={() =>
+                    setForm({
+                      ...form,
+                      channel: mode,
+                    })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.pickerSelectorItemText,
+                      form.channel === mode &&
+                        styles.pickerSelectorActiveItemText,
+                    ]}
                   >
-                    <Text style={[styles.pickerSelectorItemText, form.channel === mode && styles.pickerSelectorActiveItemText]}>{mode}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.formInputLabelText}>Target Group <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput 
-                style={styles.formInputBoxElement}
-                placeholder="e.g. Grade 8 Parents, All Staff"
-                placeholderTextColor="#A1A1AA"
-                value={form.targetGroup}
-                onChangeText={(val) => setForm({ ...form, targetGroup: val })}
-              />
-
-              <Text style={styles.formInputLabelText}>Subject <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput 
-                style={styles.formInputBoxElement}
-                placeholder="Brief summary"
-                placeholderTextColor="#A1A1AA"
-                value={form.subject}
-                onChangeText={(val) => setForm({ ...form, subject: val })}
-              />
-
-              <Text style={styles.formInputLabelText}>Message <Text style={{color:'#EF4444'}}>*</Text></Text>
-              <TextInput 
-                style={[styles.formInputBoxElement, styles.formMultiLineTextAreaElement]}
-                placeholder="Full message content..."
-                placeholderTextColor="#A1A1AA"
-                value={form.body}
-                onChangeText={(val) => setForm({ ...form, body: val })}
-                multiline
-                numberOfLines={5}
-              />
-            </ScrollView>
-
-            <View style={styles.formActionsLayoutGroup}>
-              <TouchableOpacity style={[styles.formActionButtonBase, styles.formCancelActionButton]} onPress={() => setIsDispatchModalOpen(false)}>
-                <Text style={styles.formCancelActionButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.formActionButtonBase, styles.formSubmitActionButton]} onPress={handleDispatchMessage}>
-                <Text style={styles.formSubmitActionButtonText}>Send Broadcast</Text>
-              </TouchableOpacity>
-            </View>
+                    {mode}
+                  </Text>
+                </TouchableOpacity>
+              )
+            )}
           </View>
-        </View>
-      </Modal>
+
+          {/* Target Group */}
+          <Text style={styles.formInputLabelText}>
+            Target Group
+            <Text style={{ color: '#EF4444' }}> *</Text>
+          </Text>
+
+          <TextInput
+            style={styles.formInputBoxElement}
+            placeholder="Grade 8 Parents"
+            placeholderTextColor="#A1A1AA"
+            value={form.targetGroup}
+            onChangeText={(val) =>
+              setForm({
+                ...form,
+                targetGroup: val,
+              })
+            }
+            returnKeyType="next"
+          />
+
+          {/* Subject */}
+          <Text style={styles.formInputLabelText}>
+            Subject
+            <Text style={{ color: '#EF4444' }}> *</Text>
+          </Text>
+
+          <TextInput
+            style={styles.formInputBoxElement}
+            placeholder="Broadcast subject"
+            placeholderTextColor="#A1A1AA"
+            value={form.subject}
+            onChangeText={(val) =>
+              setForm({
+                ...form,
+                subject: val,
+              })
+            }
+            returnKeyType="next"
+          />
+
+          {/* Message */}
+          <Text style={styles.formInputLabelText}>
+            Message
+            <Text style={{ color: '#EF4444' }}> *</Text>
+          </Text>
+
+          <TextInput
+            style={[
+              styles.formInputBoxElement,
+              styles.formMultiLineTextAreaElement,
+            ]}
+            placeholder="Enter communication message..."
+            placeholderTextColor="#A1A1AA"
+            value={form.body}
+            onChangeText={(val) =>
+              setForm({
+                ...form,
+                body: val,
+              })
+            }
+            multiline
+            textAlignVertical="top"
+            returnKeyType="done"
+          />
+
+          <View style={styles.formActionsLayoutGroup}>
+            <TouchableOpacity
+              style={[
+                styles.formActionButtonBase,
+                styles.formCancelActionButton,
+              ]}
+              onPress={() =>
+                setIsDispatchModalOpen(false)
+              }
+            >
+              <Text style={styles.formCancelActionButtonText}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.formActionButtonBase,
+                styles.formSubmitActionButton,
+              ]}
+              onPress={handleDispatchMessage}
+            >
+              <Text style={styles.formSubmitActionButtonText}>
+                Send Broadcast
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  </KeyboardAvoidingView>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -441,20 +557,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderColor: '#BAE6FD',
   },
-  navbarDisplayTitle: { fontSize: 24, fontWeight: '700', color: '#0C4A6E' },
+  navbarDisplayTitle: { fontSize: 22, fontWeight: '700', color: '#0C4A6E' },
   navbarDisplaySubtitle: { fontSize: 13, color: '#64748B', marginTop: 4, lineHeight: 18 },
 
   headerPrimaryAction: {
     backgroundColor: '#0EA5E9',
-    paddingVertical: 11,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
   },
   headerPrimaryActionText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
 
@@ -466,7 +582,7 @@ const styles = StyleSheet.create({
   },
   dashboardCard: {
     flex: 1,
-    minWidth: 140,
+    minWidth: 135,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 16,
@@ -481,7 +597,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderColor: '#BAE6FD',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   navigationTabRow: { flexDirection: 'row', gap: 24 },
   navigationTabItem: { paddingVertical: 16, borderBottomWidth: 3, borderBottomColor: 'transparent' },
@@ -490,7 +606,7 @@ const styles = StyleSheet.create({
   navigationTabItemTextActive: { color: '#0EA5E9', fontWeight: '600' },
 
   workspaceBodyRegion: { flex: 1 },
-  searchFilteringWrapper: { padding: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#BAE6FD' },
+  searchFilteringWrapper: { padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#BAE6FD' },
   workspaceSearchInput: {
     backgroundColor: '#E0F2FE',
     borderRadius: 12,
@@ -523,6 +639,7 @@ const styles = StyleSheet.create({
   textStatusDispatched: { color: '#065F46' },
   textStatusFailed: { color: '#B91C1C' },
   recordTruncatedExcerpt: { fontSize: 14, color: '#475569', marginTop: 12, lineHeight: 20 },
+  footerMetaLabelItem: { fontSize: 12.5, color: '#64748B', fontWeight: '500' },
   recordCardFooterMetaLayout: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
 
   staffDirectoryNodeCard: {
@@ -551,21 +668,22 @@ const styles = StyleSheet.create({
   emptyStateContainer: { alignItems: 'center', paddingVertical: 80 },
   emptyStateContainerText: { fontSize: 15, color: '#94A3B8' },
 
-  glassviewModalOverlayContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(12, 74, 110, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  modalViewportBaseCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
-    maxWidth: 520,
-    maxHeight: '90%',
-  },
+ glassviewModalOverlayContainer: {
+  flex: 1,
+  backgroundColor: 'rgba(12,74,110,0.65)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingHorizontal: 12,
+  paddingVertical: 20,
+},
+ modalViewportBaseCard: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: 20,
+  padding: 20,
+  width: '100%',
+  maxWidth: 520,
+  maxHeight: '95%',
+},
   modalViewportHeaderTitle: { fontSize: 22, fontWeight: '700', color: '#0C4A6E' },
   modalViewportHeaderSubtitle: { fontSize: 13.5, color: '#0EA5E9', marginTop: 4 },
 
@@ -617,7 +735,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: '#FFFFFF',
   },
-  formMultiLineTextAreaElement: { height: 120, textAlignVertical: 'top' },
+ formMultiLineTextAreaElement: {
+  minHeight: 120,
+  textAlignVertical: 'top',
+},
 
   formActionsLayoutGroup: { flexDirection: 'row', gap: 12, marginTop: 24 },
   formActionButtonBase: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
