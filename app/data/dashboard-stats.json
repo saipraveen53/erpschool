@@ -1,1 +1,17 @@
-{} 
+{
+  "statsData": [
+    { "title": "Total Students", "value": 1250, "icon": "👨‍🎓", "color": "#dbeafe" },
+    { "title": "Total Staff", "value": 85, "icon": "👩‍🏫", "color": "#dcfce7" },
+    { "title": "Total Classes", "value": 32, "icon": "🏫", "color": "#ffedd5" },
+    { "title": "Avg Attendance", "value": "94%", "icon": "📊", "color": "#ede9fe" }
+  ],
+  "chartData": {
+    "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    "datasets": [50000, 55000, 60000, 58000, 65000, 70000]
+  },
+  "activities": [
+    { "id": 1, "title": "New Student Admission", "time": "10 min ago", "description": "Rahul Kumar joined Class 5A" },
+    { "id": 2, "title": "Fee Payment", "time": "1 hour ago", "description": "Aarav Sharma paid ₹25,000" },
+    { "id": 3, "title": "Staff Leave", "time": "Yesterday", "description": "Mrs. Priya requested leave" }
+  ]
+}

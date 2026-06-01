@@ -10,6 +10,10 @@ export default function DriverLayout() {
       <Stack.Screen name="tracking/gps" />
       <Stack.Screen name="vehicle/reporting" />
       <Stack.Screen name="alerts/emergency" />
+      <Stack.Screen name="inspection" />
+      <Stack.Screen name="fuel-tracking" />
+      <Stack.Screen name="report-incident" />
+      <Stack.Screen name="profile" />  {/* new */}
     </Stack>
   );
 }
