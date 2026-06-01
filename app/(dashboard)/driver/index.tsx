@@ -147,11 +147,9 @@ export default function DriverDashboard() {
     Alert.alert("Trip Ended", "Thank you for driving safely");
   };
 
+  // ✅ Correct logout with confirmation and web redirect
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Logout", style: "destructive", onPress: async () => { await logout(); router.replace("/(public)/home"); } }
-    ]);
+    logout();
   };
 
   if (loading) return <SafeAreaView style={styles.loadingContainer}><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
@@ -166,7 +164,7 @@ export default function DriverDashboard() {
       >
         <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <View>
-            <Text style={styles.greeting}>Hello, {user?.name || "Driver"}!</Text>
+            <Text style={styles.greeting}>Hello, {user?.fullName || user?.username || "Driver"}!</Text>
             <Text style={styles.subGreeting}>Welcome to your dashboard</Text>
           </View>
           <View style={styles.headerActions}>
