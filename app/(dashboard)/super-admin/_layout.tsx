@@ -34,8 +34,11 @@ export default function SuperAdminLayout() {
 
   return (
     <SafeAreaView style={styles.container}>
-
-      {!isMobile && (
+      {pathname === "/super-admin/onboarding" ? (
+        <Slot />
+      ) : (
+        <>
+          {!isMobile && (
         <View style={styles.sidebar}>
           <View style={styles.logoContainer}>
             <Text style={styles.logoText}>SMART <Text style={styles.logoHighlight}>ERP</Text></Text>
@@ -56,7 +59,7 @@ export default function SuperAdminLayout() {
                 >
                   <item.icon
                     size={20}
-                    color={isActive ? "#2F6BFF" : "#64748b"}
+                    color={isActive ? "#E35336" : "#8A6B5D"}
                     style={styles.navIcon}
                   />
                   <Text style={[styles.navText, isActive && styles.navTextActive]}>
@@ -69,23 +72,22 @@ export default function SuperAdminLayout() {
         </View>
       )}
 
-      {/* Main Content Area */}
+      
       <View style={styles.mainContent}>
-        {/* Top Header */}
         <View style={styles.topHeader}>
           {isMobile && (
             <TouchableOpacity 
               style={{ marginRight: 16 }}
               onPress={() => setIsDrawerOpen(true)}
             >
-              <Menu size={24} color="#1e293b" />
+              <Menu size={24} color="#A0522D" />
             </TouchableOpacity>
           )}
           <TouchableOpacity 
             style={[styles.searchContainer, isMobile && { flex: 1, paddingHorizontal: 12, marginRight: 8 }]}
             onPress={() => router.push("/super-admin/search" as any)}
           >
-            <Search size={18} color="#94a3b8" />
+            <Search size={18} color="#B8A095" />
             {!isMobile && <Text style={styles.searchText}>Search...</Text>}
           </TouchableOpacity>
 
@@ -94,7 +96,7 @@ export default function SuperAdminLayout() {
               style={styles.iconButton}
               onPress={() => router.push("/super-admin/notifications" as any)}
             >
-              <Bell size={20} color="#64748b" />
+              <Bell size={20} color="#8A6B5D" />
               <View style={styles.badge} />
             </TouchableOpacity>
 
@@ -111,7 +113,7 @@ export default function SuperAdminLayout() {
                   <Text style={styles.profileRole}>System Owner</Text>
                 </View>
               )}
-              <ChevronDown size={16} color="#64748b" style={{ marginLeft: 8 }} />
+              <ChevronDown size={16} color="#8A6B5D" style={{ marginLeft: 8 }} />
             </TouchableOpacity>
           </View>
         </View>
@@ -138,7 +140,7 @@ export default function SuperAdminLayout() {
                   <Text style={styles.logoSubtitle}>Super Admin</Text>
                 </View>
                 <TouchableOpacity onPress={() => setIsDrawerOpen(false)}>
-                  <X size={24} color="#1e293b" />
+                  <X size={24} color="#A0522D" />
                 </TouchableOpacity>
               </View>
               <View style={styles.drawerMenu}>
@@ -158,7 +160,7 @@ export default function SuperAdminLayout() {
                     >
                       <item.icon
                         size={20}
-                        color={isActive ? "#2F6BFF" : "#64748b"}
+                        color={isActive ? "#E35336" : "#8A6B5D"}
                         style={styles.navIcon}
                       />
                       <Text style={[styles.navText, isActive && styles.navTextActive]}>
@@ -177,6 +179,8 @@ export default function SuperAdminLayout() {
           </View>
         </Modal>
       )}
+      </>
+      )}
     </SafeAreaView>
   );
 }
@@ -185,13 +189,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: "row",
-    backgroundColor: "#F4F7FE", 
+    backgroundColor: "#F5F5DC", 
   },
   sidebar: {
     width: 260,
     backgroundColor: "#FFFFFF",
     borderRightWidth: 1,
-    borderRightColor: "#E2E8F0",
+    borderRightColor: "#E6D8D2",
     paddingVertical: 24,
   },
   logoContainer: {
@@ -201,15 +205,15 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#1E293B",
+    color: "#A0522D",
     letterSpacing: -0.5,
   },
   logoHighlight: {
-    color: "#2F6BFF",
+    color: "#E35336",
   },
   logoSubtitle: {
     fontSize: 12,
-    color: "#64748b",
+    color: "#8A6B5D",
     fontWeight: "500",
     marginTop: 2,
   },
@@ -225,7 +229,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   navItemActive: {
-    backgroundColor: "#EFF4FF",
+    backgroundColor: "#F4A460",
   },
   navIcon: {
     marginRight: 12,
@@ -233,22 +237,22 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#64748b",
+    color: "#8A6B5D",
   },
   navTextActive: {
-    color: "#2F6BFF",
+    color: "#E35336",
     fontWeight: "700",
   },
   mainContent: {
     flex: 1,
-    backgroundColor: "#F4F7FE",
+    backgroundColor: "#F5F5DC",
   },
   topHeader: {
     height: Platform.OS === 'android' ? 72 + (StatusBar.currentHeight || 24) : 72 + (Platform.OS === 'ios' ? 44 : 0),
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : (Platform.OS === 'ios' ? 44 : 0),
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    borderBottomColor: "#E6D8D2",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -257,14 +261,14 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F5F5DC",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
     width: 280,
   },
   searchText: {
-    color: "#94a3b8",
+    color: "#B8A095",
     marginLeft: 8,
     fontSize: 14,
   },
@@ -276,7 +280,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F5F5DC",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,
@@ -301,7 +305,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#2F6BFF",
+    backgroundColor: "#E35336",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -316,11 +320,11 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1E293B",
+    color: "#A0522D",
   },
   profileRole: {
     fontSize: 12,
-    color: "#64748b",
+    color: "#8A6B5D",
   },
   pageContainer: {
     flex: 1,
@@ -350,7 +354,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#E6D8D2',
   },
   logoContainerMobile: {
     flexDirection: 'column',

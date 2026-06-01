@@ -24,7 +24,7 @@ export default function CreateSchool() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#1e293b" />
+          <ArrowLeft size={24} color="#A0522D" />
         </TouchableOpacity>
         <View>
           <Text style={styles.headerTitle}>Add New School</Text>
@@ -116,7 +116,7 @@ export default function CreateSchool() {
             <Switch
               value={isActive}
               onValueChange={setIsActive}
-              trackColor={{ false: "#cbd5e1", true: "#3b82f6" }}
+              trackColor={{ false: "#D0BDB3", true: "#3b82f6" }}
               thumbColor="#ffffff"
             />
           </View>
@@ -138,8 +138,8 @@ export default function CreateSchool() {
             <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#dcfce7', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
               <Save size={30} color="#16a34a" />
             </View>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 }}>School Saved!</Text>
-            <Text style={{ fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 24 }}>The new school has been successfully registered in the system.</Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#A0522D', marginBottom: 8 }}>School Saved!</Text>
+            <Text style={{ fontSize: 14, color: '#8A6B5D', textAlign: 'center', marginBottom: 24 }}>The new school has been successfully registered in the system.</Text>
             <TouchableOpacity 
               onPress={() => {
                 setModalVisible(false);
@@ -155,7 +155,7 @@ export default function CreateSchool() {
                   params: { newSchool: JSON.stringify(newSchool) }
                 });
               }} 
-              style={{ backgroundColor: '#2F6BFF', width: '100%', paddingVertical: 14, borderRadius: 8, alignItems: 'center' }}
+              style={{ backgroundColor: '#E35336', width: '100%', paddingVertical: 14, borderRadius: 8, alignItems: 'center' }}
             >
               <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Back to List</Text>
             </TouchableOpacity>
@@ -169,7 +169,7 @@ export default function CreateSchool() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F5F5DC",
   },
   header: {
     flexDirection: "row",
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     padding: isMobile ? 16 : 20,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#E6D8D2",
   },
   backButton: {
     marginRight: 16,
@@ -186,11 +186,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1e293b",
+    color: "#A0522D",
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#8A6B5D",
     marginTop: 4,
   },
   formContainer: {
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#E6D8D2",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1e293b",
+    color: "#A0522D",
     marginBottom: 16,
   },
   inputGroup: {
@@ -222,18 +222,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#475569",
+    color: "#705244",
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: "#D0BDB3",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#1e293b",
-    backgroundColor: "#f8fafc",
+    color: "#A0522D",
+    backgroundColor: "#F5F5DC",
   },
   textArea: {
     height: 100,
@@ -246,12 +246,12 @@ const styles = StyleSheet.create({
   },
   switchDesc: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#8A6B5D",
     marginTop: 4,
   },
   saveButton: {
     flexDirection: "row",
-    backgroundColor: "#2563eb",
+    backgroundColor: "#E35336",
     paddingVertical: 16,
     borderRadius: 8,
     justifyContent: "center",

@@ -12,7 +12,7 @@ export default function FeedbackPage() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#1e293b" />
+          <ArrowLeft size={24} color="#A0522D" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Recent Feedback</Text>
       </View>
@@ -33,14 +33,14 @@ export default function FeedbackPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F7FE" },
-  header: { flexDirection: "row", alignItems: "center", padding: isMobile ? 16 : 24, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
+  container: { flex: 1, backgroundColor: "#F5F5DC" },
+  header: { flexDirection: "row", alignItems: "center", padding: isMobile ? 16 : 24, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#E6D8D2" },
   backButton: { marginRight: 16 },
-  headerTitle: { fontSize: isMobile ? 18 : 20, fontWeight: "bold", color: "#1e293b" },
+  headerTitle: { fontSize: isMobile ? 18 : 20, fontWeight: "bold", color: "#A0522D" },
   content: { padding: isMobile ? 16 : 24 },
   card: { backgroundColor: "#fff", padding: isMobile ? 16 : 24, borderRadius: 16, marginBottom: 16, elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
   stars: { flexDirection: "row", marginBottom: 12 },
-  title: { fontSize: isMobile ? 15 : 18, fontWeight: "bold", color: "#1e293b", marginBottom: 8 },
-  desc: { fontSize: isMobile ? 13 : 15, color: "#475569", lineHeight: 22, marginBottom: 16 },
-  meta: { fontSize: 13, color: "#94a3b8" }
+  title: { fontSize: isMobile ? 15 : 18, fontWeight: "bold", color: "#A0522D", marginBottom: 8 },
+  desc: { fontSize: isMobile ? 13 : 15, color: "#705244", lineHeight: 22, marginBottom: 16 },
+  meta: { fontSize: 13, color: "#B8A095" }
 });

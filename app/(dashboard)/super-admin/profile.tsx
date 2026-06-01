@@ -47,7 +47,7 @@ export default function SuperAdminProfile() {
 
         <View style={[styles.headerInfo, { alignItems: isMobile ? "center" : "flex-start" }]}>
           <View style={styles.roleBadge}>
-            <Shield size={12} color="#2F6BFF" style={{ marginRight: 4 }} />
+            <Shield size={12} color="#E35336" style={{ marginRight: 4 }} />
             <Text style={styles.roleText}>Super Administrator</Text>
           </View>
           <Text style={styles.profileName}>{formData.name}</Text>
@@ -74,7 +74,7 @@ export default function SuperAdminProfile() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Full Name</Text>
             <View style={styles.inputContainer}>
-              <User size={18} color="#94a3b8" style={styles.inputIcon} />
+              <User size={18} color="#B8A095" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input} 
                 value={formData.name}
@@ -86,7 +86,7 @@ export default function SuperAdminProfile() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Email Address</Text>
             <View style={styles.inputContainer}>
-              <Mail size={18} color="#94a3b8" style={styles.inputIcon} />
+              <Mail size={18} color="#B8A095" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input} 
                 value={formData.email}
@@ -100,7 +100,7 @@ export default function SuperAdminProfile() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Phone Number</Text>
             <View style={styles.inputContainer}>
-              <Phone size={18} color="#94a3b8" style={styles.inputIcon} />
+              <Phone size={18} color="#B8A095" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input} 
                 value={formData.phone}
@@ -122,7 +122,7 @@ export default function SuperAdminProfile() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Bell size={18} color="#1e293b" />
+                <Bell size={18} color="#A0522D" />
                 <Text style={styles.cardTitle}>Notifications</Text>
               </View>
             </View>
@@ -135,7 +135,7 @@ export default function SuperAdminProfile() {
               <Switch 
                 value={notifications.email} 
                 onValueChange={(v) => setNotifications({...notifications, email: v})} 
-                trackColor={{ false: "#cbd5e1", true: "#2F6BFF" }}
+                trackColor={{ false: "#D0BDB3", true: "#E35336" }}
                 thumbColor="#fff"
               />
             </View>
@@ -148,7 +148,7 @@ export default function SuperAdminProfile() {
               <Switch 
                 value={notifications.push} 
                 onValueChange={(v) => setNotifications({...notifications, push: v})} 
-                trackColor={{ false: "#cbd5e1", true: "#2F6BFF" }}
+                trackColor={{ false: "#D0BDB3", true: "#E35336" }}
                 thumbColor="#fff"
               />
             </View>
@@ -158,7 +158,7 @@ export default function SuperAdminProfile() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Lock size={18} color="#1e293b" />
+                <Lock size={18} color="#A0522D" />
                 <Text style={styles.cardTitle}>Security</Text>
               </View>
             </View>
@@ -167,8 +167,8 @@ export default function SuperAdminProfile() {
               <Text style={styles.securityButtonText}>Change Password</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.securityButton, { marginTop: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#e2e8f0" }]}>
-              <Text style={[styles.securityButtonText, { color: "#1e293b" }]}>Enable Two-Factor Auth</Text>
+            <TouchableOpacity style={[styles.securityButton, { marginTop: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E6D8D2" }]}>
+              <Text style={[styles.securityButtonText, { color: "#A0522D" }]}>Enable Two-Factor Auth</Text>
             </TouchableOpacity>
           </View>
 
@@ -179,19 +179,19 @@ export default function SuperAdminProfile() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F7FE" },
+  container: { flex: 1, backgroundColor: "#F5F5DC" },
   
   profileHeader: { backgroundColor: "#fff", padding: 24, borderRadius: 16, marginBottom: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, alignItems: "center" },
   avatarWrapper: { position: "relative" },
-  avatarContainer: { width: 88, height: 88, borderRadius: 44, backgroundColor: "#EFF4FF", justifyContent: "center", alignItems: "center", borderWidth: 4, borderColor: "#fff", shadowColor: "#2F6BFF", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 4 },
-  avatarText: { fontSize: 32, fontWeight: "bold", color: "#2F6BFF" },
-  cameraButton: { position: "absolute", bottom: 0, right: 0, backgroundColor: "#2F6BFF", width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#fff" },
+  avatarContainer: { width: 88, height: 88, borderRadius: 44, backgroundColor: "#F4A460", justifyContent: "center", alignItems: "center", borderWidth: 4, borderColor: "#fff", shadowColor: "#E35336", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 4 },
+  avatarText: { fontSize: 32, fontWeight: "bold", color: "#E35336" },
+  cameraButton: { position: "absolute", bottom: 0, right: 0, backgroundColor: "#E35336", width: 28, height: 28, borderRadius: 14, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#fff" },
   
   headerInfo: { flex: 1, justifyContent: "center" },
-  roleBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "#EFF4FF", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, alignSelf: "flex-start" },
-  roleText: { fontSize: 12, fontWeight: "700", color: "#2F6BFF" },
-  profileName: { fontSize: 24, fontWeight: "bold", color: "#1e293b", marginBottom: 4 },
-  profileEmail: { fontSize: 14, color: "#64748b" },
+  roleBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "#F4A460", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 8, alignSelf: "flex-start" },
+  roleText: { fontSize: 12, fontWeight: "700", color: "#E35336" },
+  profileName: { fontSize: 24, fontWeight: "bold", color: "#A0522D", marginBottom: 4 },
+  profileEmail: { fontSize: 14, color: "#8A6B5D" },
   
   headerActions: { justifyContent: "center", alignItems: "flex-end" },
   logoutButton: { flexDirection: "row", alignItems: "center", backgroundColor: "#fef2f2", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: "#fee2e2", gap: 8, justifyContent: "center" },
@@ -200,22 +200,22 @@ const styles = StyleSheet.create({
   contentGrid: { marginTop: 8 },
   card: { backgroundColor: "#fff", borderRadius: 16, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
   cardHeader: { marginBottom: 20 },
-  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#1e293b", marginBottom: 4 },
-  cardSubtitle: { fontSize: 13, color: "#64748b" },
+  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#A0522D", marginBottom: 4 },
+  cardSubtitle: { fontSize: 13, color: "#8A6B5D" },
   
   formGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: "600", color: "#475569", marginBottom: 8 },
-  inputContainer: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 10, backgroundColor: "#f8fafc", paddingHorizontal: 14 },
+  label: { fontSize: 13, fontWeight: "600", color: "#705244", marginBottom: 8 },
+  inputContainer: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#E6D8D2", borderRadius: 10, backgroundColor: "#F5F5DC", paddingHorizontal: 14 },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, paddingVertical: 12, fontSize: 15, color: "#1e293b" },
+  input: { flex: 1, paddingVertical: 12, fontSize: 15, color: "#A0522D" },
   
-  saveButton: { backgroundColor: "#2F6BFF", paddingVertical: 14, borderRadius: 10, alignItems: "center", marginTop: 8 },
+  saveButton: { backgroundColor: "#E35336", paddingVertical: 14, borderRadius: 10, alignItems: "center", marginTop: 8 },
   saveButtonText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
   
-  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
-  settingLabel: { fontSize: 15, fontWeight: "600", color: "#1e293b", marginBottom: 2 },
-  settingDesc: { fontSize: 12, color: "#64748b" },
+  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F4A460" },
+  settingLabel: { fontSize: 15, fontWeight: "600", color: "#A0522D", marginBottom: 2 },
+  settingDesc: { fontSize: 12, color: "#8A6B5D" },
   
-  securityButton: { backgroundColor: "#f1f5f9", paddingVertical: 12, borderRadius: 8, alignItems: "center" },
-  securityButtonText: { color: "#475569", fontWeight: "600", fontSize: 14 },
+  securityButton: { backgroundColor: "#F4A460", paddingVertical: 12, borderRadius: 8, alignItems: "center" },
+  securityButtonText: { color: "#705244", fontWeight: "600", fontSize: 14 },
 });

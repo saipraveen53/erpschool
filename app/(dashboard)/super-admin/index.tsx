@@ -24,9 +24,9 @@ export default function SuperAdminDashboard() {
   });
 
   const [operations, setOperations] = useState([
-    { id: 1, type: 'alert', title: "Server Downtime (4)", icon: ServerCrash, color: "#1E293B", route: "server-downtime" },
-    { id: 2, type: 'normal', title: "Pending Support (2)", icon: Clock, color: "#64748b", route: "support-tickets" },
-    { id: 3, type: 'normal', title: "Security Warnings (0)", icon: ShieldAlert, color: "#64748b", route: "security-logs" },
+    { id: 1, type: 'alert', title: "Server Downtime (4)", icon: ServerCrash, color: "#A0522D", route: "server-downtime" },
+    { id: 2, type: 'normal', title: "Pending Support (2)", icon: Clock, color: "#8A6B5D", route: "support-tickets" },
+    { id: 3, type: 'normal', title: "Security Warnings (0)", icon: ShieldAlert, color: "#8A6B5D", route: "security-logs" },
   ]);
 
   const handleTabChange = (tab: string) => {
@@ -51,9 +51,8 @@ export default function SuperAdminDashboard() {
       <Text style={[styles.pageTitle, { fontSize: isMobile ? 22 : 28, marginBottom: isMobile ? 16 : 24 }]}>Overview</Text>
 
       <View style={{ flexDirection: (isMobile || isTablet) ? "column" : "row" }}>
-        {/* Left Column */}
+       \
         <View style={{ flex: (isMobile || isTablet) ? 1 : 2, marginRight: (isMobile || isTablet) ? 0 : 24 }}>
-          {/* Chart Card */}
           <View style={[styles.card, { padding: isMobile ? 14 : 24 }]}>
             <View style={{ flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: isMobile ? 12 : 32, gap: isMobile ? 10 : 0 }}>
               <View style={{ flex: 1 }}>
@@ -90,13 +89,13 @@ export default function SuperAdminDashboard() {
               <Svg width="100%" height={chartHeight} viewBox={`0 0 600 ${chartHeight}`} preserveAspectRatio="none">
                 <Defs>
                   <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor="#2F6BFF" stopOpacity="0.2" />
-                    <Stop offset="1" stopColor="#2F6BFF" stopOpacity="0" />
+                    <Stop offset="0" stopColor="#E35336" stopOpacity="0.2" />
+                    <Stop offset="1" stopColor="#E35336" stopOpacity="0" />
                   </LinearGradient>
                 </Defs>
                 <Path d={pathData} fill="url(#grad)" />
-                <Path d={linePath} fill="none" stroke="#2F6BFF" strokeWidth="4" strokeLinecap="round" />
-                <Circle cx="300" cy="110" r="6" fill="#FFFFFF" stroke="#2F6BFF" strokeWidth="4" />
+                <Path d={linePath} fill="none" stroke="#E35336" strokeWidth="4" strokeLinecap="round" />
+                <Circle cx="300" cy="110" r="6" fill="#FFFFFF" stroke="#E35336" strokeWidth="4" />
               </Svg>
               <View style={styles.tooltipMock}>
                 <Text style={styles.tooltipText}>{chartData.tooltip}</Text>
@@ -108,10 +107,7 @@ export default function SuperAdminDashboard() {
               </View>
             </View>
           </View>
-
-          {/* Bottom row: Progress + Top Schools */}
           <View style={{ flexDirection: isMobile ? "column" : "row", marginTop: 16 }}>
-            {/* Progress Card */}
             <View style={[styles.card, { flex: 1, marginRight: isMobile ? 0 : 16, marginBottom: isMobile ? 16 : 0, padding: isMobile ? 14 : 24 }]}>
               <Text style={styles.cardTitle}>Monthly Progress</Text>
               <Text style={styles.cardSubtitle}>Earn benefits for great performance</Text>
@@ -140,7 +136,7 @@ export default function SuperAdminDashboard() {
 
               <View style={styles.listContainer}>
                 {[
-                  { id: "1", name: "St. Josephs Higher Secondary School", users: 56, color: "#2F6BFF" },
+                  { id: "1", name: "St. Josephs Higher Secondary School", users: 56, color: "#E35336" },
                   { id: "2", name: "St. Mary's Academy", users: 51, color: "#10b981" },
                   { id: "3", name: "Oakridge Int.", users: 49, color: "#f59e0b" },
                   { id: "4", name: "Delhi Public", users: 43, color: "#6366f1" },
@@ -161,12 +157,12 @@ export default function SuperAdminDashboard() {
           <View style={[styles.card, { marginTop: 16, padding: isMobile ? 14 : 24 }]}>
             <Text style={[styles.cardTitle, { textAlign: "center" }]}>Active Schools (131)</Text>
             <View style={styles.legendRow}>
-              <View style={styles.legendItem}><View style={[styles.legendBox, { backgroundColor: "#bfdbfe" }]} /><Text style={styles.legendText}>New (56)</Text></View>
-              <View style={styles.legendItem}><View style={[styles.legendBox, { backgroundColor: "#2F6BFF" }]} /><Text style={styles.legendText}>Returning (75)</Text></View>
+              <View style={styles.legendItem}><View style={[styles.legendBox, { backgroundColor: "#E59551" }]} /><Text style={styles.legendText}>New (56)</Text></View>
+              <View style={styles.legendItem}><View style={[styles.legendBox, { backgroundColor: "#E35336" }]} /><Text style={styles.legendText}>Returning (75)</Text></View>
             </View>
             <View style={styles.barContainer}>
-              <View style={[styles.barSegment, { flex: 56, backgroundColor: "#bfdbfe" }]} />
-              <View style={[styles.barSegment, { flex: 75, backgroundColor: "#2F6BFF" }]} />
+              <View style={[styles.barSegment, { flex: 56, backgroundColor: "#E59551" }]} />
+              <View style={[styles.barSegment, { flex: 75, backgroundColor: "#E35336" }]} />
             </View>
           </View>
         </View>
@@ -177,7 +173,7 @@ export default function SuperAdminDashboard() {
           <View style={[styles.card, { padding: isMobile ? 14 : 24 }]}>
             <View style={styles.cardHeaderFlex}>
               <Text style={styles.cardTitle}>Operations <Text style={styles.cardTitleHighlight}>(needs attention)</Text></Text>
-              <AlertCircle size={16} color="#94a3b8" />
+              <AlertCircle size={16} color="#B8A095" />
             </View>
 
             {operations.map(op => (
@@ -190,7 +186,7 @@ export default function SuperAdminDashboard() {
                   <op.icon size={op.type === 'alert' ? 18 : 16} color={op.color} />
                   <Text style={op.type === 'alert' ? styles.operationTextBold : styles.operationText}>{op.title}</Text>
                 </View>
-                <ChevronDown size={op.type === 'alert' ? 18 : 16} color="#94a3b8" />
+                <ChevronDown size={op.type === 'alert' ? 18 : 16} color="#B8A095" />
               </TouchableOpacity>
             ))}
           </View>
@@ -233,7 +229,7 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontWeight: "800",
-    color: "#1E293B",
+    color: "#A0522D",
     letterSpacing: -0.5,
   },
   card: {
@@ -251,37 +247,37 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   chartTabActive: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F5F5DC",
   },
   chartTabText: {
     fontSize: 13,
-    color: "#94a3b8",
+    color: "#B8A095",
     fontWeight: "500",
   },
   chartTabTextActive: {
-    color: "#1E293B",
+    color: "#A0522D",
     fontWeight: "700",
   },
   chartStatLabel: {
     fontSize: 12,
-    color: "#64748b",
+    color: "#8A6B5D",
     marginBottom: 4,
   },
   chartStatValue: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#1E293B",
+    color: "#A0522D",
   },
   chartStatSub: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: "#B8A095",
     marginTop: 4,
   },
   tooltipMock: {
     position: "absolute",
     top: 50,
     left: "40%",
-    backgroundColor: "#2F6BFF",
+    backgroundColor: "#E35336",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -299,23 +295,23 @@ const styles = StyleSheet.create({
   },
   axisText: {
     fontSize: 10,
-    color: "#94a3b8",
+    color: "#B8A095",
     fontWeight: "500",
   },
   cardTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#1E293B",
+    color: "#A0522D",
     marginBottom: 4,
   },
   cardTitleHighlight: {
-    color: "#94a3b8",
+    color: "#B8A095",
     fontWeight: "500",
     fontSize: 13,
   },
   cardSubtitle: {
     fontSize: 12,
-    color: "#64748b",
+    color: "#8A6B5D",
     marginBottom: 16,
   },
   progressItem: {
@@ -323,16 +319,16 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     fontSize: 13,
-    color: "#1E293B",
+    color: "#A0522D",
     fontWeight: "600",
   },
   progressStatus: {
     fontSize: 12,
-    color: "#64748b",
+    color: "#8A6B5D",
     marginTop: 4,
   },
   darkButton: {
-    backgroundColor: "#1E293B",
+    backgroundColor: "#A0522D",
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -353,7 +349,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#F4A460",
   },
   listLeft: {
     flexDirection: "row",
@@ -370,13 +366,13 @@ const styles = StyleSheet.create({
   },
   listText: {
     fontSize: 13,
-    color: "#475569",
+    color: "#705244",
     fontWeight: "500",
     flex: 1,
   },
   listValue: {
     fontSize: 13,
-    color: "#1E293B",
+    color: "#A0522D",
     fontWeight: "600",
   },
   legendRow: {
@@ -397,7 +393,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: "#64748b",
+    color: "#8A6B5D",
   },
   barContainer: {
     flexDirection: "row",
@@ -423,7 +419,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#E6D8D2",
     marginBottom: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -437,7 +433,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F5F5DC",
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -449,13 +445,13 @@ const styles = StyleSheet.create({
   operationTextBold: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#1E293B",
+    color: "#A0522D",
     marginLeft: 10,
   },
   operationText: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#64748b",
+    color: "#8A6B5D",
     marginLeft: 10,
   },
   feedbackList: {
@@ -468,7 +464,7 @@ const styles = StyleSheet.create({
   feedbackImagePlaceholder: {
     width: 52,
     height: 36,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#E6D8D2",
     borderRadius: 6,
     marginRight: 10,
     flexShrink: 0,
@@ -479,12 +475,12 @@ const styles = StyleSheet.create({
   feedbackTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#1E293B",
+    color: "#A0522D",
     marginBottom: 4,
   },
   feedbackDate: {
     fontSize: 11,
-    color: "#94a3b8",
+    color: "#B8A095",
     marginBottom: 4,
   },
   stars: {

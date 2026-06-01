@@ -98,7 +98,7 @@ export default function SystemSettings() {
             </View>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Public API Access</Text>
-              <Switch value={false} trackColor={{ false: "#cbd5e1" }} thumbColor="#fff" />
+              <Switch value={false} trackColor={{ false: "#D0BDB3" }} thumbColor="#fff" />
             </View>
             <TouchableOpacity 
               style={styles.primaryBtn}
@@ -148,7 +148,7 @@ export default function SystemSettings() {
               style={[styles.tabButton, activeTab === tab.id && styles.activeTabButton]}
               onPress={() => setActiveTab(tab.id)}
             >
-              <tab.icon size={18} color={activeTab === tab.id ? "#3b82f6" : "#64748b"} style={{ marginRight: 8 }} />
+              <tab.icon size={18} color={activeTab === tab.id ? "#3b82f6" : "#8A6B5D"} style={{ marginRight: 8 }} />
               <Text style={[styles.tabText, activeTab === tab.id && styles.activeTabText]}>{tab.id}</Text>
             </TouchableOpacity>
           ))}
@@ -165,28 +165,28 @@ export default function SystemSettings() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F5F5DC",
   },
   header: {
     padding: isMobile ? 16 : 24,
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#E6D8D2",
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#1e293b",
+    color: "#A0522D",
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#8A6B5D",
     marginTop: 4,
   },
   tabContainer: {
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: "#E6D8D2",
   },
   tabsScroll: {
     paddingHorizontal: 16,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#64748b",
+    color: "#8A6B5D",
   },
   activeTabText: {
     color: "#3b82f6",
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: isMobile ? 16 : 24,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: "#E6D8D2",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1e293b",
+    color: "#A0522D",
     marginBottom: 20,
   },
   statRow: {
@@ -238,28 +238,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    borderBottomColor: "#F4A460",
   },
   statLabel: {
     fontSize: 15,
-    color: "#475569",
+    color: "#705244",
   },
   statValue: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#1e293b",
+    color: "#A0522D",
   },
   primaryBtn: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#F4A460",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
     marginTop: 24,
     borderWidth: 1,
-    borderColor: "#bfdbfe",
+    borderColor: "#E59551",
   },
   primaryBtnText: {
-    color: "#1d4ed8",
+    color: "#C4412B",
     fontWeight: "600",
     fontSize: 15,
   },
