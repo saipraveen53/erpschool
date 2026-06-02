@@ -1,30 +1,174 @@
- 
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+import { StatusBar } from "expo-status-bar";
 
-export default function AddStudent() {
-  const router = useRouter();
-  const [form, setForm] = useState({ name: '', email: '', phone: '', class: '', rollNo: '' });
+const PRIMARY = "#A0522D";
+const { width } = Dimensions.get("window");
 
-  const handleSubmit = () => {
-    if (!form.name || !form.email) {
-      Alert.alert('Error', 'Name and email are required');
-      return;
-    }
-    // Mock save – would call service later
-    Alert.alert('Success', 'Student added', [{ text: 'OK', onPress: () => router.back() }]);
-  };
-
+export default function AddStaff() {
   return (
-    <ScrollView className="flex-1 bg-white p-4">
-      <Text className="text-2xl font-bold mb-4">Add New Student</Text>
-      <TextInput placeholder="Full Name" className="border p-3 rounded-lg mb-3" onChangeText={text => setForm({ ...form, name: text })} />
-      <TextInput placeholder="Email" keyboardType="email-address" className="border p-3 rounded-lg mb-3" onChangeText={text => setForm({ ...form, email: text })} />
-      <TextInput placeholder="Phone" keyboardType="phone-pad" className="border p-3 rounded-lg mb-3" onChangeText={text => setForm({ ...form, phone: text })} />
-      <TextInput placeholder="Class" className="border p-3 rounded-lg mb-3" onChangeText={text => setForm({ ...form, class: text })} />
-      <TextInput placeholder="Roll Number" className="border p-3 rounded-lg mb-6" onChangeText={text => setForm({ ...form, rollNo: text })} />
-      <TouchableOpacity onPress={handleSubmit} className="bg-blue-600 py-3 rounded-lg"><Text className="text-white text-center font-semibold">Save Student</Text></TouchableOpacity>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* HEADER */}
+
+      <Text style={styles.heading}>
+        Add New Staff
+      </Text>
+
+      <Text style={styles.subHeading}>
+        Enter faculty and employee details
+      </Text>
+
+      {/* FORM */}
+
+      <View style={styles.form}>
+        <TextInput
+          placeholder="Full Name"
+          placeholderTextColor="#9CA3AF"
+          style={styles.input}
+        />
+
+        <TextInput
+          placeholder="Email Address"
+          placeholderTextColor="#9CA3AF"
+          style={styles.input}
+        />
+
+        <TextInput
+          placeholder="Phone Number"
+          placeholderTextColor="#9CA3AF"
+          style={styles.input}
+        />
+
+        <TextInput
+          placeholder="Department"
+          placeholderTextColor="#9CA3AF"
+          style={styles.input}
+        />
+
+        <TextInput
+          placeholder="Designation"
+          placeholderTextColor="#9CA3AF"
+          style={styles.input}
+        />
+
+        <TextInput
+          placeholder="Employee ID"
+          placeholderTextColor="#9CA3AF"
+          style={styles.input}
+        />
+
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>
+            Save Staff Member
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ANALYTICS CARD */}
+
+      <View style={styles.analyticsCard}>
+        <Text style={styles.analyticsTitle}>
+          Smart Hiring Insights
+        </Text>
+
+        <Text style={styles.analyticsText}>
+          AI recommendations help optimize faculty onboarding and department
+          balancing
+        </Text>
+      </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F5DC",
+  },
+
+  contentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 100,
+  },
+
+  heading: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: PRIMARY,
+  },
+
+  subHeading: {
+    marginTop: 4,
+    marginBottom: 18,
+    color: "#6B7280",
+    fontSize: 13,
+  },
+
+  form: {
+    backgroundColor: "#fff",
+    padding: 18,
+    borderRadius: 20,
+    elevation: 3,
+  },
+
+  input: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    fontSize: 14,
+    color: "#111827",
+    width: "100%",
+  },
+
+  button: {
+    backgroundColor: PRIMARY,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 6,
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+
+  analyticsCard: {
+    marginTop: 20,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    elevation: 3,
+  },
+
+  analyticsTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: PRIMARY,
+    textAlign: "center",
+  },
+
+  analyticsText: {
+    marginTop: 10,
+    lineHeight: 20,
+    color: "#6B7280",
+    fontSize: 13,
+    textAlign: "center",
+  },
+});

@@ -5,7 +5,6 @@ import { useAuth } from "./contexts/AuthContext";
 
 export default function Index() {
   const router = useRouter();
-  const rootNavigationState = useRootNavigationState();
 
   const { isAuthenticated, isLoading, user } = useAuth();
   const rootNavigationState = useRootNavigationState();
