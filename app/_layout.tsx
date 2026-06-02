@@ -12,7 +12,7 @@ export default function RootLayout() {
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
   const [hasNavigated, setHasNavigated] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<any>(null);
 
   // ✅ Effect for app start / refresh – check AsyncStorage and navigate
   useEffect(() => {

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, useWindowDimensions } from 'react-native';
 import { Mail, User } from 'lucide-react-native';
 
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function InvitePrincipal() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -17,12 +20,13 @@ export default function InvitePrincipal() {
 
     setLoading(true);
     try {
-      // NOTE: Adjust the API URL if needed based on the environment setup.
-      const response = await fetch('http://192.168.88.13:8081/api/superAdmin/invitePrinciple', {
+      const token = await AsyncStorage.getItem("userToken");
+      const response = await fetch('http://192.168.88.20:8081/api/superAdmin/invitePrinciple', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': '*/*'
+          'Accept': '*/*',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ email, fullName })
       });
@@ -35,8 +39,8 @@ export default function InvitePrincipal() {
         const errorText = await response.text();
         Alert.alert("Failed", `Could not send invite: ${errorText}`);
       }
-    } catch (error) {
-      Alert.alert("Error", "A network error occurred. Make sure the backend is running.");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "A network error occurred. Make sure the backend is running.");
       console.error(error);
     } finally {
       setLoading(false);

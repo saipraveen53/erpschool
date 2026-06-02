@@ -115,7 +115,7 @@ export default function SchoolsManagement() {
         {isMobile ? (
           /* Mobile Cards */
           filteredSchools.map(school => (
-            <TouchableOpacity key={school.id} style={styles.card} onPress={() => router.push(`/super-admin/schools/${school.id}`)} activeOpacity={0.8}>
+            <TouchableOpacity key={school.id} style={styles.card} onPress={() => router.push(`/super-admin/schools/${school.id}` as any)} activeOpacity={0.8}>
               <View style={styles.cardTop}>
                 <View style={styles.cardIconWrap}><Building2 size={18} color="#E35336" /></View>
                 <View style={{ flex: 1 }}>
@@ -162,7 +162,7 @@ export default function SchoolsManagement() {
               <Text style={[styles.th, { flex: 1, textAlign: "center" }]}>Actions</Text>
             </View>
             {filteredSchools.map(school => (
-              <TouchableOpacity key={school.id} style={styles.tableRow} onPress={() => router.push(`/super-admin/schools/${school.id}`)}>
+              <TouchableOpacity key={school.id} style={styles.tableRow} onPress={() => router.push(`/super-admin/schools/${school.id}` as any)}>
                 <View style={[styles.td, { width: 40 }]}>
                   <TouchableOpacity onPress={() => toggleSelect(school.id)} style={[styles.checkbox, selectedIds.includes(school.id) && styles.checkboxActive]}>
                     {selectedIds.includes(school.id) && <View style={styles.checkboxInner} />}

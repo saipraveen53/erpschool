@@ -145,7 +145,7 @@ export default function SuperAdminDashboard() {
                   { id: "3", name: "Oakridge Int.", users: 49, color: "#f59e0b" },
                   { id: "4", name: "Delhi Public", users: 43, color: "#6366f1" },
                 ].map((item, idx) => (
-                  <TouchableOpacity key={idx} style={styles.listItem} onPress={() => router.push(`/super-admin/schools/${item.id}`)}>
+                  <TouchableOpacity key={idx} style={styles.listItem} onPress={() => router.push(`/super-admin/schools/${item.id}` as any)}>
                     <View style={styles.listLeft}>
                       <View style={[styles.dot, { backgroundColor: item.color }]} />
                       <Text style={styles.listText} numberOfLines={1}>{item.name}</Text>

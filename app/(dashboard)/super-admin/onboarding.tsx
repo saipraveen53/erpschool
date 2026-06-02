@@ -33,7 +33,7 @@ export default function CompleteOnboarding() {
     setLoading(true);
     try {
       // NOTE: Adjust the API URL if needed based on the environment setup.
-      const response = await fetch(`http://192.168.88.13:8081/api/principle/complete-onboarding?token=${token}`, {
+      const response = await fetch(`http://192.168.88.20:8081/api/principle/complete-onboarding?token=${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
