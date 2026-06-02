@@ -9,9 +9,9 @@ export default function SubscriptionsManagement() {
   const router = useRouter();
 
   const subscriptions = [
-    { id: "1", school: "Greenwood High", plan: "Enterprise", status: "Active", amount: "$499/mo", nextBilling: "Oct 15, 2026" },
-    { id: "2", school: "St. Mary's Academy", plan: "Pro", status: "Active", amount: "$299/mo", nextBilling: "Oct 12, 2026" },
-    { id: "3", school: "Oakridge International", plan: "Basic", status: "Past Due", amount: "$99/mo", nextBilling: "Sep 28, 2026" },
+    { id: "1", title: "Core ERP License", plan: "Enterprise", status: "Active", amount: "$499/mo", nextBilling: "Oct 15, 2026" },
+    { id: "2", title: "SMS Add-on", plan: "Pro", status: "Active", amount: "$299/mo", nextBilling: "Oct 12, 2026" },
+    { id: "3", title: "Storage Expansion", plan: "Basic", status: "Past Due", amount: "$99/mo", nextBilling: "Sep 28, 2026" },
   ];
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -37,7 +37,7 @@ export default function SubscriptionsManagement() {
       <View style={[styles.header, { flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 12 : 0 }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerTitle, { fontSize: isMobile ? 20 : 24 }]}>Subscriptions</Text>
-          <Text style={styles.headerSubtitle}>Manage school billing and plans</Text>
+          <Text style={styles.headerSubtitle}>Manage your billing and plans</Text>
         </View>
         <TouchableOpacity style={[styles.addButton, { width: isMobile ? "100%" : "auto" }]}>
           <Plus size={18} color="#fff" />
@@ -77,7 +77,7 @@ export default function SubscriptionsManagement() {
                   <CreditCard size={18} color="#E35336" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.cardSchool}>{sub.school}</Text>
+                  <Text style={styles.cardSchool}>{sub.title}</Text>
                   <Text style={styles.cardBilling}>Next billing: {sub.nextBilling}</Text>
                 </View>
                 <ChevronRight size={18} color="#D0BDB3" />
@@ -114,7 +114,7 @@ export default function SubscriptionsManagement() {
                   {selectedIds.length === filteredSubscriptions.length && filteredSubscriptions.length > 0 && <View style={styles.checkboxInner} />}
                 </TouchableOpacity>
               </View>
-              <Text style={[styles.th, { flex: 2.5 }]}>School</Text>
+              <Text style={[styles.th, { flex: 2.5 }]}>Service</Text>
               <Text style={[styles.th, { flex: 1.5 }]}>Plan</Text>
               <Text style={[styles.th, { flex: 1.5 }]}>Amount</Text>
               <Text style={[styles.th, { flex: 1.5, textAlign: "center" }]}>Status</Text>
@@ -132,7 +132,7 @@ export default function SubscriptionsManagement() {
                     <CreditCard size={15} color="#E35336" />
                   </View>
                   <View> 
-                    <Text style={styles.cardSchool} numberOfLines={1}>{sub.school}</Text>
+                    <Text style={styles.cardSchool} numberOfLines={1}>{sub.title}</Text>
                     <Text style={styles.cardBilling}>{sub.nextBilling}</Text>
                   </View>
                 </View>

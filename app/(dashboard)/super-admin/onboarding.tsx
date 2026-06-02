@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, useWindowDimensions } from 'react-native';
-import { Lock, MapPin, Phone, Briefcase, ChevronRight } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, useWindowDimensions, Platform } from 'react-native';
+import { Lock, MapPin, Phone, Briefcase, ChevronRight, Eye, EyeOff } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 export default function CompleteOnboarding() {
@@ -17,6 +17,7 @@ export default function CompleteOnboarding() {
     address: '',
     phoneNo: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -32,8 +33,8 @@ export default function CompleteOnboarding() {
 
     setLoading(true);
     try {
-      // NOTE: Adjust the API URL if needed based on the environment setup.
-      const response = await fetch(`http://192.168.88.20:8081/api/principle/complete-onboarding?token=${token}`, {
+      const baseUrl = Platform.OS === 'web' ? 'http://localhost:8081' : 'http://192.168.88.20:8081';
+      const response = await fetch(`${baseUrl}/api/principle/complete-onboarding?token=${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +70,7 @@ export default function CompleteOnboarding() {
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={[styles.card, { width: isMobile ? '100%' : 600 }]}>
         <Text style={styles.title}>Welcome!</Text>
-        <Text style={styles.subtitle}>Please complete your Principal profile to get started.</Text>
+        <Text style={styles.subtitle}>Please complete your profile to get started.</Text>
 
         <View style={styles.formGroup}>
           <Text style={styles.label}>Set Password</Text>
@@ -81,8 +82,11 @@ export default function CompleteOnboarding() {
               value={form.password}
               onChangeText={(t) => setForm({...form, password: t})}
               placeholderTextColor="#B8A095"
-              secureTextEntry
+              secureTextEntry={!showPassword}
             />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              {showPassword ? <EyeOff size={18} color="#A0522D" /> : <Eye size={18} color="#A0522D" />}
+            </TouchableOpacity>
           </View>
         </View>
 

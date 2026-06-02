@@ -1,8 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, useWindowDimensions } from "react-native";
-import { User, Mail, Phone, Shield, Camera, Bell, Lock, LogOut } from "lucide-react-native";
+import { User, Mail, Phone, Shield, Camera, Bell, Lock, LogOut, Eye, EyeOff } from "lucide-react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ActivityIndicator, Alert as RNAlert, Platform } from "react-native";
 
 export default function SuperAdminProfile() {
   const { width } = useWindowDimensions();
@@ -22,12 +24,65 @@ export default function SuperAdminProfile() {
     updates: true,
   });
 
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmNewPassword: ''
+  });
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loadingPassword, setLoadingPassword] = useState(false);
+
   const handleLogout = async () => {
     try {
       await logout();
       router.replace("/login");
     } catch (error) {
       console.error("Logout failed:", error);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmNewPassword) {
+      RNAlert.alert("Error", "Please fill in all password fields.");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+      RNAlert.alert("Error", "New passwords do not match.");
+      return;
+    }
+
+    setLoadingPassword(true);
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      const baseUrl = Platform.OS === 'web' ? 'http://localhost:8081' : 'http://192.168.88.20:8081';
+      const response = await fetch(`${baseUrl}/api/superAdmin/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': '*/*',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword,
+          confirmNewPassword: passwordForm.confirmNewPassword
+        })
+      });
+
+      if (response.ok) {
+        RNAlert.alert("Success", "Your password has been changed successfully.");
+        setPasswordForm({ oldPassword: '', newPassword: '', confirmNewPassword: '' });
+      } else {
+        const errorText = await response.text();
+        RNAlert.alert("Failed", `Could not change password: ${errorText}`);
+      }
+    } catch (error) {
+      RNAlert.alert("Error", "A network error occurred. Please try again.");
+      console.error(error);
+    } finally {
+      setLoadingPassword(false);
     }
   };
 
@@ -159,12 +214,74 @@ export default function SuperAdminProfile() {
             <View style={styles.cardHeader}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Lock size={18} color="#A0522D" />
-                <Text style={styles.cardTitle}>Security</Text>
+                <Text style={styles.cardTitle}>Security & Password</Text>
               </View>
             </View>
             
-            <TouchableOpacity style={styles.securityButton}>
-              <Text style={styles.securityButtonText}>Change Password</Text>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Current Password</Text>
+              <View style={styles.inputContainer}>
+                <Lock size={18} color="#B8A095" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Old password"
+                  value={passwordForm.oldPassword}
+                  onChangeText={(t) => setPasswordForm({...passwordForm, oldPassword: t})}
+                  placeholderTextColor="#B8A095"
+                  secureTextEntry={!showOldPassword}
+                />
+                <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)}>
+                  {showOldPassword ? <EyeOff size={18} color="#B8A095" /> : <Eye size={18} color="#B8A095" />}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>New Password</Text>
+              <View style={styles.inputContainer}>
+                <Lock size={18} color="#B8A095" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="New password"
+                  value={passwordForm.newPassword}
+                  onChangeText={(t) => setPasswordForm({...passwordForm, newPassword: t})}
+                  placeholderTextColor="#B8A095"
+                  secureTextEntry={!showNewPassword}
+                />
+                <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                  {showNewPassword ? <EyeOff size={18} color="#B8A095" /> : <Eye size={18} color="#B8A095" />}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Confirm New Password</Text>
+              <View style={styles.inputContainer}>
+                <Lock size={18} color="#B8A095" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Re-enter new password"
+                  value={passwordForm.confirmNewPassword}
+                  onChangeText={(t) => setPasswordForm({...passwordForm, confirmNewPassword: t})}
+                  placeholderTextColor="#B8A095"
+                  secureTextEntry={!showConfirmPassword}
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  {showConfirmPassword ? <EyeOff size={18} color="#B8A095" /> : <Eye size={18} color="#B8A095" />}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={[styles.securityButton, loadingPassword && { backgroundColor: "#F5F5DC" }]} 
+              onPress={handleChangePassword}
+              disabled={loadingPassword}
+            >
+              {loadingPassword ? (
+                <ActivityIndicator color="#A0522D" size="small" />
+              ) : (
+                <Text style={styles.securityButtonText}>Update Password</Text>
+              )}
             </TouchableOpacity>
             
             <TouchableOpacity style={[styles.securityButton, { marginTop: 12, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E6D8D2" }]}>

@@ -1,13 +1,11 @@
 import { Slot, usePathname, useRouter } from "expo-router";
 import {
   Bell,
-  Building2,
   ChevronDown,
   CreditCard,
   FileText,
   LayoutDashboard,
   Search,
-  Settings,
   Users,
   Menu,
   X
@@ -23,25 +21,25 @@ export default function SuperAdminLayout() {
 
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, route: "/super-admin" },
-    { name: "Schools", icon: Building2, route: "/super-admin/schools" },
     { name: "Users", icon: Users, route: "/super-admin/users" },
     { name: "Subscriptions", icon: CreditCard, route: "/super-admin/subscriptions" },
     { name: "Reports", icon: FileText, route: "/super-admin/reports" },
-    { name: "Settings", icon: Settings, route: "/super-admin/settings" },
   ];
 
   const isMobile = width < 768;
 
   return (
     <SafeAreaView style={styles.container}>
-      {pathname === "/super-admin/onboarding" ? (
+      {pathname === "/super-admin/onboarding" || 
+       pathname === "/super-admin/forgot-password" || 
+       pathname === "/super-admin/reset-password" ? (
         <Slot />
       ) : (
         <>
           {!isMobile && (
         <View style={styles.sidebar}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>SMART <Text style={styles.logoHighlight}>ERP</Text></Text>
+            <Text style={styles.logoText}>edvance<Text style={styles.logoHighlight}>.</Text></Text>
             <Text style={styles.logoSubtitle}>Super Admin</Text>
           </View>
 
@@ -59,7 +57,7 @@ export default function SuperAdminLayout() {
                 >
                   <item.icon
                     size={20}
-                    color={isActive ? "#E35336" : "#8A6B5D"}
+                    color={isActive ? "#E35336" : "#78716C"}
                     style={styles.navIcon}
                   />
                   <Text style={[styles.navText, isActive && styles.navTextActive]}>
@@ -80,15 +78,15 @@ export default function SuperAdminLayout() {
               style={{ marginRight: 16 }}
               onPress={() => setIsDrawerOpen(true)}
             >
-              <Menu size={24} color="#A0522D" />
+              <Menu size={24} color="#1C1917" />
             </TouchableOpacity>
           )}
           <TouchableOpacity 
             style={[styles.searchContainer, isMobile && { flex: 1, paddingHorizontal: 12, marginRight: 8 }]}
             onPress={() => router.push("/super-admin/search" as any)}
           >
-            <Search size={18} color="#B8A095" />
-            {!isMobile && <Text style={styles.searchText}>Search...</Text>}
+            <Search size={18} color="#A8A29E" />
+            {!isMobile && <Text style={styles.searchText}>Search anything...</Text>}
           </TouchableOpacity>
 
           <View style={styles.headerRight}>
@@ -96,7 +94,7 @@ export default function SuperAdminLayout() {
               style={styles.iconButton}
               onPress={() => router.push("/super-admin/notifications" as any)}
             >
-              <Bell size={20} color="#8A6B5D" />
+              <Bell size={20} color="#57534E" />
               <View style={styles.badge} />
             </TouchableOpacity>
 
@@ -113,7 +111,7 @@ export default function SuperAdminLayout() {
                   <Text style={styles.profileRole}>System Owner</Text>
                 </View>
               )}
-              <ChevronDown size={16} color="#8A6B5D" style={{ marginLeft: 8 }} />
+              <ChevronDown size={16} color="#A8A29E" style={{ marginLeft: 8 }} />
             </TouchableOpacity>
           </View>
         </View>
@@ -136,11 +134,11 @@ export default function SuperAdminLayout() {
             <View style={styles.drawerContent}>
               <View style={styles.drawerHeader}>
                 <View style={styles.logoContainerMobile}>
-                  <Text style={styles.logoText}>SMART <Text style={styles.logoHighlight}>ERP</Text></Text>
+                  <Text style={styles.logoText}>edvance<Text style={styles.logoHighlight}>.</Text></Text>
                   <Text style={styles.logoSubtitle}>Super Admin</Text>
                 </View>
                 <TouchableOpacity onPress={() => setIsDrawerOpen(false)}>
-                  <X size={24} color="#A0522D" />
+                  <X size={24} color="#1C1917" />
                 </TouchableOpacity>
               </View>
               <View style={styles.drawerMenu}>
@@ -160,7 +158,7 @@ export default function SuperAdminLayout() {
                     >
                       <item.icon
                         size={20}
-                        color={isActive ? "#E35336" : "#8A6B5D"}
+                        color={isActive ? "#E35336" : "#78716C"}
                         style={styles.navIcon}
                       />
                       <Text style={[styles.navText, isActive && styles.navTextActive]}>
@@ -189,13 +187,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: "row",
-    backgroundColor: "#F5F5DC", 
+    backgroundColor: "#FAFAF9", 
   },
   sidebar: {
     width: 260,
     backgroundColor: "#FFFFFF",
     borderRightWidth: 1,
-    borderRightColor: "#E6D8D2",
+    borderRightColor: "#F5F5F4",
     paddingVertical: 24,
   },
   logoContainer: {
@@ -205,7 +203,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#A0522D",
+    color: "#1C1917", // Stone 900
     letterSpacing: -0.5,
   },
   logoHighlight: {
@@ -213,9 +211,11 @@ const styles = StyleSheet.create({
   },
   logoSubtitle: {
     fontSize: 12,
-    color: "#8A6B5D",
-    fontWeight: "500",
+    color: "#A8A29E",
+    fontWeight: "600",
     marginTop: 2,
+    letterSpacing: 1,
+    textTransform: 'uppercase'
   },
   navMenu: {
     paddingHorizontal: 12,
@@ -225,11 +225,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 4,
   },
   navItemActive: {
-    backgroundColor: "#F4A460",
+    backgroundColor: "#FFF1F2", // Very light red/terracotta tint
   },
   navIcon: {
     marginRight: 12,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#8A6B5D",
+    color: "#78716C",
   },
   navTextActive: {
     color: "#E35336",
@@ -245,14 +245,14 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-    backgroundColor: "#F5F5DC",
+    backgroundColor: "#FAFAF9",
   },
   topHeader: {
     height: Platform.OS === 'android' ? 72 + (StatusBar.currentHeight || 24) : 72 + (Platform.OS === 'ios' ? 44 : 0),
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : (Platform.OS === 'ios' ? 44 : 0),
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E6D8D2",
+    borderBottomColor: "#F5F5F4",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -261,16 +261,17 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F5DC",
+    backgroundColor: "#F5F5F4",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 999,
+    borderRadius: 8,
     width: 280,
   },
   searchText: {
-    color: "#B8A095",
-    marginLeft: 8,
+    color: "#78716C",
+    marginLeft: 10,
     fontSize: 14,
+    fontWeight: '500'
   },
   headerRight: {
     flexDirection: "row",
@@ -280,7 +281,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F5F5DC",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7E5E4",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,
@@ -288,12 +291,12 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: "absolute",
-    top: 10,
+    top: 8,
     right: 10,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#EF4444",
+    backgroundColor: "#E35336",
     borderWidth: 1,
     borderColor: "#FFFFFF",
   },
@@ -311,7 +314,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: "#FFFFFF",
-    fontWeight: "bold",
+    fontWeight: "700",
     fontSize: 14,
   },
   profileTextContainer: {
@@ -319,12 +322,13 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#A0522D",
+    fontWeight: "700",
+    color: "#1C1917",
   },
   profileRole: {
     fontSize: 12,
-    color: "#8A6B5D",
+    color: "#78716C",
+    fontWeight: '500'
   },
   pageContainer: {
     flex: 1,
@@ -333,7 +337,7 @@ const styles = StyleSheet.create({
   drawerOverlay: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   drawerCloseArea: {
     flex: 1,
@@ -343,10 +347,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     height: '100%',
     shadowColor: "#000",
-    shadowOffset: { width: 2, height: 0 },
+    shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowRadius: 15,
+    elevation: 20,
   },
   drawerHeader: {
     flexDirection: 'row',
@@ -354,7 +358,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#E6D8D2',
+    borderBottomColor: '#F5F5F4',
   },
   logoContainerMobile: {
     flexDirection: 'column',

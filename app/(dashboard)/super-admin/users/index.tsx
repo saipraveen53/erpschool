@@ -9,16 +9,16 @@ export default function UsersManagement() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState([
-    { id: "1", name: "Alice Freeman", email: "alice@greenwood.edu", role: "ADMIN", school: "Greenwood High", status: "Active", lastLogin: "2 hours ago" },
-    { id: "2", name: "Bob Smith", email: "bsmith@stmarys.org", role: "PRINCIPAL", school: "St. Mary's Academy", status: "Active", lastLogin: "5 hours ago" },
-    { id: "3", name: "Carol Davis", email: "cdavis@oakridge.net", role: "TEACHER", school: "Oakridge International", status: "Inactive", lastLogin: "2 days ago" },
+    { id: "1", name: "Alice Freeman", email: "alice@greenwood.edu", role: "ADMIN", status: "Active", lastLogin: "2 hours ago" },
+    { id: "2", name: "Bob Smith", email: "bsmith@stmarys.org", role: "PRINCIPAL", status: "Active", lastLogin: "5 hours ago" },
+    { id: "3", name: "Carol Davis", email: "cdavis@oakridge.net", role: "TEACHER", status: "Inactive", lastLogin: "2 days ago" },
   ]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState("All");
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
-  const [formData, setFormData] = useState({ name: "", email: "", role: "ADMIN", school: "", status: "Active" });
+  const [formData, setFormData] = useState({ name: "", email: "", role: "ADMIN", status: "Active" });
 
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -54,13 +54,13 @@ export default function UsersManagement() {
       setUsers([...users, { id: Date.now().toString(), lastLogin: "Just now", ...formData }]);
     }
     setModalVisible(false);
-    setFormData({ name: "", email: "", role: "ADMIN", school: "", status: "Active" });
+    setFormData({ name: "", email: "", role: "ADMIN", status: "Active" });
     setEditingUser(null);
   };
 
   const openEdit = (user: any) => {
     setEditingUser(user);
-    setFormData({ name: user.name, email: user.email, role: user.role, school: user.school, status: user.status });
+    setFormData({ name: user.name, email: user.email, role: user.role, status: user.status });
     setModalVisible(true);
   };
 
@@ -85,11 +85,11 @@ export default function UsersManagement() {
             <Text style={styles.addButtonText}>Invite Principal</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.addButton, { width: isMobile ? "100%" : "auto" }]}
-            onPress={() => { setEditingUser(null); setFormData({ name: "", email: "", role: "ADMIN", school: "", status: "Active" }); setModalVisible(true); }}
+            style={[styles.addButton, { backgroundColor: "#E35336", width: isMobile ? "100%" : "auto" }]}
+            onPress={() => router.push("/super-admin/invite-principal?defaultRole=admin" as any)}
           >
-            <Plus size={18} color="#fff" />
-            <Text style={styles.addButtonText}>Add User</Text>
+            <Shield size={18} color="#fff" />
+            <Text style={styles.addButtonText}>Invite Admin</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -147,7 +147,7 @@ export default function UsersManagement() {
                   <Shield size={10} color="#E35336" style={{ marginRight: 4 }} />
                   <Text style={styles.roleText}>{user.role}</Text>
                 </View>
-                <Text style={styles.schoolText} numberOfLines={1}>{user.school || "Global"}</Text>
+                <Text style={styles.schoolText} numberOfLines={1}>{user.role === "ADMIN" || user.role === "PRINCIPAL" ? "System Access" : "Staff"}</Text>
                 <View style={styles.cardActions}>
                   <TouchableOpacity onPress={() => toggleStatus(user.id)}>
                     <View style={[styles.statusBadge, { backgroundColor: user.status === "Active" ? "#dcfce7" : "#F4A460" }]}>
@@ -174,10 +174,9 @@ export default function UsersManagement() {
                 </TouchableOpacity>
               </View>
               <Text style={[styles.th, { flex: 2.5 }]}>User</Text>
-              <Text style={[styles.th, { flex: 1.5 }]}>Role</Text>
-              <Text style={[styles.th, { flex: 2 }]}>School</Text>
-              <Text style={[styles.th, { flex: 1.2, textAlign: "center" }]}>Last Login</Text>
-              <Text style={[styles.th, { flex: 1.2, textAlign: "center" }]}>Status</Text>
+              <Text style={[styles.th, { flex: 2 }]}>Role</Text>
+              <Text style={[styles.th, { flex: 1.5, textAlign: "center" }]}>Last Login</Text>
+              <Text style={[styles.th, { flex: 1.5, textAlign: "center" }]}>Status</Text>
               <Text style={[styles.th, { flex: 1, textAlign: "center" }]}>Actions</Text>
             </View>
             {filteredUsers.map(user => (
@@ -200,19 +199,16 @@ export default function UsersManagement() {
                     <Text style={styles.cardEmail} numberOfLines={1}>{user.email}</Text>
                   </View>
                 </View>
-                <View style={[styles.td, { flex: 1.5, justifyContent: "center" }]}>
+                <View style={[styles.td, { flex: 2, justifyContent: "center" }]}>
                   <View style={styles.roleBadge}>
                     <Shield size={10} color="#E35336" style={{ marginRight: 4 }} />
                     <Text style={styles.roleText}>{user.role}</Text>
                   </View>
                 </View>
-                <View style={[styles.td, { flex: 2, justifyContent: "center" }]}>
-                  <Text style={styles.schoolText} numberOfLines={1}>{user.school || "Global Access"}</Text>
-                </View>
-                <View style={[styles.td, { flex: 1.2, alignItems: "center" }]}>
+                <View style={[styles.td, { flex: 1.5, alignItems: "center" }]}>
                   <Text style={styles.dateText}>{user.lastLogin}</Text>
                 </View>
-                <View style={[styles.td, { flex: 1.2, alignItems: "center" }]}>
+                <View style={[styles.td, { flex: 1.5, alignItems: "center" }]}>
                   <TouchableOpacity onPress={() => toggleStatus(user.id)}>
                     <View style={[styles.statusBadge, { backgroundColor: user.status === "Active" ? "#ecfdf5" : "#fff7ed", borderColor: user.status === "Active" ? "#a7f3d0" : "#fed7aa" }]}>
                       <View style={[styles.statusDot, { backgroundColor: user.status === "Active" ? "#10b981" : "#f97316" }]} />
@@ -252,15 +248,9 @@ export default function UsersManagement() {
               <Text style={styles.label}>Email Address</Text>
               <TextInput style={styles.input} value={formData.email} onChangeText={t => setFormData({ ...formData, email: t })} placeholder="e.g. john@example.com" keyboardType="email-address" autoCapitalize="none" />
             </View>
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <View style={[styles.formGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Role</Text>
-                <TextInput style={styles.input} value={formData.role} onChangeText={t => setFormData({ ...formData, role: t.toUpperCase() })} placeholder="ADMIN" />
-              </View>
-              <View style={[styles.formGroup, { flex: 1 }]}>
-                <Text style={styles.label}>School</Text>
-                <TextInput style={styles.input} value={formData.school} onChangeText={t => setFormData({ ...formData, school: t })} placeholder="Greenwood High" />
-              </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Role</Text>
+              <TextInput style={styles.input} value={formData.role} onChangeText={t => setFormData({ ...formData, role: t.toUpperCase() })} placeholder="ADMIN" />
             </View>
             <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
               <Text style={styles.saveBtnText}>{editingUser ? "Save Changes" : "Create User"}</Text>
