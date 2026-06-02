@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, CheckCircle, Search, User, XCircle } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getDriverAttendance, updateAttendanceStatus } from "../../../services/driverService";
 
@@ -29,59 +29,56 @@ export default function AttendanceConfirmation() {
 
   useEffect(() => { Animated.timing(fadeAnim, { toValue: 1, duration: 600 }).start(); }, []);
 
-  if (loading) return <SafeAreaView style={{ flex: 1, justifyContent: "center", backgroundColor: "#fff" }}><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
+  if (loading) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
 
   const filtered = attendance.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
   const present = attendance.filter(s => s.status === "present").length;
   const total = attendance.length;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar style="dark" />
-      <View style={styles.header}><TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity><Text style={styles.headerTitle}>Attendance</Text><View style={{ width: 40 }} /></View>
-      <Animated.View style={[styles.summaryCard, { opacity: fadeAnim }]}>
-        <View style={styles.summaryItem}><CheckCircle size={24} color="#00a652" /><Text style={styles.summaryValue}>{present}</Text><Text>Present</Text></View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}><XCircle size={24} color="#ff4b00" /><Text style={styles.summaryValue}>{total - present}</Text><Text>Absent</Text></View>
+      <View className="flex-row justify-between px-4 py-3 bg-white border-b border-gray-50">
+        <TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity>
+        <Text className="text-lg font-semibold text-[#0065ea]">Attendance</Text>
+        <View className="w-10" />
+      </View>
+      <Animated.View className="flex-row bg-white mx-4 my-4 p-4 rounded-xl justify-around" style={{ opacity: fadeAnim }}>
+        <View className="items-center flex-1">
+          <CheckCircle size={24} color="#00a652" />
+          <Text className="text-xl font-bold mt-1 text-[#0065ea]">{present}</Text>
+          <Text className="text-sm text-gray-500">Present</Text>
+        </View>
+        <View className="w-px bg-gray-100" />
+        <View className="items-center flex-1">
+          <XCircle size={24} color="#ff4b00" />
+          <Text className="text-xl font-bold mt-1 text-[#0065ea]">{total - present}</Text>
+          <Text className="text-sm text-gray-500">Absent</Text>
+        </View>
       </Animated.View>
-      <View style={styles.searchContainer}><Search size={20} color="#0065ea" /><TextInput placeholder="Search student" placeholderTextColor="#0065ea" value={search} onChangeText={setSearch} style={styles.searchInput} /></View>
+      <View className="flex-row items-center bg-white mx-4 mb-4 px-3 py-2.5 rounded-xl border border-[#0065ea]">
+        <Search size={20} color="#0065ea" />
+        <TextInput className="flex-1 ml-2 text-[#0065ea]" placeholder="Search student" placeholderTextColor="#0065ea" value={search} onChangeText={setSearch} />
+      </View>
       <ScrollView>
         {filtered.map((student) => (
-          <View key={student.id} style={styles.studentCard}>
-            <View style={styles.studentAvatar}><User size={24} color="#0065ea" /></View>
-            <View style={styles.studentInfo}>
-              <Text style={styles.studentName}>{student.name}</Text>
-              {student.status === "present" && <Text style={styles.studentTime}>Boarded at {student.time}</Text>}
+          <View key={student.id} className="flex-row items-center bg-white mx-4 mb-2 p-3 rounded-xl">
+            <View className="w-12 h-12 rounded-full bg-gray-50 items-center justify-center">
+              <User size={24} color="#0065ea" />
             </View>
-            <TouchableOpacity style={[styles.statusBtn, student.status === "present" ? styles.presentBtn : styles.absentBtn]} onPress={() => toggleStatus(student.id, student.status)}>
-              <Text>{student.status === "present" ? "Present" : "Absent"}</Text>
+            <View className="flex-1 ml-3">
+              <Text className="text-base font-semibold text-[#0065ea]">{student.name}</Text>
+              {student.status === "present" && <Text className="text-xs text-[#00a652] mt-0.5">Boarded at {student.time}</Text>}
+            </View>
+            <TouchableOpacity className={`px-4 py-2 rounded-full ${student.status === "present" ? "bg-[#00a652]" : "bg-[#ff4b00]"}`} onPress={() => toggleStatus(student.id, student.status)}>
+              <Text className="text-white text-sm">{student.status === "present" ? "Present" : "Absent"}</Text>
             </TouchableOpacity>
           </View>
         ))}
       </ScrollView>
-      <TouchableOpacity style={styles.submitBtn} onPress={() => { Alert.alert("Submitted", "Attendance saved"); router.back(); }}><Text style={styles.submitBtnText}>Submit Attendance</Text></TouchableOpacity>
+      <TouchableOpacity className="bg-[#0065ea] mx-4 my-4 p-3.5 rounded-xl items-center" onPress={() => { Alert.alert("Submitted", "Attendance saved"); router.back(); }}>
+        <Text className="text-white font-semibold text-base">Submit Attendance</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
-  summaryCard: { flexDirection: "row", backgroundColor: "#fff", margin: 16, padding: 16, borderRadius: 12, justifyContent: "space-around" },
-  summaryItem: { alignItems: "center", flex: 1 },
-  summaryValue: { fontSize: 20, fontWeight: "bold", marginTop: 4, color: "#0065ea" },
-  summaryDivider: { width: 1, backgroundColor: "#e2e8f0" },
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 16, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#0065ea" },
-  searchInput: { flex: 1, marginLeft: 8, color: "#0065ea" },
-  studentCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 12 },
-  studentAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#f5f5f5", alignItems: "center", justifyContent: "center" },
-  studentInfo: { flex: 1, marginLeft: 12 },
-  studentName: { fontSize: 16, fontWeight: "600", color: "#0065ea" },
-  studentTime: { fontSize: 12, color: "#00a652", marginTop: 2 },
-  statusBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  presentBtn: { backgroundColor: "#00a652" },
-  absentBtn: { backgroundColor: "#ff4b00" },
-  submitBtn: { backgroundColor: "#0065ea", margin: 16, padding: 14, borderRadius: 12, alignItems: "center" },
-  submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-});
