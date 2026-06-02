@@ -147,7 +147,6 @@ export default function DriverDashboard() {
     Alert.alert("Trip Ended", "Thank you for driving safely");
   };
 
-  // ✅ Correct logout with confirmation and web redirect
   const handleLogout = () => {
     logout();
   };
