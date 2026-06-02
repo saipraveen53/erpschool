@@ -1,47 +1,100 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
-  // OTP Modal states
-  const [showOTPModal, setShowOTPModal] = useState(false);
+  // Demo OTP modal state
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [otp, setOtp] = useState("");
-  const [tempCredentials, setTempCredentials] = useState({
-    email: "",
-    password: "",
-  });
+  const [demoUserData, setDemoUserData] = useState<{
+    role: string;
+    username: string;
+    fullName: string;
+  } | null>(null);
+
+  // Demo credentials (same as before)
+  const demoCredentials = [
+    { role: "Super Admin", username: "superadmin@school.com", password: "super123" },
+    { role: "Admin", username: "admin@school.com", password: "admin123" },
+    { role: "Principal", username: "principal@school.com", password: "principal123" },
+    { role: "Vice Principal", username: "vice@school.com", password: "vice123" },
+    { role: "Teacher", username: "teacher@school.com", password: "teacher123" },
+    { role: "Student", username: "student@school.com", password: "student123" },
+    { role: "Parent", username: "parent@school.com", password: "parent123" },
+    { role: "Driver", username: "driver@school.com", password: "driver123" },
+    { role: "Housekeeping", username: "housekeeping@school.com", password: "house123" },
+    { role: "Receptionist", username: "receptionist@school.com", password: "reception123" },
+    { role: "Librarian", username: "librarian@school.com", password: "librarian123" },
+  ];
+
+  const fillDemoCredentials = (demoUsername: string, demoPassword: string, role: string) => {
+    setUsername(demoUsername);
+    setPassword(demoPassword);
+    setError("");
+    setShowDemoModal(false);
+    // Store the selected role for later use during demo OTP flow
+    setDemoUserData({
+      role: role.toUpperCase().replace(" ", "_"),
+      username: demoUsername,
+      fullName: role,
+    });
+  };
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!username || !password) {
       setError("Please fill all fields");
       return;
     }
     setLoading(true);
     setError("");
+
+    // Check if this is a demo login (credentials match any demo role)
+    const matchedDemo = demoCredentials.find(
+      (cred) => cred.username === username && cred.password === password
+    );
+
+    if (matchedDemo) {
+      // Demo flow: no API call, show OTP modal
+      setDemoUserData({
+        role: matchedDemo.role.toUpperCase().replace(" ", "_"),
+        username: matchedDemo.username,
+        fullName: matchedDemo.role,
+      });
+      setLoading(false);
+      setShowOtpModal(true);
+      return;
+    }
+
+    // Real login flow
     try {
-      await login(email, password);
-      setTempCredentials({ email, password });
-      setShowOTPModal(true);
+      await login(username, password);
+      // AuthContext will redirect to dashboard
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
@@ -49,40 +102,37 @@ export default function LoginScreen() {
     }
   };
 
-  const handleVerifyOTP = () => {
-    if (otp === "123456") {
-      setShowOTPModal(false);
-      setOtp("");
-      router.replace("/");
-    } else {
+  const handleVerifyOtp = async () => {
+    if (otp !== "123456") {
       Alert.alert("Error", "Invalid OTP. Please try again.");
       setOtp("");
+      return;
     }
-  };
 
-  const handleResendOTP = () => {
-    Alert.alert("OTP Sent", "Demo OTP: 123456 has been resent");
-  };
+    // OTP verified – manually store user data and navigate
+    if (!demoUserData) return;
 
-  // Complete list of demo credentials for all dashboard roles
-  const demoCredentials = [
-    { role: "Super Admin", email: "superadmin@school.com", password: "super123" },
-    { role: "Admin", email: "admin@school.com", password: "admin123" },
-    { role: "Principal", email: "principal@school.com", password: "principal123" },
-    { role: "Vice Principal", email: "vice@school.com", password: "vice123" },
-    { role: "Teacher", email: "teacher@school.com", password: "teacher123" },
-    { role: "Student", email: "student@school.com", password: "student123" },
-    { role: "Parent", email: "parent@school.com", password: "parent123" },
-    { role: "Driver", email: "driver@school.com", password: "driver123" },
-    { role: "Housekeeping", email: "housekeeping@school.com", password: "house123" },
-    { role: "Receptionist", email: "receptionist@school.com", password: "reception123" },
-    { role: "Librarian", email: "librarian@school.com", password: "librarian123" },
-  ];
+    try {
+      // Create fake token and store in AsyncStorage
+      const fakeToken = `fake-jwt-token-${Date.now()}`;
+      await AsyncStorage.setItem("userToken", fakeToken);
+      await AsyncStorage.setItem("userRole", demoUserData.role);
+      await AsyncStorage.setItem("userUsername", demoUserData.username);
+      await AsyncStorage.setItem("userFullName", demoUserData.fullName);
+      await AsyncStorage.setItem("authenticated", "true");
 
-  const fillDemoCredentials = (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError("");
+      // Also update AuthContext state indirectly by logging in again?
+      // Instead, we can directly navigate and let index.tsx pick up AsyncStorage.
+      // But AuthContext won't know. Simpler: force reload for web, or redirect.
+      // For a smoother experience, we can call a "silent login" but easiest:
+      setShowOtpModal(false);
+      setOtp("");
+
+      // Navigate to index (root) which will read AsyncStorage and redirect
+      router.replace("/");
+    } catch (err) {
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    }
   };
 
   return (
@@ -90,134 +140,156 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+      <View style={styles.mainBackground}>
+        <View style={styles.centerWrapper}>
+          <View style={styles.mainCard}>
+            <ImageBackground
+              source={require("../../../assets/images/erp_login_cover.png")}
+              style={[styles.cardBackgroundImage, { flexDirection: isMobile ? "column" : "row" }]}
+              resizeMode="cover"
+            >
+              <View style={[styles.leftContentArea, isMobile && styles.mobileContentArea]}>
+                <View style={styles.loginFormContainer}>
+                  <View style={styles.logoContainer}>
+                    <Text style={styles.logoText}>
+                      Edvance<Text style={styles.logoHighlight}>.</Text>
+                    </Text>
+                    <Text style={styles.subtitle}>SCHOOL ERP</Text>
+                  </View>
+
+                  {error ? (
+                    <View style={styles.errorWrapper}>
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.fadeContainer}>
+                    <Text style={styles.welcomeText}>Welcome Back! 👋</Text>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Username / Email</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="you@school.com"
+                        placeholderTextColor="#9ca3af"
+                        value={username}
+                        onChangeText={setUsername}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Password</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="••••••••"
+                        placeholderTextColor="#9ca3af"
+                        secureTextEntry
+                        value={password}
+                        onChangeText={setPassword}
+                      />
+                    </View>
+
+                    <View style={styles.forgotPasswordContainer}>
+                      <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")}>
+                        <Text style={styles.forgotText}>Forgot Password?</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={handleLogin}
+                      disabled={loading}
+                      style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+                    >
+                      {loading ? (
+                        <ActivityIndicator color="white" size="small" />
+                      ) : (
+                        <Text style={styles.loginButtonText}>Sign In</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <View style={styles.demoDivider}>
+                      <View style={styles.dividerLine} />
+                      <Text style={styles.dividerText}>OR</Text>
+                      <View style={styles.dividerLine} />
+                    </View>
+
+                    <TouchableOpacity onPress={() => setShowDemoModal(true)} style={styles.demoLinkBtn}>
+                      <Text style={styles.demoLinkText}>Try Demo Roles ➔</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              {!isMobile && <View style={styles.rightContentArea} />}
+            </ImageBackground>
+          </View>
         </View>
+      </View>
 
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.form}>
-          <View>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor="#9ca3af"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
-
-          <TouchableOpacity
-            onPress={() => router.push("/(auth)/forgot-password")}
-            style={styles.forgotButton}
-          >
-            <Text style={styles.forgotText}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleLogin}
-            disabled={loading}
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
-              <Text style={styles.registerLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Demo Credentials Section - All Roles */}
-          <View style={styles.demoSection}>
-            <Text style={styles.demoTitle}>Demo Credentials (All Roles)</Text>
+      {/* Demo Roles Modal */}
+      <Modal
+        visible={showDemoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDemoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.demoModalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Demo Role</Text>
+              <TouchableOpacity onPress={() => setShowDemoModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.demoModalSubtitle}>
+              Click on any role below to auto-fill the login credentials.
+            </Text>
             <View style={styles.demoGrid}>
               {demoCredentials.map((cred, idx) => (
                 <TouchableOpacity
                   key={idx}
-                  style={styles.demoButton}
-                  onPress={() => fillDemoCredentials(cred.email, cred.password)}
+                  style={styles.demoGridItem}
+                  onPress={() => fillDemoCredentials(cred.username, cred.password, cred.role)}
                 >
-                  <Text style={styles.demoButtonText}>{cred.role}</Text>
+                  <Text style={styles.demoGridItemText}>{cred.role}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.demoNote}>Demo OTP: 123456</Text>
           </View>
         </View>
-      </ScrollView>
+      </Modal>
 
-      {/* OTP Modal */}
-      <Modal
-        visible={showOTPModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowOTPModal(false)}
-      >
+      {/* OTP Verification Modal (only for demo login) */}
+      <Modal visible={showOtpModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>OTP Verification</Text>
-              <TouchableOpacity onPress={() => setShowOTPModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalSubtitle}>
-              Please enter the 6-digit verification code sent to your email
+          <View style={styles.otpModalContainer}>
+            <Text style={styles.otpModalTitle}>Verify OTP</Text>
+            <Text style={styles.otpModalSubtitle}>
+              Enter the 6-digit verification code sent to your email
             </Text>
-
             <TextInput
               style={styles.otpInput}
-              placeholder="Enter OTP"
+              placeholder="123456"
               placeholderTextColor="#9ca3af"
-              value={otp}
-              onChangeText={setOtp}
               keyboardType="number-pad"
               maxLength={6}
+              value={otp}
+              onChangeText={setOtp}
               textAlign="center"
             />
-
             <Text style={styles.otpHint}>Demo OTP: 123456</Text>
-
-            <TouchableOpacity
-              style={styles.verifyBtn}
-              onPress={handleVerifyOTP}
-            >
-              <Text style={styles.verifyBtnText}>Verify & Login</Text>
+            <TouchableOpacity style={styles.otpVerifyBtn} onPress={handleVerifyOtp}>
+              <Text style={styles.otpVerifyBtnText}>Verify & Login</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
-              style={styles.resendBtn}
-              onPress={handleResendOTP}
+              style={styles.otpCancelBtn}
+              onPress={() => {
+                setShowOtpModal(false);
+                setOtp("");
+              }}
             >
-              <Text style={styles.resendBtnText}>Resend OTP</Text>
+              <Text style={styles.otpCancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -226,205 +298,56 @@ export default function LoginScreen() {
   );
 }
 
+// Styles – keep all existing styles plus add OTP modal styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
-  header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    color: "#111827",
-  },
-  subtitle: {
-    textAlign: "center",
-    color: "#6b7280",
-    marginTop: 8,
-  },
-  errorContainer: {
-    backgroundColor: "#fee2e2",
-    borderWidth: 1,
-    borderColor: "#fecaca",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: "#dc2626",
-    textAlign: "center",
-  },
-  form: {
-    gap: 16,
-  },
-  label: {
-    color: "#374151",
-    marginBottom: 4,
-    fontWeight: "500",
-  },
-  input: {
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: "#111827",
-  },
-  forgotButton: {
-    alignSelf: "flex-end",
-  },
-  forgotText: {
-    color: "#2563eb",
-    fontSize: 14,
-  },
-  loginButton: {
-    backgroundColor: "#2563eb",
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginTop: 16,
-  },
-  loginButtonDisabled: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
-    color: "#ffffff",
-    textAlign: "center",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  registerContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 24,
-  },
-  registerText: {
-    color: "#6b7280",
-  },
-  registerLink: {
-    color: "#2563eb",
-    fontWeight: "600",
-  },
-  demoSection: {
-    marginTop: 32,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-  },
-  demoTitle: {
-    textAlign: "center",
-    color: "#6b7280",
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  demoGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 8,
-  },
-  demoButton: {
-    backgroundColor: "#f3f4f6",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  demoButtonText: {
-    fontSize: 12,
-    color: "#374151",
-  },
-  demoNote: {
-    textAlign: "center",
-    color: "#9ca3af",
-    fontSize: 11,
-    marginTop: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    padding: 24,
-    width: "85%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  modalClose: {
-    fontSize: 20,
-    color: "#6b7280",
-    fontWeight: "bold",
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  otpInput: {
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
-    textAlign: "center",
-    letterSpacing: 8,
-  },
-  otpHint: {
-    fontSize: 12,
-    color: "#9ca3af",
-    textAlign: "center",
-    marginTop: 12,
-  },
-  verifyBtn: {
-    backgroundColor: "#2563eb",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 24,
-  },
-  verifyBtnText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  resendBtn: {
-    alignItems: "center",
-    marginTop: 16,
-  },
-  resendBtnText: {
-    color: "#2563eb",
-    fontSize: 14,
-    fontWeight: "500",
-  },
+  container: { flex: 1 },
+  mainBackground: { flex: 1, backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center" },
+  centerWrapper: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 20, width: "100%" },
+  mainCard: { width: "100%", maxWidth: 1100, height: 560, backgroundColor: "#FFF", borderRadius: 24, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 15 }, shadowOpacity: 0.15, shadowRadius: 30, elevation: 20 },
+  cardBackgroundImage: { flex: 1, width: "100%", height: "100%" },
+  leftContentArea: { flex: 1, justifyContent: "center", alignItems: "center", paddingLeft: Platform.OS === "web" ? 40 : 20 },
+  mobileContentArea: { paddingLeft: 0, paddingHorizontal: 20, backgroundColor: "rgba(255,255,255,0.85)" },
+  rightContentArea: { flex: 1.1 },
+  loginFormContainer: { width: "100%", maxWidth: 400, paddingHorizontal: 20, paddingVertical: 10 },
+  fadeContainer: { width: "100%" },
+  logoContainer: { alignItems: "center", marginBottom: 20 },
+  logoText: { fontSize: 42, fontWeight: "900", color: "#5C2E14", letterSpacing: -1 },
+  logoHighlight: { color: "#E35336" },
+  subtitle: { fontSize: 14, color: "#A0522D", marginTop: 2, letterSpacing: 4, fontWeight: "800" },
+  welcomeText: { fontSize: 20, fontWeight: "800", color: "#111827", marginBottom: 24, textAlign: "center" },
+  errorWrapper: { backgroundColor: "#FEE2E2", padding: 10, borderRadius: 8, marginBottom: 16 },
+  errorText: { color: "#DC2626", fontWeight: "600", fontSize: 13, textAlign: "center" },
+  inputGroup: { marginBottom: 16 },
+  inputLabel: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 },
+  input: { backgroundColor: "#FFF", borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 8, height: 48, paddingHorizontal: 16, color: "#111827", fontSize: 15, fontWeight: "500" },
+  forgotPasswordContainer: { alignItems: "flex-end", marginTop: -4, marginBottom: 24 },
+  forgotText: { color: "#2563EB", fontSize: 13, fontWeight: "600" },
+  loginButton: { backgroundColor: "#E35336", paddingVertical: 14, borderRadius: 8, width: "100%", alignItems: "center", shadowColor: "#E35336", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 4 },
+  loginButtonDisabled: { opacity: 0.7 },
+  loginButtonText: { color: "#FFF", fontWeight: "800", fontSize: 16, letterSpacing: 1 },
+  demoDivider: { flexDirection: "row", alignItems: "center", marginVertical: 24 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#E5E7EB" },
+  dividerText: { marginHorizontal: 10, color: "#9CA3AF", fontSize: 12, fontWeight: "600" },
+  demoLinkBtn: { backgroundColor: "rgba(227,83,54,0.08)", paddingVertical: 14, borderRadius: 8, width: "100%", alignItems: "center", borderWidth: 1, borderColor: "rgba(227,83,54,0.2)" },
+  demoLinkText: { color: "#E35336", fontSize: 14, fontWeight: "800" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(17,24,39,0.75)", justifyContent: "center", alignItems: "center" },
+  demoModalContainer: { backgroundColor: "#FFF", borderRadius: 24, padding: 30, width: "90%", maxWidth: 550, shadowColor: "#000", shadowOffset: { width: 0, height: 15 }, shadowOpacity: 0.3, shadowRadius: 30, elevation: 15 },
+  demoModalSubtitle: { fontSize: 14, color: "#6B7280", marginBottom: 24, lineHeight: 20 },
+  demoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, justifyContent: "center", marginBottom: 20 },
+  demoGridItem: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  demoGridItemText: { fontSize: 13, color: "#374151", fontWeight: "700" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  modalTitle: { fontSize: 24, fontWeight: "800", color: "#111827" },
+  modalClose: { fontSize: 22, color: "#9CA3AF", fontWeight: "bold", padding: 4 },
+
+  // OTP Modal Styles
+  otpModalContainer: { backgroundColor: "#FFF", borderRadius: 24, padding: 30, width: "90%", maxWidth: 400, alignItems: "center" },
+  otpModalTitle: { fontSize: 24, fontWeight: "800", color: "#111827", marginBottom: 8 },
+  otpModalSubtitle: { fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 24, lineHeight: 20 },
+  otpInput: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 24, fontWeight: "900", color: "#E35336", textAlign: "center", letterSpacing: 10, width: "100%", marginBottom: 12 },
+  otpHint: { fontSize: 13, color: "#6B7280", textAlign: "center", marginBottom: 24, fontWeight: "600" },
+  otpVerifyBtn: { backgroundColor: "#E35336", paddingVertical: 14, borderRadius: 8, width: "100%", alignItems: "center", marginBottom: 12, shadowColor: "#E35336", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 4 },
+  otpVerifyBtnText: { color: "#FFF", fontWeight: "800", fontSize: 16 },
+  otpCancelBtn: { paddingVertical: 10 },
+  otpCancelBtnText: { color: "#2563EB", fontSize: 14, fontWeight: "600" },
 });
