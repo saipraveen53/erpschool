@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Send } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getReportTypes, submitIncidentReport } from "../../services/driverService";
 
@@ -22,37 +22,28 @@ export default function ReportIncident() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar style="dark" />
-      <View style={styles.header}><TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity><Text style={styles.headerTitle}>Report Incident</Text><View style={{ width: 40 }} /></View>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <Text style={styles.label}>Incident Type</Text>
-        <View style={styles.typeContainer}>
+      <View className="flex-row justify-between px-4 py-3 bg-white border-b border-gray-50">
+        <TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity>
+        <Text className="text-lg font-semibold text-[#0065ea]">Report Incident</Text>
+        <View className="w-10" />
+      </View>
+      <ScrollView contentContainerClassName="p-4">
+        <Text className="text-sm font-medium mt-4 mb-2 text-[#0065ea]">Incident Type</Text>
+        <View className="flex-row flex-wrap gap-2">
           {types.map(type => (
-            <TouchableOpacity key={type.id} style={[styles.typeBtn, selectedType === type.id && styles.typeBtnActive]} onPress={() => setSelectedType(type.id)}>
-              <Text style={[styles.typeBtnText, selectedType === type.id && styles.typeBtnTextActive]}>{type.label}</Text>
+            <TouchableOpacity key={type.id} className={`px-4 py-2 rounded-full ${selectedType === type.id ? "bg-[#0065ea]" : "bg-white"}`} onPress={() => setSelectedType(type.id)}>
+              <Text className={`${selectedType === type.id ? "text-white" : "text-[#0065ea]"}`}>{type.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={styles.label}>Description</Text>
-        <TextInput style={styles.textArea} placeholder="Describe the incident..." placeholderTextColor="#0065ea" multiline numberOfLines={4} value={description} onChangeText={setDescription} />
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}><Send size={20} color="white" /><Text style={styles.submitBtnText}>Submit Report</Text></TouchableOpacity>
+        <Text className="text-sm font-medium mt-4 mb-2 text-[#0065ea]">Description</Text>
+        <TextInput className="border border-[#0065ea] rounded-lg p-3 text-base min-h-[100px] text-left align-top text-[#0065ea]" placeholder="Describe the incident..." placeholderTextColor="#0065ea" multiline numberOfLines={4} value={description} onChangeText={setDescription} />
+        <TouchableOpacity className="bg-[#0065ea] flex-row items-center justify-center p-3.5 rounded-xl mt-5 gap-2" onPress={handleSubmit}>
+          <Send size={20} color="white" /><Text className="text-white font-semibold text-base">Submit Report</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
-  label: { fontSize: 14, fontWeight: "500", marginTop: 16, marginBottom: 8, color: "#0065ea" },
-  typeContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  typeBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#fff" },
-  typeBtnActive: { backgroundColor: "#0065ea" },
-  typeBtnText: { color: "#0065ea" },
-  typeBtnTextActive: { color: "#fff" },
-  textArea: { borderWidth: 1, borderColor: "#0065ea", borderRadius: 8, padding: 12, fontSize: 16, minHeight: 100, textAlignVertical: "top", color: "#0065ea" },
-  submitBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0065ea", padding: 14, borderRadius: 12, marginTop: 20, gap: 8 },
-  submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-});

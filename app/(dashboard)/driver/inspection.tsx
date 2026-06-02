@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, CheckCircle, Circle } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getInspectionItems } from "../../services/driverService";
 
@@ -30,34 +30,27 @@ export default function Inspection() {
     else { Alert.alert("Incomplete", "Please complete all checks before starting trip"); }
   };
 
-  if (loading) return <SafeAreaView style={{ flex: 1, justifyContent: "center", backgroundColor: "#fff" }}><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
+  if (loading) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar style="dark" />
-      <View style={styles.header}><TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity><Text style={styles.headerTitle}>Vehicle Inspection</Text><View style={{ width: 40 }} /></View>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <View className="flex-row justify-between px-4 py-3 bg-white border-b border-gray-50">
+        <TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity>
+        <Text className="text-lg font-semibold text-[#0065ea]">Vehicle Inspection</Text>
+        <View className="w-10" />
+      </View>
+      <ScrollView contentContainerClassName="p-4">
         {items.map(item => (
-          <TouchableOpacity key={item.id} style={styles.checkItem} onPress={() => toggle(item.id)}>
+          <TouchableOpacity key={item.id} className="flex-row items-center gap-3 bg-white p-4 rounded-xl mb-3" onPress={() => toggle(item.id)}>
             {checks[item.id] ? <CheckCircle size={24} color="#00a652" /> : <Circle size={24} color="#0065ea" />}
-            <Text style={styles.checkLabel}>{item.label}</Text>
+            <Text className="text-base font-medium text-[#0065ea]">{item.label}</Text>
           </TouchableOpacity>
         ))}
-        <TouchableOpacity style={[styles.submitBtn, !allChecked && styles.disabledBtn]} onPress={confirmTrip} disabled={!allChecked}>
-          <Text style={styles.submitBtnText}>{allChecked ? "All Good, Start Trip" : "Complete All Checks"}</Text>
+        <TouchableOpacity className={`p-4 rounded-xl items-center mt-6 ${allChecked ? "bg-[#0065ea]" : "bg-[#ff4b00]"}`} onPress={confirmTrip} disabled={!allChecked}>
+          <Text className="text-white font-semibold text-base">{allChecked ? "All Good, Start Trip" : "Complete All Checks"}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
-  checkItem: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12 },
-  checkLabel: { fontSize: 16, fontWeight: "500", color: "#0065ea" },
-  submitBtn: { backgroundColor: "#0065ea", padding: 16, borderRadius: 12, alignItems: "center", marginTop: 24 },
-  disabledBtn: { backgroundColor: "#ff4b00" },
-  submitBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-});
