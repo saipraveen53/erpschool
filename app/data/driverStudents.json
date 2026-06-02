@@ -1,0 +1,12 @@
+{
+  "students": [
+    { "id": 1, "name": "Aarav Sharma", "class": "5A", "pickupPoint": "Raj Nagar", "phone": "9876543210", "status": "pending" },
+    { "id": 2, "name": "Vihaan Kumar", "class": "5B", "pickupPoint": "Raj Nagar", "phone": "9876543211", "status": "pending" },
+    { "id": 3, "name": "Sai Reddy", "class": "6A", "pickupPoint": "Indira Colony", "phone": "9876543212", "status": "pending" },
+    { "id": 4, "name": "Ananya Singh", "class": "6B", "pickupPoint": "Indira Colony", "phone": "9876543213", "status": "pending" },
+    { "id": 5, "name": "Diya Patel", "class": "7A", "pickupPoint": "Sai Nagar", "phone": "9876543214", "status": "pending" },
+    { "id": 6, "name": "Arjun Nair", "class": "7B", "pickupPoint": "Sai Nagar", "phone": "9876543215", "status": "pending" },
+    { "id": 7, "name": "Rohan Verma", "class": "8A", "pickupPoint": "Shivaji Park", "phone": "9876543216", "status": "pending" },
+    { "id": 8, "name": "Ishita Gupta", "class": "8B", "pickupPoint": "Shivaji Park", "phone": "9876543217", "status": "pending" }
+  ]
+}

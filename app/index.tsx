@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRootNavigationState, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
@@ -13,23 +14,39 @@ export default function Index() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Cleanup timeout on unmount
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
   useEffect(() => {
-    // Wait for root navigation to be ready AND auth to finish loading
     if (!rootNavigationState?.key || isLoading) return;
     if (hasNavigated) return;
 
-    // Defer navigation to next event loop to ensure router is fully ready
-    timeoutRef.current = setTimeout(() => {
-      if (!rootNavigationState?.key) return; // safety check again
+    timeoutRef.current = setTimeout(async () => {
+      if (!rootNavigationState?.key) return;
 
-      if (isAuthenticated && user) {
-        const role = user.role?.toUpperCase();
+      // Priority 1: AuthContext user
+      let role = user?.role?.toUpperCase();
+
+      // Priority 2: If user not available, read directly from AsyncStorage
+      if (!role) {
+        try {
+          const storedAuth = await AsyncStorage.getItem("authenticated");
+          const storedRole = await AsyncStorage.getItem("userRole");
+          const storedToken = await AsyncStorage.getItem("userToken");
+
+          if (storedAuth === "true" && storedToken && storedRole) {
+            role = storedRole.toUpperCase();
+            console.log("🔍 Retrieved role from AsyncStorage:", role);
+          }
+        } catch (err) {
+          console.error("Failed to read AsyncStorage in index:", err);
+        }
+      }
+
+      if (role) {
+        console.log("🔍 Navigating to role:", role);
         switch (role) {
           case "SUPER_ADMIN":
             router.replace("/(dashboard)/super-admin");
@@ -68,10 +85,11 @@ export default function Index() {
             router.replace("/(dashboard)/admin");
         }
       } else {
+        // No valid role → go to public home
         router.replace("/(public)/home");
       }
       setHasNavigated(true);
-    }, 0);
+    }, 100);
   }, [isAuthenticated, isLoading, user, rootNavigationState?.key, hasNavigated]);
 
   return (
