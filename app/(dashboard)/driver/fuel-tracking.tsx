@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Fuel, Save } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { addFuelLog } from "../../services/driverService";
 
@@ -20,32 +20,27 @@ export default function FuelTracking() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar style="dark" />
-      <View style={styles.header}><TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity><Text style={styles.headerTitle}>Fuel Tracking</Text><View style={{ width: 40 }} /></View>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <View style={styles.card}>
-          <Fuel size={32} color="#0065ea" style={{ alignSelf: "center", marginBottom: 16 }} />
-          <Text style={styles.label}>Liters filled</Text>
-          <TextInput style={styles.input} placeholder="e.g., 40" placeholderTextColor="#0065ea" keyboardType="numeric" value={liters} onChangeText={setLiters} />
-          <Text style={styles.label}>Amount (₹)</Text>
-          <TextInput style={styles.input} placeholder="e.g., 5000" placeholderTextColor="#0065ea" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-          <Text style={styles.label}>Odometer reading (km) - optional</Text>
-          <TextInput style={styles.input} placeholder="e.g., 12500" placeholderTextColor="#0065ea" keyboardType="numeric" value={odometer} onChangeText={setOdometer} />
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}><Save size={20} color="white" /><Text style={styles.saveBtnText}>Save Log</Text></TouchableOpacity>
+      <View className="flex-row justify-between px-4 py-3 bg-white border-b border-gray-50">
+        <TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity>
+        <Text className="text-lg font-semibold text-[#0065ea]">Fuel Tracking</Text>
+        <View className="w-10" />
+      </View>
+      <ScrollView contentContainerClassName="p-4">
+        <View className="bg-white rounded-2xl p-5 shadow-sm">
+          <Fuel size={32} color="#0065ea" className="self-center mb-4" />
+          <Text className="text-sm font-medium mt-3 mb-1 text-[#0065ea]">Liters filled</Text>
+          <TextInput className="border border-[#0065ea] rounded-lg p-3 text-base text-[#0065ea]" placeholder="e.g., 40" placeholderTextColor="#0065ea" keyboardType="numeric" value={liters} onChangeText={setLiters} />
+          <Text className="text-sm font-medium mt-3 mb-1 text-[#0065ea]">Amount (₹)</Text>
+          <TextInput className="border border-[#0065ea] rounded-lg p-3 text-base text-[#0065ea]" placeholder="e.g., 5000" placeholderTextColor="#0065ea" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+          <Text className="text-sm font-medium mt-3 mb-1 text-[#0065ea]">Odometer reading (km) - optional</Text>
+          <TextInput className="border border-[#0065ea] rounded-lg p-3 text-base text-[#0065ea]" placeholder="e.g., 12500" placeholderTextColor="#0065ea" keyboardType="numeric" value={odometer} onChangeText={setOdometer} />
+          <TouchableOpacity className="bg-[#0065ea] flex-row items-center justify-center p-3.5 rounded-xl mt-5 gap-2" onPress={handleSave}>
+            <Save size={20} color="white" /><Text className="text-white font-semibold text-base">Save Log</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#0065ea" },
-  card: { backgroundColor: "#fff", borderRadius: 16, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, elevation: 1 },
-  label: { fontSize: 14, fontWeight: "500", marginTop: 12, marginBottom: 4, color: "#0065ea" },
-  input: { borderWidth: 1, borderColor: "#0065ea", borderRadius: 8, padding: 12, fontSize: 16, color: "#0065ea" },
-  saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#0065ea", padding: 14, borderRadius: 12, marginTop: 20, gap: 8 },
-  saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-});
