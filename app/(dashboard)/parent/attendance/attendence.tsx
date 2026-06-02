@@ -6,10 +6,11 @@ import {
   Award,
   Calendar,
   Clock,
+  FileText,
   Filter,
   Info,
   Sparkles,
-  X
+  X,
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -309,6 +310,28 @@ export default function AttendanceAnalyticsDashboard() {
               </View>
             </View>
           </Animated.View>
+
+          {/* NEW CRITICAL FEATURE: Mobile-Only Leave Request Action Card Button */}
+          {!isDesktop && (
+            <Animated.View style={[styles.mobileLeaveActionContainer, { opacity: fadeAnim }]}>
+              <TouchableOpacity
+                style={styles.mobileLeaveActionBtn}
+                onPress={() => router.push("/(dashboard)/parent/attendance/leave-request")}
+                activeOpacity={0.85}
+              >
+                <View style={styles.mobileBtnLeftCluster}>
+                  <View style={styles.mobileBtnIconBackdrop}>
+                    <FileText size={18} color={THEME.white} />
+                  </View>
+                  <View>
+                    <Text style={styles.mobileBtnMainText}>Apply Student Leave Form</Text>
+                    <Text style={styles.mobileBtnSubText}>File medical, casual, or emergency logs</Text>
+                  </View>
+                </View>
+                <Sparkles size={16} color={THEME.primary} />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
 
           {/* Conditional Legal Warning Bar Ticker */}
           {attendanceSummary.percentage > attendanceSummary.warningLimit && (
@@ -717,6 +740,49 @@ const styles = StyleSheet.create({
   summaryBadgeChipText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  mobileLeaveActionContainer: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    shadowColor: THEME.darkAccent,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  mobileLeaveActionBtn: {
+    backgroundColor: THEME.white,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(160, 82, 45, 0.06)",
+  },
+  mobileBtnLeftCluster: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  mobileBtnIconBackdrop: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: THEME.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mobileBtnMainText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: THEME.textDark,
+  },
+  mobileBtnSubText: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    marginTop: 2,
   },
   warningAlertBannerWrapper: {
     backgroundColor: THEME.primary,
