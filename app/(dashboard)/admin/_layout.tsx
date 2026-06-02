@@ -730,57 +730,63 @@ function Sidebar({
         )}
       </ScrollView>
 
-      {/* LOGOUT */}
+{/* LOGOUT */}
 
-      <View
+<View
+  style={{
+    borderTopWidth: 1,
+    borderTopColor: "#EFEFEF",
+
+    paddingTop: 12,
+    paddingBottom: 10,
+  }}
+>
+  <TouchableOpacity
+    activeOpacity={0.85}
+    onPress={() => {
+      // GO BACK TO PREVIOUS SCREEN
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        // FALLBACK TO LOGIN/HOME
+        router.replace("/");
+      }
+    }}
+    style={{
+      flexDirection: "row",
+
+      alignItems: "center",
+
+      paddingVertical: 13,
+      paddingHorizontal: 14,
+
+      borderRadius: 16,
+
+      backgroundColor: "#FEE2E2",
+    }}
+  >
+    <LogOut
+      size={20}
+      color="#DC2626"
+    />
+
+    {!collapsed && (
+      <Text
         style={{
-          borderTopWidth: 1,
-          borderTopColor: "#EFEFEF",
+          marginLeft: 14,
 
-          paddingTop: 12,
-          paddingBottom: 10,
+          fontSize: 14,
+
+          fontWeight: "700",
+
+          color: "#DC2626",
         }}
       >
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => {
-            router.replace("/");
-          }}
-          style={{
-            flexDirection: "row",
-
-            alignItems: "center",
-
-            paddingVertical: 13,
-            paddingHorizontal: 14,
-
-            borderRadius: 16,
-
-            backgroundColor: "#FEE2E2",
-          }}
-        >
-          <LogOut
-            size={20}
-            color="#DC2626"
-          />
-
-          {!collapsed && (
-            <Text
-              style={{
-                marginLeft: 14,
-
-                fontSize: 14,
-
-                fontWeight: "700",
-
-                color: "#DC2626",
-              }}
-            >
-              Logout
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        Logout
+      </Text>
+    )}
+  </TouchableOpacity>
+</View>
     </View>
   );
 }
