@@ -1,144 +1,84 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AlertCircle, ArrowLeft, CheckCircle, Search, User, XCircle } from "lucide-react-native";
+import { ArrowLeft, CheckCircle, Search, User, XCircle } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const attendanceData = [
-  { id: 1, name: "Aarav Sharma", status: "present", time: "7:45 AM" },
-  { id: 2, name: "Vihaan Kumar", status: "present", time: "7:45 AM" },
-  { id: 3, name: "Sai Reddy", status: "absent", time: "-" },
-  { id: 4, name: "Ananya Singh", status: "present", time: "7:55 AM" },
-  { id: 5, name: "Diya Patel", status: "present", time: "8:05 AM" },
-  { id: 6, name: "Arjun Nair", status: "absent", time: "-" },
-  { id: 7, name: "Rohan Verma", status: "present", time: "8:15 AM" },
-  { id: 8, name: "Ishita Gupta", status: "present", time: "8:15 AM" },
-];
+import { getDriverAttendance, updateAttendanceStatus } from "../../../services/driverService";
 
 export default function AttendanceConfirmation() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [attendance, setAttendance] = useState(attendanceData);
+  const [attendance, setAttendance] = useState([]);
+  const [loading, setLoading] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const cardAnimations = useRef(attendanceData.map(() => new Animated.Value(0))).current;
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-    cardAnimations.forEach((anim, idx) => {
-      Animated.spring(anim, { toValue: 1, delay: idx * 80, useNativeDriver: true, tension: 50 }).start();
-    });
-  }, []);
-
-  const toggleStatus = (id: number) => {
-    setAttendance((prev) =>
-      prev.map((student) =>
-        student.id === id
-          ? {
-              ...student,
-              status: student.status === "present" ? "absent" : "present",
-              time: student.status === "present" ? "-" : new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            }
-          : student
-      )
-    );
+  const loadData = async () => {
+    const data = await getDriverAttendance();
+    setAttendance(data);
+    setLoading(false);
   };
 
-  const filteredStudents = attendance.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
-  const presentCount = attendance.filter((s) => s.status === "present").length;
-  const totalCount = attendance.length;
+  useEffect(() => { loadData(); }, []);
+
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === "present" ? "absent" : "present";
+    await updateAttendanceStatus(id, newStatus);
+    loadData();
+  };
+
+  useEffect(() => { Animated.timing(fadeAnim, { toValue: 1, duration: 600 }).start(); }, []);
+
+  if (loading) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
+
+  const filtered = attendance.filter(s => s.name.toLowerCase().includes(search.toLowerCase()));
+  const present = attendance.filter(s => s.status === "present").length;
+  const total = attendance.length;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar style="dark" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Attendance</Text>
-        <View style={{ width: 40 }} />
+      <View className="flex-row justify-between px-4 py-3 bg-white border-b border-gray-50">
+        <TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity>
+        <Text className="text-lg font-semibold text-[#0065ea]">Attendance</Text>
+        <View className="w-10" />
       </View>
-
-      <Animated.View style={[styles.summaryCard, { opacity: fadeAnim }]}>
-        <View style={styles.summaryItem}>
-          <CheckCircle size={24} color="#16a34a" />
-          <Text style={styles.summaryValue}>{presentCount}</Text>
-          <Text style={styles.summaryLabel}>Present</Text>
+      <Animated.View className="flex-row bg-white mx-4 my-4 p-4 rounded-xl justify-around" style={{ opacity: fadeAnim }}>
+        <View className="items-center flex-1">
+          <CheckCircle size={24} color="#00a652" />
+          <Text className="text-xl font-bold mt-1 text-[#0065ea]">{present}</Text>
+          <Text className="text-sm text-gray-500">Present</Text>
         </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <XCircle size={24} color="#dc2626" />
-          <Text style={styles.summaryValue}>{totalCount - presentCount}</Text>
-          <Text style={styles.summaryLabel}>Absent</Text>
-        </View>
-        <View style={styles.summaryDivider} />
-        <View style={styles.summaryItem}>
-          <AlertCircle size={24} color="#f59e0b" />
-          <Text style={styles.summaryValue}>0</Text>
-          <Text style={styles.summaryLabel}>Late</Text>
+        <View className="w-px bg-gray-100" />
+        <View className="items-center flex-1">
+          <XCircle size={24} color="#ff4b00" />
+          <Text className="text-xl font-bold mt-1 text-[#0065ea]">{total - present}</Text>
+          <Text className="text-sm text-gray-500">Absent</Text>
         </View>
       </Animated.View>
-
-      <View style={styles.searchContainer}>
-        <Search size={20} color="#9ca3af" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search student"
-          placeholderTextColor="#9ca3af"
-          value={search}
-          onChangeText={setSearch}
-        />
+      <View className="flex-row items-center bg-white mx-4 mb-4 px-3 py-2.5 rounded-xl border border-[#0065ea]">
+        <Search size={20} color="#0065ea" />
+        <TextInput className="flex-1 ml-2 text-[#0065ea]" placeholder="Search student" placeholderTextColor="#0065ea" value={search} onChangeText={setSearch} />
       </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {filteredStudents.map((student, idx) => (
-          <Animated.View key={student.id} style={[styles.studentCard, { opacity: cardAnimations[idx] }]}>
-            <View style={styles.studentAvatar}>
-              <User size={24} color="#6b7280" />
+      <ScrollView>
+        {filtered.map((student) => (
+          <View key={student.id} className="flex-row items-center bg-white mx-4 mb-2 p-3 rounded-xl">
+            <View className="w-12 h-12 rounded-full bg-gray-50 items-center justify-center">
+              <User size={24} color="#0065ea" />
             </View>
-            <View style={styles.studentInfo}>
-              <Text style={styles.studentName}>{student.name}</Text>
-              {student.status === "present" && <Text style={styles.studentTime}>Picked at {student.time}</Text>}
+            <View className="flex-1 ml-3">
+              <Text className="text-base font-semibold text-[#0065ea]">{student.name}</Text>
+              {student.status === "present" && <Text className="text-xs text-[#00a652] mt-0.5">Boarded at {student.time}</Text>}
             </View>
-            <TouchableOpacity
-              style={[styles.statusBtn, student.status === "present" ? styles.presentBtn : styles.absentBtn]}
-              onPress={() => toggleStatus(student.id)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.statusBtnText}>{student.status === "present" ? "Present" : "Absent"}</Text>
+            <TouchableOpacity className={`px-4 py-2 rounded-full ${student.status === "present" ? "bg-[#00a652]" : "bg-[#ff4b00]"}`} onPress={() => toggleStatus(student.id, student.status)}>
+              <Text className="text-white text-sm">{student.status === "present" ? "Present" : "Absent"}</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         ))}
       </ScrollView>
-
-      <TouchableOpacity style={styles.submitBtn} activeOpacity={0.8}>
-        <Text style={styles.submitBtnText}>Submit Attendance</Text>
+      <TouchableOpacity className="bg-[#0065ea] mx-4 my-4 p-3.5 rounded-xl items-center" onPress={() => { Alert.alert("Submitted", "Attendance saved"); router.back(); }}>
+        <Text className="text-white font-semibold text-base">Submit Attendance</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3f4f6" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
-  backBtn: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#111827" },
-  summaryCard: { flexDirection: "row", backgroundColor: "#ffffff", margin: 16, padding: 16, borderRadius: 12, justifyContent: "space-around" },
-  summaryItem: { alignItems: "center", flex: 1 },
-  summaryValue: { fontSize: 20, fontWeight: "bold", color: "#111827", marginTop: 4 },
-  summaryLabel: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  summaryDivider: { width: 1, backgroundColor: "#e5e7eb" },
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#ffffff", marginHorizontal: 16, marginBottom: 16, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e5e7eb" },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 14, color: "#111827" },
-  studentCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#ffffff", marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 12 },
-  studentAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#f3f4f6", alignItems: "center", justifyContent: "center" },
-  studentInfo: { flex: 1, marginLeft: 12 },
-  studentName: { fontSize: 16, fontWeight: "600", color: "#111827" },
-  studentTime: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  statusBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  presentBtn: { backgroundColor: "#dcfce7" },
-  absentBtn: { backgroundColor: "#fee2e2" },
-  statusBtnText: { fontSize: 12, fontWeight: "500" },
-  submitBtn: { backgroundColor: "#2563eb", margin: 16, padding: 14, borderRadius: 12, alignItems: "center" },
-  submitBtnText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
-});

@@ -1,141 +1,144 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowLeft, Bus, Clock, MapPin, Navigation, Users } from "lucide-react-native";
-import { useEffect, useRef } from "react";
-import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ArrowLeft, Bus, CheckCircle, Clock, ExternalLink, MapPin, Navigation, Users } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Animated, Linking, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const routeData = {
-  name: "Route 101 - East Zone",
-  busNumber: "AP 28 AB 1234",
-  driverName: "Rajesh Kumar",
-  totalStops: 8,
-  totalStudents: 32,
-  estimatedTime: "1 hour 15 min",
-  distance: "24.5 km",
-  stops: [
-    { id: 1, name: "Main School", time: "7:30 AM", students: 0, type: "school" },
-    { id: 2, name: "Raj Nagar", time: "7:45 AM", students: 8, type: "stop" },
-    { id: 3, name: "Indira Colony", time: "7:55 AM", students: 6, type: "stop" },
-    { id: 4, name: "Sai Nagar", time: "8:05 AM", students: 10, type: "stop" },
-    { id: 5, name: "Shivaji Park", time: "8:15 AM", students: 8, type: "stop" },
-  ],
-};
+import { getDriverRoute, markStopCompleted } from "../../../services/driverService";
 
 export default function AssignedRoute() {
   const router = useRouter();
+  const [route, setRoute] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  const stopAnimations = useRef(routeData.stops.map(() => new Animated.Value(0))).current;
+  const headerScale = useRef(new Animated.Value(0.95)).current;
+
+  const loadRoute = async () => {
+    try {
+      const data = await getDriverRoute();
+      setRoute(data);
+    } catch (err) { setError("Failed to load route"); } finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadRoute(); }, []);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
-    ]).start();
+    if (route) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 600 }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 500 }),
+        Animated.spring(headerScale, { toValue: 1, friction: 8 })
+      ]).start();
+    }
+  }, [route]);
 
-    stopAnimations.forEach((anim, idx) => {
-      Animated.timing(anim, { toValue: 1, delay: idx * 100, duration: 400, useNativeDriver: true }).start();
-    });
-  }, []);
+  const markCompleted = async (stopId) => {
+    await markStopCompleted(stopId);
+    loadRoute();
+    Alert.alert("Stop Completed", "Stop marked as completed");
+  };
+
+  const openInMaps = (stopName) => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(stopName)}`);
+
+  if (loading) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
+  if (error || !route) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><Text>{error}</Text><TouchableOpacity onPress={loadRoute}><Text>Retry</Text></TouchableOpacity></SafeAreaView>;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar style="dark" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ArrowLeft size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Assigned Route</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Animated.View style={[styles.routeInfoCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Bus size={32} color="#2563eb" />
-          <Text style={styles.routeName}>{routeData.name}</Text>
-          <Text style={styles.routeDetail}>Bus: {routeData.busNumber}</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Users size={18} color="#6b7280" />
-              <Text style={styles.statValue}>{routeData.totalStudents}</Text>
-              <Text style={styles.statLabel}>Students</Text>
+      <LinearGradient colors={["#fff", "#fff"]} className="flex-row items-center justify-between px-5 py-4 border-b border-gray-100">
+        <TouchableOpacity onPress={() => router.back()}><ArrowLeft size={24} color="#0065ea" /></TouchableOpacity>
+        <Text className="text-xl font-bold text-[#0065ea]">Assigned Route</Text>
+        <View className="w-10" />
+      </LinearGradient>
+      <ScrollView contentContainerClassName="pb-8">
+        <Animated.View className="mx-4 rounded-2xl overflow-hidden shadow-lg" style={{ opacity: fadeAnim, transform: [{ scale: headerScale }] }}>
+          <LinearGradient colors={["#0065ea", "#0065ea"]} className="p-6 items-center">
+            <Bus size={40} color="#fff" />
+            <Text className="text-[22px] font-bold text-white mt-3">{route.name}</Text>
+            <Text className="text-sm text-white mt-1">Bus: {route.busNumber}</Text>
+            <View className="flex-row justify-around w-full mt-6 bg-white/15 rounded-2xl py-3">
+              <View className="items-center flex-1">
+                <View className="w-9 h-9 rounded-full bg-white items-center justify-center mb-1.5">
+                  <Users size={20} color="#0065ea" />
+                </View>
+                <Text className="text-lg font-bold text-white">{route.totalStudents}</Text>
+                <Text className="text-[11px] text-white">Students</Text>
+              </View>
+              <View className="w-px h-[30px] bg-white/30" />
+              <View className="items-center flex-1">
+                <View className="w-9 h-9 rounded-full bg-white items-center justify-center mb-1.5">
+                  <MapPin size={20} color="#0065ea" />
+                </View>
+                <Text className="text-lg font-bold text-white">{route.totalStops}</Text>
+                <Text className="text-[11px] text-white">Stops</Text>
+              </View>
+              <View className="w-px h-[30px] bg-white/30" />
+              <View className="items-center flex-1">
+                <View className="w-9 h-9 rounded-full bg-white items-center justify-center mb-1.5">
+                  <Clock size={20} color="#0065ea" />
+                </View>
+                <Text className="text-lg font-bold text-white">{route.estimatedTime}</Text>
+                <Text className="text-[11px] text-white">Est. Time</Text>
+              </View>
             </View>
-            <View style={styles.statItem}>
-              <MapPin size={18} color="#6b7280" />
-              <Text style={styles.statValue}>{routeData.totalStops}</Text>
-              <Text style={styles.statLabel}>Stops</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Clock size={18} color="#6b7280" />
-              <Text style={styles.statValue}>{routeData.estimatedTime}</Text>
-              <Text style={styles.statLabel}>Est. Time</Text>
-            </View>
-          </View>
+          </LinearGradient>
         </Animated.View>
 
-        <Text style={styles.sectionTitle}>Route Stops</Text>
-        {routeData.stops.map((stop, index) => (
-          <Animated.View key={stop.id} style={[styles.stopCard, { opacity: stopAnimations[index] }]}>
-            <View style={styles.stopNumber}>
-              <Text style={styles.stopNumberText}>{index + 1}</Text>
-              {index < routeData.stops.length - 1 && <View style={styles.stopLine} />}
+        <Text className="text-lg font-bold text-[#0065ea] mx-4 my-4">Route Stops • {route.distance}</Text>
+        {route.stops.map((stop, index) => (
+          <View key={stop.id} className="flex-row bg-white mx-4 mb-3 p-4 rounded-2xl items-center shadow-sm">
+            <View className="w-10 items-center mr-3">
+              <View className={`w-8 h-8 rounded-full bg-white items-center justify-center border border-[#0065ea] ${stop.type === "school" ? "bg-[#ff4b00]" : ""}`}>
+                <Text className="text-sm font-bold text-[#0065ea]">{index + 1}</Text>
+              </View>
+              {index < route.stops.length - 1 && <View className="w-0.5 h-10 bg-gray-100 mt-1" />}
             </View>
-            <View style={styles.stopContent}>
-              <View style={styles.stopHeader}>
-                <Text style={styles.stopName}>{stop.name}</Text>
-                <Text style={styles.stopTime}>{stop.time}</Text>
+            <View className="flex-1">
+              <View className="flex-row justify-between items-center mb-1">
+                <Text className="text-base font-semibold text-[#0065ea]">{stop.name}</Text>
+                <View className="flex-row items-center bg-white px-2 py-1 rounded-full gap-1">
+                  <Clock size={12} color="#0065ea" />
+                  <Text className="text-xs font-medium text-[#0065ea]">{stop.time}</Text>
+                </View>
               </View>
               {stop.students > 0 && (
-                <View style={styles.stopStudents}>
-                  <Users size={14} color="#6b7280" />
-                  <Text style={styles.stopStudentsText}>{stop.students} students</Text>
+                <View className="flex-row items-center gap-1.5 mt-1">
+                  <Users size={14} color="#0065ea" />
+                  <Text className="text-xs text-[#0065ea]">{stop.students} students</Text>
                 </View>
               )}
               {stop.type === "school" && (
-                <View style={styles.schoolBadge}>
-                  <Text style={styles.schoolBadgeText}>School</Text>
+                <View className="bg-[#ff4b00] px-2.5 py-1 rounded-full self-start mt-1.5">
+                  <Text className="text-[11px] font-semibold text-white">School Stop</Text>
                 </View>
               )}
+              <View className="flex-row gap-3 mt-2">
+                {!stop.completed && (
+                  <TouchableOpacity className="flex-row items-center gap-1 bg-[#00a652] px-2.5 py-1 rounded-full" onPress={() => markCompleted(stop.id)}>
+                    <CheckCircle size={16} color="#fff" />
+                    <Text className="text-white text-xs">Complete</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity className="flex-row items-center gap-1 bg-white px-2.5 py-1 rounded-full" onPress={() => openInMaps(stop.name)}>
+                  <ExternalLink size={16} color="#0065ea" />
+                  <Text className="text-[#0065ea] text-xs">Navigate</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <Navigation size={20} color="#9ca3af" />
-          </Animated.View>
+            <Navigation size={20} color="#0065ea" />
+          </View>
         ))}
-
-        <TouchableOpacity style={styles.startBtn} activeOpacity={0.8}>
-          <Navigation size={20} color="white" />
-          <Text style={styles.startBtnText}>Start Navigation</Text>
+        <TouchableOpacity className="mx-4 rounded-3xl overflow-hidden shadow-md mt-2" onPress={() => router.push("/(dashboard)/driver/tracking/gps")}>
+          <LinearGradient colors={["#0065ea", "#0065ea"]} className="flex-row items-center justify-center py-4 gap-3">
+            <Navigation size={20} color="white" />
+            <Text className="text-white font-bold text-base">Start Live Tracking</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3f4f6" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
-  backBtn: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: "600", color: "#111827" },
-  routeInfoCard: { backgroundColor: "#ffffff", margin: 16, padding: 20, borderRadius: 20, alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  routeName: { fontSize: 18, fontWeight: "bold", color: "#111827", marginTop: 12 },
-  routeDetail: { fontSize: 14, color: "#6b7280", marginTop: 4 },
-  statsRow: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginTop: 20 },
-  statItem: { alignItems: "center" },
-  statValue: { fontSize: 18, fontWeight: "bold", color: "#111827", marginTop: 4 },
-  statLabel: { fontSize: 12, color: "#6b7280" },
-  sectionTitle: { fontSize: 16, fontWeight: "600", color: "#111827", marginHorizontal: 16, marginBottom: 12 },
-  stopCard: { flexDirection: "row", backgroundColor: "#ffffff", marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 12, alignItems: "center" },
-  stopNumber: { width: 32, alignItems: "center", position: "relative" },
-  stopNumberText: { width: 24, height: 24, borderRadius: 12, backgroundColor: "#2563eb", color: "#ffffff", textAlign: "center", textAlignVertical: "center", fontSize: 12, fontWeight: "bold", overflow: "hidden" },
-  stopLine: { width: 2, height: 40, backgroundColor: "#d1d5db", marginTop: 4 },
-  stopContent: { flex: 1, marginLeft: 12 },
-  stopHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  stopName: { fontSize: 16, fontWeight: "500", color: "#111827" },
-  stopTime: { fontSize: 12, color: "#6b7280" },
-  stopStudents: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-  stopStudentsText: { fontSize: 12, color: "#6b7280", marginLeft: 4 },
-  schoolBadge: { backgroundColor: "#dbeafe", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, alignSelf: "flex-start", marginTop: 4 },
-  schoolBadgeText: { fontSize: 10, color: "#2563eb", fontWeight: "500" },
-  startBtn: { backgroundColor: "#2563eb", flexDirection: "row", alignItems: "center", justifyContent: "center", margin: 16, padding: 16, borderRadius: 12, gap: 8 },
-  startBtnText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
-});

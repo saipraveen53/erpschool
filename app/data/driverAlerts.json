@@ -1,0 +1,6 @@
+{
+  "alerts": [
+    { "id": 1, "message": "Traffic jam on Main Road", "time": "10 min ago", "type": "warning" },
+    { "id": 2, "message": "Student reported absent - Rohan S.", "time": "20 min ago", "type": "info" }
+  ]
+}

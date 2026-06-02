@@ -1,3 +1,4 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -5,270 +6,286 @@ import {
   Bell,
   Bus,
   Calendar,
+  CheckCircle,
   Clock,
+  Fuel,
+  LogOut,
   MapPin,
   Navigation,
+  Play,
+  Square,
+  User,
   UserCheck,
   Users,
+  Volume2,
+  VolumeX,
 } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
+  Platform,
   RefreshControl,
   ScrollView,
-  StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
-
-const assignedRoute = {
-  id: "R-101",
-  name: "Route 101 - East Zone",
-  stops: ["Main School", "Raj Nagar", "Indira Colony", "Sai Nagar", "Shivaji Park"],
-  totalStudents: 32,
-  distance: "24.5 km",
-  estimatedTime: "1 hour 15 min",
-};
-
-const todaySchedule = {
-  pickup: "7:30 AM",
-  drop: "4:30 PM",
-};
-
-const recentAlerts = [
-  { id: 1, message: "Traffic jam on Main Road", time: "10 min ago", type: "warning" },
-  { id: 2, message: "Student reported absent - Rohan S.", time: "20 min ago", type: "info" },
-];
+import {
+  endTrip,
+  getBusCapacity,
+  getDriverAlerts,
+  getDriverRoute,
+  getDriverStudents,
+  getTodaySchedule,
+  startTrip,
+  syncOfflineQueue,
+} from "../../services/driverService";
+import { getUnreadCountForRole } from "../../services/notificationService";
 
 export default function DriverDashboard() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { width } = useWindowDimensions();
+  const isWeb = Platform.OS === "web";
+
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [route, setRoute] = useState(null);
+  const [studentCount, setStudentCount] = useState(0);
+  const [alerts, setAlerts] = useState([]);
+  const [schedule, setSchedule] = useState({ pickup: "", drop: "" });
+  const [onboardCount, setOnboardCount] = useState(0);
+  const [busCapacity, setBusCapacity] = useState(32);
+  const [tripActive, setTripActive] = useState(false);
+  const [silentMode, setSilentMode] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Define menuItems BEFORE using it in useRef
-  const menuItems = [
-    {
-      title: "Assigned Route",
-      icon: <MapPin size={24} color="#2563eb" />,
-      description: "View your route and stops",
-      onPress: () => router.push("/(dashboard)/driver/routes/assigned"),
-      bgColor: "#dbeafe",
-    },
-    {
-      title: "Student Pickup List",
-      icon: <Users size={24} color="#16a34a" />,
-      description: "View students on your route",
-      onPress: () => router.push("/(dashboard)/driver/students/pickup-list"),
-      bgColor: "#dcfce7",
-    },
-    {
-      title: "Attendance Confirmation",
-      icon: <UserCheck size={24} color="#ea580c" />,
-      description: "Mark student pickup/drop",
-      onPress: () => router.push("/(dashboard)/driver/attendance/confirmation"),
-      bgColor: "#ffedd5",
-    },
-    {
-      title: "Live GPS Tracking",
-      icon: <Navigation size={24} color="#7c3aed" />,
-      description: "Share live location",
-      onPress: () => router.push("/(dashboard)/driver/tracking/gps"),
-      bgColor: "#ede9fe",
-    },
-    {
-      title: "Vehicle Reporting",
-      icon: <Bus size={24} color="#dc2626" />,
-      description: "Report issues or maintenance",
-      onPress: () => router.push("/(dashboard)/driver/vehicle/reporting"),
-      bgColor: "#fee2e2",
-    },
-    {
-      title: "Emergency Alert",
-      icon: <AlertTriangle size={24} color="#b91c1c" />,
-      description: "Send emergency alert",
-      onPress: () => router.push("/(dashboard)/driver/alerts/emergency"),
-      bgColor: "#fecaca",
-    },
-  ];
-
-  // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  const menuAnimations = useRef(menuItems.map(() => new Animated.Value(0))).current;
-  const alertAnimations = useRef(recentAlerts.map(() => new Animated.Value(0))).current;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start();
+  const menuItems = [
+    { title: "Assigned Route", icon: <MapPin size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/routes/assigned") },
+    { title: "Student Pickup List", icon: <Users size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/students/pickup-list") },
+    { title: "Attendance", icon: <UserCheck size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/attendance/confirmation") },
+    { title: "Live GPS", icon: <Navigation size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/tracking/gps") },
+    { title: "Vehicle Report", icon: <Bus size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/vehicle/reporting") },
+    { title: "Emergency", icon: <AlertTriangle size={24} color="#ff4b00" />, onPress: () => router.push("/(dashboard)/driver/alerts/emergency") },
+    { title: "Inspection", icon: <CheckCircle size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/inspection") },
+    { title: "Fuel Tracking", icon: <Fuel size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/fuel-tracking") },
+    { title: "My Profile", icon: <User size={24} color="#0065ea" />, onPress: () => router.push("/(dashboard)/driver/profile") },
+  ];
 
-    // Stagger menu cards
-    menuAnimations.forEach((anim, idx) => {
-      Animated.spring(anim, {
-        toValue: 1,
-        delay: idx * 100,
-        useNativeDriver: true,
-        tension: 50,
-      }).start();
-    });
+  const columns = isWeb ? (width >= 1024 ? 4 : width >= 768 ? 3 : 2) : 2;
+  const cardWidth = `${(100 / columns) - 2}%`;
 
-    alertAnimations.forEach((anim, idx) => {
-      Animated.timing(anim, {
-        toValue: 1,
-        delay: 500 + idx * 100,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, []);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
+  const loadData = async () => {
+    try {
+      const [routeData, studentsData, alertsData, scheduleData, capacityData] = await Promise.all([
+        getDriverRoute(), getDriverStudents(), getDriverAlerts(), getTodaySchedule(), getBusCapacity()
+      ]);
+      setRoute(routeData);
+      setStudentCount(studentsData.length);
+      setAlerts(alertsData);
+      setSchedule(scheduleData);
+      setOnboardCount(studentsData.filter(s => s.status === "picked").length);
+      setBusCapacity(capacityData.capacity);
+    } catch (err) {
+      setError("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const loadUnreadCount = async () => {
+    if (user?.role) {
+      const count = await getUnreadCountForRole(user.role);
+      setUnreadCount(count);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    syncOfflineQueue();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUnreadCount();
+    }, [user])
+  );
+
+  useEffect(() => {
+    if (!loading && !error) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [loading, error]);
+
+  const handleStartTrip = async () => {
+    if (silentMode) {
+      Alert.alert("Silent Mode", "Please disable silent mode to start trip");
+      return;
+    }
+    await startTrip();
+    setTripActive(true);
+    Alert.alert("Trip Started", "Live tracking now active");
+  };
+
+  const handleEndTrip = async () => {
+    await endTrip();
+    setTripActive(false);
+    Alert.alert("Trip Ended", "Thank you for driving safely");
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  if (loading) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><ActivityIndicator size="large" color="#0065ea" /></SafeAreaView>;
+  if (error) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><Text>{error}</Text><TouchableOpacity onPress={loadData} className="bg-[#0065ea] p-3 rounded-lg mt-4"><Text className="text-white">Retry</Text></TouchableOpacity></SafeAreaView>;
+
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <StatusBar style="dark" />
       <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadData} />}
+        contentContainerStyle={isWeb ? { maxWidth: 1200, alignSelf: "center", width: "100%" } : undefined}
       >
-        {/* Header */}
-        <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Text style={styles.greeting}>Hello, {user?.name || "Driver"}!</Text>
-          <Text style={styles.subGreeting}>Welcome to your dashboard</Text>
-        </Animated.View>
-
-        {/* Schedule Card */}
-        <Animated.View style={[styles.scheduleCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={styles.scheduleHeader}>
-            <Calendar size={20} color="#2563eb" />
-            <Text style={styles.scheduleTitle}>Today's Schedule</Text>
+        <Animated.View className="px-5 pt-5 pb-3 bg-white border-b border-gray-100 flex-row justify-between items-center" style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <View>
+            <Text className="text-2xl font-bold text-[#0065ea]">Hello, {user?.fullName || user?.username || "Driver"}!</Text>
+            <Text className="text-sm text-[#0065ea] mt-1">Welcome to your dashboard</Text>
           </View>
-          <View style={styles.scheduleRow}>
-            <View style={styles.scheduleItem}>
-              <Clock size={18} color="#6b7280" />
-              <Text style={styles.scheduleLabel}>Pickup Time</Text>
-              <Text style={styles.scheduleValue}>{todaySchedule.pickup}</Text>
-            </View>
-            <View style={styles.scheduleDivider} />
-            <View style={styles.scheduleItem}>
-              <Clock size={18} color="#6b7280" />
-              <Text style={styles.scheduleLabel}>Drop Time</Text>
-              <Text style={styles.scheduleValue}>{todaySchedule.drop}</Text>
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* Route Card */}
-        <Animated.View style={[styles.routeCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={styles.routeHeader}>
-            <Bus size={20} color="#ffffff" />
-            <Text style={styles.routeTitle}>Assigned Route</Text>
-            <TouchableOpacity onPress={() => router.push("/(dashboard)/driver/routes/assigned")}>
-              <Text style={styles.viewAllBtn}>View</Text>
+          <View className="flex-row items-center gap-3">
+            <TouchableOpacity onPress={() => router.push("/(dashboard)/common/notifications")} className="relative p-1">
+              <Bell size={24} color="#0065ea" />
+              {unreadCount > 0 && (
+                <View className="absolute -top-1.5 -right-2 bg-[#ff4b00] rounded-full min-w-[18px] h-[18px] justify-center items-center px-1">
+                  <Text className="text-white text-[10px] font-bold">{unreadCount > 9 ? "9+" : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} className="p-1">
+              <LogOut size={22} color="#0065ea" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.routeName}>{assignedRoute.name}</Text>
-          <View style={styles.routeStats}>
-            <View style={styles.routeStat}>
-              <Users size={16} color="#bfdbfe" />
-              <Text style={styles.routeStatText}>{assignedRoute.totalStudents} Students</Text>
+        </Animated.View>
+
+        <View className="flex-row justify-between items-center bg-white mx-4 my-4 p-3 rounded-xl shadow-sm">
+          <View className="flex-row items-center gap-2">
+            {silentMode ? <VolumeX size={20} color="#0065ea" /> : <Volume2 size={20} color="#0065ea" />}
+            <Text className="text-sm text-[#0065ea]">Silent Mode (no inputs while driving)</Text>
+          </View>
+          <Switch
+            value={silentMode}
+            onValueChange={setSilentMode}
+            trackColor={{ false: "#e2e8f0", true: "#0065ea" }}
+            thumbColor={silentMode ? "#fff" : "#ff4b00"}
+          />
+        </View>
+
+        <View className="bg-white mx-4 p-4 rounded-2xl">
+          <Text className="text-sm font-medium text-[#0065ea]">Onboard Students</Text>
+          <Text className="text-[28px] font-bold text-[#0065ea] my-1">{onboardCount} / {busCapacity}</Text>
+          <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <View className="h-full bg-[#0065ea]" style={{ width: `${(onboardCount / busCapacity) * 100}%` }} />
+          </View>
+        </View>
+
+        <View className="mx-4 mt-2">
+          {!tripActive ? (
+            <TouchableOpacity className="bg-[#00a652] flex-row items-center justify-center p-3.5 rounded-xl gap-2" onPress={handleStartTrip}>
+              <Play size={20} color="white" /><Text className="text-white font-semibold text-base">Start Trip</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity className="bg-[#ff4b00] flex-row items-center justify-center p-3.5 rounded-xl gap-2" onPress={handleEndTrip}>
+              <Square size={20} color="white" /><Text className="text-white font-semibold text-base">End Trip</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Animated.View className="bg-white mx-4 my-4 p-4 rounded-2xl shadow-sm" style={{ opacity: fadeAnim }}>
+          <View className="flex-row items-center gap-2 mb-3">
+            <Calendar size={20} color="#0065ea" />
+            <Text className="text-base font-semibold text-[#0065ea]">Today's Schedule</Text>
+          </View>
+          <View className="flex-row justify-around">
+            <View className="items-center flex-1">
+              <Clock size={18} color="#0065ea" />
+              <Text className="text-xs text-[#0065ea] mt-1">Pickup</Text>
+              <Text className="text-base font-bold text-[#0065ea] mt-0.5">{schedule.pickup}</Text>
             </View>
-            <View style={styles.routeStat}>
-              <MapPin size={16} color="#bfdbfe" />
-              <Text style={styles.routeStatText}>{assignedRoute.distance}</Text>
+            <View className="w-px bg-gray-100" />
+            <View className="items-center flex-1">
+              <Clock size={18} color="#0065ea" />
+              <Text className="text-xs text-[#0065ea] mt-1">Drop</Text>
+              <Text className="text-base font-bold text-[#0065ea] mt-0.5">{schedule.drop}</Text>
             </View>
           </View>
         </Animated.View>
 
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.gridContainer}>
-          {menuItems.map((item, index) => (
-            <Animated.View
-              key={index}
-              style={[
-                styles.menuCardWrapper,
-                { opacity: menuAnimations[index], transform: [{ scale: menuAnimations[index] }] },
-              ]}
-            >
-              <TouchableOpacity style={styles.menuCard} onPress={item.onPress} activeOpacity={0.7}>
-                <View style={[styles.menuIcon, { backgroundColor: item.bgColor }]}>{item.icon}</View>
-                <Text style={styles.menuTitle}>{item.title}</Text>
-                <Text style={styles.menuDescription}>{item.description}</Text>
+        {route && (
+          <Animated.View className="bg-[#0065ea] mx-4 mt-4 p-4 rounded-2xl" style={{ opacity: fadeAnim }}>
+            <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center">
+                <Bus size={20} color="#fff" />
+                <Text className="text-base font-semibold text-white ml-2 flex-1">Assigned Route</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push("/(dashboard)/driver/routes/assigned")}>
+                <Text className="text-white text-sm">View</Text>
               </TouchableOpacity>
-            </Animated.View>
+            </View>
+            <Text className="text-lg font-bold text-white mt-3">{route.name}</Text>
+            <View className="flex-row gap-4 mt-3">
+              <View className="flex-row items-center gap-1">
+                <Users size={16} color="#fff" />
+                <Text className="text-white text-xs">{studentCount} Students</Text>
+              </View>
+              <View className="flex-row items-center gap-1">
+                <MapPin size={16} color="#fff" />
+                <Text className="text-white text-xs">{route.distance}</Text>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        <Text className="text-lg font-semibold text-[#0065ea] mx-4 mt-6 mb-3">Quick Actions</Text>
+        <View className={`flex-row flex-wrap justify-between px-3 ${isWeb ? "max-w-5xl self-center w-full" : ""}`}>
+          {menuItems.map((item, index) => (
+            <View key={index} style={{ width: cardWidth, marginBottom: 12 }}>
+              <TouchableOpacity className="bg-white p-4 rounded-2xl items-center gap-2 shadow-sm" onPress={item.onPress}>
+                {item.icon}
+                <Text className="text-sm font-semibold text-[#0065ea]">{item.title}</Text>
+              </TouchableOpacity>
+            </View>
           ))}
         </View>
 
-        {/* Alerts Section */}
-        <Animated.View style={[styles.alertsSection, { opacity: fadeAnim }]}>
-          <View style={styles.alertsHeader}>
-            <Bell size={20} color="#111827" />
-            <Text style={styles.alertsTitle}>Recent Alerts</Text>
+        <Animated.View className="bg-white mx-4 my-4 p-4 rounded-2xl" style={{ opacity: fadeAnim }}>
+          <View className="flex-row items-center gap-2 mb-3">
+            <Bell size={20} color="#0065ea" />
+            <Text className="text-base font-semibold text-[#0065ea]">Recent Alerts</Text>
           </View>
-          {recentAlerts.map((alert, idx) => (
-            <Animated.View key={alert.id} style={[styles.alertCard, { opacity: alertAnimations[idx] }]}>
-              <View style={[styles.alertDot, { backgroundColor: alert.type === "warning" ? "#f59e0b" : "#3b82f6" }]} />
-              <View style={styles.alertContent}>
-                <Text style={styles.alertMessage}>{alert.message}</Text>
-                <Text style={styles.alertTime}>{alert.time}</Text>
+          {alerts.map(alert => (
+            <View key={alert.id} className="flex-row items-center py-3 border-b border-white">
+              <View className={`w-2 h-2 rounded-full mr-3 ${alert.type === "warning" ? "bg-[#ff4b00]" : "bg-[#0065ea]"}`} />
+              <View className="flex-1">
+                <Text className="text-sm text-[#0065ea]">{alert.message}</Text>
+                <Text className="text-[11px] text-[#0065ea] mt-0.5">{alert.time}</Text>
               </View>
-            </Animated.View>
+            </View>
           ))}
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3f4f6" },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
-  greeting: { fontSize: 24, fontWeight: "bold", color: "#111827" },
-  subGreeting: { fontSize: 14, color: "#6b7280", marginTop: 4 },
-  scheduleCard: { backgroundColor: "#ffffff", marginHorizontal: 16, marginTop: 16, padding: 16, borderRadius: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  scheduleHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  scheduleTitle: { fontSize: 16, fontWeight: "600", color: "#111827", marginLeft: 8 },
-  scheduleRow: { flexDirection: "row", justifyContent: "space-around" },
-  scheduleItem: { alignItems: "center", flex: 1 },
-  scheduleLabel: { fontSize: 12, color: "#6b7280", marginTop: 4 },
-  scheduleValue: { fontSize: 16, fontWeight: "bold", color: "#111827", marginTop: 2 },
-  scheduleDivider: { width: 1, backgroundColor: "#e5e7eb" },
-  routeCard: { backgroundColor: "#2563eb", marginHorizontal: 16, marginTop: 16, padding: 16, borderRadius: 16 },
-  routeHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  routeTitle: { fontSize: 16, fontWeight: "600", color: "#ffffff", marginLeft: 8, flex: 1 },
-  viewAllBtn: { color: "#bfdbfe", fontSize: 14, fontWeight: "500" },
-  routeName: { fontSize: 18, fontWeight: "bold", color: "#ffffff", marginTop: 12 },
-  routeStats: { flexDirection: "row", marginTop: 12, gap: 16 },
-  routeStat: { flexDirection: "row", alignItems: "center" },
-  routeStatText: { color: "#bfdbfe", fontSize: 12, marginLeft: 4 },
-  sectionTitle: { fontSize: 18, fontWeight: "600", color: "#111827", marginHorizontal: 16, marginTop: 24, marginBottom: 12 },
-  gridContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingHorizontal: 12 },
-  menuCardWrapper: { width: "48%", marginBottom: 12 },
-  menuCard: { backgroundColor: "#ffffff", padding: 16, borderRadius: 16 },
-  menuIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  menuTitle: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 4 },
-  menuDescription: { fontSize: 11, color: "#6b7280", lineHeight: 14 },
-  alertsSection: { backgroundColor: "#ffffff", marginHorizontal: 16, marginTop: 16, marginBottom: 24, padding: 16, borderRadius: 16 },
-  alertsHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  alertsTitle: { fontSize: 16, fontWeight: "600", color: "#111827", marginLeft: 8 },
-  alertCard: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
-  alertDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
-  alertContent: { flex: 1 },
-  alertMessage: { fontSize: 14, color: "#111827" },
-  alertTime: { fontSize: 11, color: "#9ca3af", marginTop: 2 },
-});
