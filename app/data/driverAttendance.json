@@ -1,0 +1,12 @@
+{
+  "attendance": [
+    { "id": 1, "name": "Aarav Sharma", "status": "present", "time": "7:45 AM" },
+    { "id": 2, "name": "Vihaan Kumar", "status": "present", "time": "7:45 AM" },
+    { "id": 3, "name": "Sai Reddy", "status": "absent", "time": "-" },
+    { "id": 4, "name": "Ananya Singh", "status": "present", "time": "7:55 AM" },
+    { "id": 5, "name": "Diya Patel", "status": "present", "time": "8:05 AM" },
+    { "id": 6, "name": "Arjun Nair", "status": "absent", "time": "-" },
+    { "id": 7, "name": "Rohan Verma", "status": "present", "time": "8:15 AM" },
+    { "id": 8, "name": "Ishita Gupta", "status": "present", "time": "8:15 AM" }
+  ]
+}
