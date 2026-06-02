@@ -1,0 +1,86 @@
+{
+  "assignedRoute": {
+    "id": "R-101",
+    "name": "Route 101 - East Zone",
+    "busNumber": "AP 28 AB 1234",
+    "driverName": "Rajesh Kumar",
+    "totalStudents": 32,
+    "distance": "24.5 km",
+    "estimatedTime": "1 hour 15 min",
+    "stops": [
+      { "id": 1, "name": "Main School", "time": "7:30 AM", "students": 0, "type": "school", "completed": false },
+      { "id": 2, "name": "Raj Nagar", "time": "7:45 AM", "students": 8, "type": "stop", "completed": false },
+      { "id": 3, "name": "Indira Colony", "time": "7:55 AM", "students": 6, "type": "stop", "completed": false },
+      { "id": 4, "name": "Sai Nagar", "time": "8:05 AM", "students": 10, "type": "stop", "completed": false },
+      { "id": 5, "name": "Shivaji Park", "time": "8:15 AM", "students": 8, "type": "stop", "completed": false }
+    ]
+  },
+  "students": [
+    { "id": 1, "name": "Aarav Sharma", "class": "5A", "pickupPoint": "Raj Nagar", "phone": "9876543210", "status": "pending", "boardedTime": null, "droppedTime": null },
+    { "id": 2, "name": "Vihaan Kumar", "class": "5B", "pickupPoint": "Raj Nagar", "phone": "9876543211", "status": "pending", "boardedTime": null, "droppedTime": null },
+    { "id": 3, "name": "Sai Reddy", "class": "6A", "pickupPoint": "Indira Colony", "phone": "9876543212", "status": "pending", "boardedTime": null, "droppedTime": null },
+    { "id": 4, "name": "Ananya Singh", "class": "6B", "pickupPoint": "Indira Colony", "phone": "9876543213", "status": "pending", "boardedTime": null, "droppedTime": null },
+    { "id": 5, "name": "Diya Patel", "class": "7A", "pickupPoint": "Sai Nagar", "phone": "9876543214", "status": "pending", "boardedTime": null, "droppedTime": null },
+    { "id": 6, "name": "Arjun Nair", "class": "7B", "pickupPoint": "Sai Nagar", "phone": "9876543215", "status": "pending", "boardedTime": null, "droppedTime": null },
+    { "id": 7, "name": "Rohan Verma", "class": "8A", "pickupPoint": "Shivaji Park", "phone": "9876543216", "status": "pending", "boardedTime": null, "droppedTime": null },
+    { "id": 8, "name": "Ishita Gupta", "class": "8B", "pickupPoint": "Shivaji Park", "phone": "9876543217", "status": "pending", "boardedTime": null, "droppedTime": null }
+  ],
+  "attendance": [
+    { "id": 1, "name": "Aarav Sharma", "status": "present", "time": "7:45 AM" },
+    { "id": 2, "name": "Vihaan Kumar", "status": "present", "time": "7:45 AM" },
+    { "id": 3, "name": "Sai Reddy", "status": "absent", "time": "-" },
+    { "id": 4, "name": "Ananya Singh", "status": "present", "time": "7:55 AM" },
+    { "id": 5, "name": "Diya Patel", "status": "present", "time": "8:05 AM" },
+    { "id": 6, "name": "Arjun Nair", "status": "absent", "time": "-" },
+    { "id": 7, "name": "Rohan Verma", "status": "present", "time": "8:15 AM" },
+    { "id": 8, "name": "Ishita Gupta", "status": "present", "time": "8:15 AM" }
+  ],
+  "alerts": [
+    { "id": 1, "message": "Traffic jam on Main Road", "time": "10 min ago", "type": "warning" },
+    { "id": 2, "message": "Student reported absent - Rohan S.", "time": "20 min ago", "type": "info" }
+  ],
+  "todaySchedule": {
+    "pickup": "7:30 AM",
+    "drop": "4:30 PM"
+  },
+  "reportTypes": [
+    { "id": "mechanical", "label": "Mechanical Issue", "iconColor": "#2563eb" },
+    { "id": "accident", "label": "Accident", "iconColor": "#dc2626" },
+    { "id": "fuel", "label": "Fuel Issue", "iconColor": "#f59e0b" },
+    { "id": "other", "label": "Other", "iconColor": "#6b7280" }
+  ],
+  "emergencyContacts": [
+    { "name": "Transport Manager", "number": "9876543210", "relation": "Manager" },
+    { "name": "School Admin", "number": "9876543211", "relation": "Admin" },
+    { "name": "Police Control Room", "number": "100", "relation": "Emergency" },
+    { "name": "Ambulance", "number": "102", "relation": "Emergency" }
+  ],
+  "vehicleInfo": {
+    "busNumber": "AP 28 AB 1234",
+    "routeName": "Route 101 - East Zone",
+    "driverName": "Rajesh Kumar"
+  },
+  "tracking": {
+    "initialLocation": { "lat": 17.385, "lng": 78.4867, "address": "Main School, Hyderabad" }
+  },
+  "vehicleInspection": {
+    "items": [
+      { "id": "brakes", "label": "Brakes", "required": true },
+      { "id": "tyres", "label": "Tyres", "required": true },
+      { "id": "lights", "label": "Lights", "required": true },
+      { "id": "horn", "label": "Horn", "required": true },
+      { "id": "fuel", "label": "Fuel Level", "required": true }
+    ]
+  },
+  "fuelLogs": [],
+  "tripLogs": [],
+  "incidentReports": [],
+  "busCapacity": 32,
+  "silentMode": false,
+  "offlineQueue": [],
+  "licence": {
+    "number": "DL-1234567890",
+    "startDate": "2020-01-01",
+    "endDate": "2025-12-31"
+  }
+}
