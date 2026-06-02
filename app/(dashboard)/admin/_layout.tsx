@@ -1,6 +1,8 @@
 // app/admin/_layout.tsx
 
 import { Stack, router, usePathname } from "expo-router";
+import { useAuth } from "../../contexts/AuthContext";
+
 
 import {
   Image,
@@ -356,6 +358,7 @@ function Sidebar({
   setCollapsed,
 }: any) {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   const [openMenus, setOpenMenus] =
     useState<any>({});
@@ -743,13 +746,16 @@ function Sidebar({
 >
   <TouchableOpacity
     activeOpacity={0.85}
-    onPress={() => {
-      // GO BACK TO PREVIOUS SCREEN
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        // FALLBACK TO LOGIN/HOME
+    onPress={async () => {
+      try {
+        await logout();
+
         router.replace("/");
+      } catch (error) {
+        console.log(
+          "Logout Error:",
+          error
+        );
       }
     }}
     style={{
