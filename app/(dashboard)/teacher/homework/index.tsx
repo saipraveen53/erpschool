@@ -1,25 +1,25 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-    ArrowLeft,
-    BookOpen,
-    Calendar,
-    CheckCircle,
-    ChevronRight,
-    Clock,
-    FilePlus,
-    ListTodo,
-    Users,
+  ArrowLeft,
+  BookOpen,
+  Calendar,
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  FilePlus,
+  ListTodo,
+  Users,
 } from "lucide-react-native";
 import React from "react";
 import {
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 
 const COLORS = {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 40,
     paddingBottom: 16,
     backgroundColor: COLORS.bgWhite,
     borderBottomWidth: 1,

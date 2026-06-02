@@ -3,12 +3,12 @@ import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Calendar, Users } from "lucide-react-native";
 import React from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 
 const COLORS = {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 40,
     paddingBottom: 16,
     backgroundColor: COLORS.bgWhite,
     borderBottomWidth: 1,

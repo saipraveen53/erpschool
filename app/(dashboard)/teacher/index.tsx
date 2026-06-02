@@ -1,40 +1,53 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-    BookOpen,
-    Calendar,
-    CalendarCheck,
-    ClipboardCheck,
-    ClipboardEdit,
-    GraduationCap,
-    MessageSquare,
-    PieChart,
+  BookOpen,
+  Calendar,
+  CalendarCheck,
+  ClipboardCheck,
+  ClipboardEdit,
+  GraduationCap,
+  LogOut,
+  MessageSquare,
+  PieChart,
 } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import {
-    Animated,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
+  Animated,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
+import { useAuth } from "../../contexts/AuthContext"; // Import your AuthContext
 
 const isWeb = Platform.OS === "web";
 
 const COLORS = {
+  // Theme palette (Burnt Sienna, Sandy Brown, Yellow)
+  primary: "#E35336", // Burnt Sienna
+  accent: "#F5F50C", // Bright Yellow
+  secondary: "#F4A460", // Sandy Brown
+
+  // Derived shades
+  primaryLight: "#FDE8E3",
+  primaryDark: "#C73E21",
+  secondaryLight: "#FEF0E8",
+  accentLight: "#FEFCE8",
+
   bgWhite: "#FFFFFF",
   darkBg: "#2A1308", // Deep Brown
-  cardDark: "#3E1F0D", // Slightly lighter brown for cards
-  cardLight: "#FFFCF8", // Soft off-white for cards on white bg
-  accent: "#F4A460", // Sandy Orange
-  primary: "#E35336", // Terracotta
-  textSecondary: "#A0522D", // Sienna
+  cardDark: "#3E1F0D",
+  cardLight: "#FFFCF8",
+  textSecondary: "#8B5E3C", // Sienna
   textPrimary: "#5C2E14", // Dark Brown
   white: "#FFFFFF",
-  lightGray: "#F5F5F5",
+  lightGray: "#F8F9FA",
+  border: "#F0E4D8",
+  shadowLight: "#E8D5C4",
 };
 
 // Map the modules directly to the folder structure provided
@@ -92,13 +105,12 @@ const teacherModules = [
 export default function TeacherDashboard() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { logout } = useAuth();
 
-  // Responsive Grid Logic - Clamped to 1200px max width to match scrollContent
+  // Responsive Grid Logic
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
   const numColumns = isDesktop ? 4 : isTablet ? 3 : 2;
-
-  // Calculate exact card width based on container boundaries, making it safe for BOTH Web and Android
   const containerWidth = Math.min(width, 1200);
   const cardWidth = (containerWidth - 48 - (numColumns - 1) * 16) / numColumns;
 
@@ -131,6 +143,11 @@ export default function TeacherDashboard() {
     ).start();
   }, []);
 
+  // Logout handler – clears token and redirects to root page
+  const handleLogout = async () => {
+    await logout();
+  };
+
   // Quick Stats Data
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -146,15 +163,24 @@ export default function TeacherDashboard() {
         translucent={false}
       />
 
-      {/* --- TOP HEADER NAVIGATION --- */}
+      {/* --- TOP HEADER NAVIGATION with Logout Button --- */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greetingText}>Welcome back,</Text>
           <Text style={styles.teacherName}>Sarah Jenkins</Text>
         </View>
-        <TouchableOpacity style={styles.profileAvatar} activeOpacity={0.8}>
-          <Text style={styles.avatarText}>SJ</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.profileAvatar} activeOpacity={0.8}>
+            <Text style={styles.avatarText}>SJ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <LogOut size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -162,7 +188,7 @@ export default function TeacherDashboard() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* --- WELCOME BANNER --- */}
+        {/* --- WELCOME BANNER (enhanced with theme colors) --- */}
         <View style={styles.bannerContainer}>
           <Text style={styles.bannerDate}>{today}</Text>
           <Text style={styles.bannerTitle}>Your Teaching Dashboard</Text>
@@ -175,6 +201,10 @@ export default function TeacherDashboard() {
             <View style={styles.statBox}>
               <Text style={styles.statNumber}>12</Text>
               <Text style={styles.statLabel}>Pending Assignments</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>86%</Text>
+              <Text style={styles.statLabel}>Avg. Attendance</Text>
             </View>
           </View>
         </View>
@@ -197,14 +227,9 @@ export default function TeacherDashboard() {
                     width: cardWidth,
                     marginBottom: 16,
                   },
-                  // Platform-specific wrapper styles
                   Platform.select({
-                    android: {
-                      minHeight: 140,
-                    },
-                    web: {
-                      // No additional wrapper styling needed for web
-                    },
+                    android: { minHeight: 140 },
+                    web: {},
                   }),
                 ]}
               >
@@ -224,7 +249,7 @@ export default function TeacherDashboard() {
           })}
         </View>
 
-        {/* --- RECENT ACTIVITY LIST (Placeholder for future expansion) --- */}
+        {/* --- UPCOMING CLASSES (enhanced) --- */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Upcoming Classes</Text>
         </View>
@@ -272,13 +297,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 40,
     paddingBottom: 16,
     backgroundColor: COLORS.bgWhite,
     borderBottomWidth: 1,
-    borderBottomColor: "#EAEAEE",
+    borderBottomColor: COLORS.border,
     ...Platform.select({
-      web: { userSelect: "none" }, // Prevents ugly text highlighting on Web
+      web: { userSelect: "none" },
     }),
   },
   greetingText: {
@@ -291,6 +316,11 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontWeight: "800",
     letterSpacing: -0.5,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   profileAvatar: {
     width: 44,
@@ -305,6 +335,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
+  logoutButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.primaryLight,
+  },
   scrollView: {
     flex: 1,
   },
@@ -318,9 +353,11 @@ const styles = StyleSheet.create({
   },
   bannerContainer: {
     backgroundColor: COLORS.darkBg,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
     marginBottom: 32,
+    borderWidth: 1,
+    borderColor: COLORS.secondary,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.textPrimary,
@@ -328,12 +365,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 12,
       },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: "0px 8px 12px rgba(92, 46, 20, 0.15)", // Premium smooth web shadow
-      },
+      android: { elevation: 8 },
+      web: { boxShadow: "0px 8px 12px rgba(92, 46, 20, 0.15)" },
     }),
   },
   bannerDate: {
@@ -352,16 +385,18 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: "row",
-    gap: 24,
+    gap: 16,
   },
   statBox: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 12,
+    backgroundColor: "rgba(244, 164, 96, 0.15)", // sandy brown with opacity
+    borderRadius: 16,
     padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.secondary,
   },
   statNumber: {
-    color: COLORS.white,
+    color: COLORS.secondary,
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 4,
@@ -385,13 +420,14 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 16,
     marginBottom: 32,
-    alignItems: "flex-start", // Important: prevents cards from stretching to same height
+    alignItems: "flex-start",
   },
   moduleCard: {
     backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
-    // Remove height: "100%" to prevent stretching on Android
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -399,21 +435,20 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
       },
-      android: {
-        elevation: 3,
-      },
+      android: { elevation: 3 },
       web: {
         boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.05)",
         cursor: "pointer",
-        height: "100%", // Keep height:100% only for web where it works well
+        height: "100%",
+        transition: "transform 0.2s, box-shadow 0.2s",
       },
     }),
   },
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
+    borderRadius: 16,
+    backgroundColor: COLORS.primaryLight,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
@@ -431,8 +466,10 @@ const styles = StyleSheet.create({
   },
   activityCard: {
     backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -440,12 +477,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
       },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.05)",
-      },
+      android: { elevation: 3 },
+      web: { boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.05)" },
     }),
   },
   activityRow: {
@@ -454,7 +487,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#EAEAEE",
+    borderBottomColor: COLORS.border,
   },
   timeBlock: {
     width: 80,

@@ -1,11 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios, {
   AxiosError,
   AxiosInstance,
   InternalAxiosRequestConfig,
-} from 'axios';
- 
-
+} from "axios";
 
 const getToken = async (): Promise<string | null> => {
   try {
@@ -19,25 +17,29 @@ const getToken = async (): Promise<string | null> => {
 const createAxiosInstance = (baseURL: string): AxiosInstance => {
   const instance: AxiosInstance = axios.create({
     baseURL: baseURL,
-    timeout: 10000,  
+    timeout: 10000,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   instance.interceptors.request.use(
-    async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
+    async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<InternalAxiosRequestConfig> => {
       const token: string | null = await getToken();
-      
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
     },
-    (error: AxiosError): Promise<AxiosError> => Promise.reject(error)
+    (error: AxiosError): Promise<AxiosError> => Promise.reject(error),
   );
 
   return instance;
 };
 
-export const rootApi: AxiosInstance = createAxiosInstance("http://192.168.88.11:8081");
+export const rootApi: AxiosInstance = createAxiosInstance(
+  "http://192.168.88.20:8081",
+);
