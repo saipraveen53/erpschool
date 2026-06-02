@@ -1,5 +1,6 @@
+// app/_layout.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack, useRootNavigationState, useRouter } from 'expo-router';
+import { Stack, usePathname, useRootNavigationState, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, StatusBar as RNStatusBar } from 'react-native';
@@ -7,17 +8,17 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import "./globals.css";
 
 export default function RootLayout() {
   const router = useRouter();
+  const pathname = usePathname(); // 👈 get current route
   const rootNavigationState = useRootNavigationState();
   const [hasNavigated, setHasNavigated] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ Effect for app start / refresh – check AsyncStorage and navigate
   useEffect(() => {
     const checkAndNavigate = async () => {
-      // Wait for root navigation to be ready
       if (!rootNavigationState?.key) return;
       if (hasNavigated) return;
 
@@ -26,6 +27,13 @@ export default function RootLayout() {
         const role = await AsyncStorage.getItem("userRole");
 
         if (authenticated === "true" && role) {
+          // 👇 Allow modal and other public routes without redirect
+          const allowedPublicRoutes = ['/modal'];
+          if (allowedPublicRoutes.includes(pathname)) {
+            console.log("🔍 Skipping redirect – on allowed route:", pathname);
+            return;
+          }
+
           const upperRole = role.toUpperCase();
           console.log("🔍 _layout: Navigating to role:", upperRole);
 
@@ -80,9 +88,8 @@ export default function RootLayout() {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [rootNavigationState?.key, hasNavigated]);
+  }, [rootNavigationState?.key, hasNavigated, pathname]); // 👈 add pathname as dependency
 
-  // Existing AppState listener (unchanged)
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
@@ -90,9 +97,7 @@ export default function RootLayout() {
         RNStatusBar.setBackgroundColor('#2563eb');
       }
     });
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, []);
 
   return (
@@ -114,6 +119,8 @@ export default function RootLayout() {
               <Stack.Screen name="(public)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
+              {/* ✅ Modal route – accessible from anywhere */}
+              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
             </Stack>
           </NotificationProvider>
         </AuthProvider>
