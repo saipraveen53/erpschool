@@ -1,9 +1,11 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios, {
   AxiosError,
   AxiosInstance,
   AxiosResponse,
   InternalAxiosRequestConfig,
+} from "axios";
+ 
 } from 'axios';
 
 // Helper to decode JWT and get expiry timestamp (seconds)
@@ -84,7 +86,7 @@ const getToken = async (): Promise<string | null> => {
     return null;
   }
 };
-
+ 
 const createAxiosInstance = (baseURL: string): AxiosInstance => {
   const instance: AxiosInstance = axios.create({
     baseURL,
@@ -132,7 +134,7 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
       }
       return config;
     },
-    (error: AxiosError): Promise<AxiosError> => Promise.reject(error)
+    (error: AxiosError): Promise<AxiosError> => Promise.reject(error),
   );
 
   // Response interceptor: handle 401 globally and log remaining time on success
