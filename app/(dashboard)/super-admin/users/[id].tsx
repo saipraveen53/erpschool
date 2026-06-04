@@ -1,12 +1,63 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, UserCircle, Phone, Mail, Shield, CheckCircle, Clock, Key } from "lucide-react-native";
+import { useState, useEffect } from "react";
+import { rootApi } from "../../../utils/axiosInstance";
 
 export default function UserDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        const response = await rootApi.get(`/api/student/teacher/${id}`);
+        if (response.data) {
+          const t = response.data;
+          setUser({
+            id: t.teacherId || t.id,
+            name: t.teacherName || t.name,
+            email: t.email || "No email provided",
+            role: t.role || "TEACHER",
+            status: t.active === false ? "Inactive" : (t.status || "Active"),
+            phone: t.phone || t.mobile || "N/A"
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch teacher details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) {
+      fetchUser();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#E35336" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: "#A0522D", fontSize: 16 }}>User not found.</Text>
+        <TouchableOpacity style={[styles.backButton, { marginTop: 20 }]} onPress={() => router.back()}>
+          <ArrowLeft size={22} color="#A0522D" />
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -28,28 +79,28 @@ export default function UserDetailScreen() {
             </View>
             <View style={styles.profileTitleContainer}>
               <Text style={[styles.profileName, { fontSize: isMobile ? 15 : 20 }]} numberOfLines={1}>
-                Admin User (ID: {id})
+                {user.name} (ID: {user.id})
               </Text>
-              <Text style={styles.profileRole}>System Administrator</Text>
+              <Text style={styles.profileRole}>{user.role}</Text>
             </View>
-            <View style={styles.statusBadge}>
-              <CheckCircle size={13} color="#166534" style={{ marginRight: 4 }} />
-              <Text style={styles.statusText}>Active</Text>
+            <View style={[styles.statusBadge, { backgroundColor: user.status === "Active" ? "#dcfce7" : "#fff7ed" }]}>
+              <CheckCircle size={13} color={user.status === "Active" ? "#166534" : "#c2410c"} style={{ marginRight: 4 }} />
+              <Text style={[styles.statusText, { color: user.status === "Active" ? "#166534" : "#c2410c" }]}>{user.status}</Text>
             </View>
           </View>
 
           <View style={styles.contactRow}>
             <View style={styles.contactItem}>
               <Mail size={15} color="#8A6B5D" />
-              <Text style={styles.contactText}>admin@erpschool.com</Text>
+              <Text style={styles.contactText}>{user.email}</Text>
             </View>
             <View style={styles.contactItem}>
               <Phone size={15} color="#8A6B5D" />
-              <Text style={styles.contactText}>+1 (555) 987-6543</Text>
+              <Text style={styles.contactText}>{user.phone}</Text>
             </View>
             <View style={styles.contactItem}>
               <Shield size={15} color="#8A6B5D" />
-              <Text style={styles.contactText}>Full Access</Text>
+              <Text style={styles.contactText}>{user.role} Access</Text>
             </View>
           </View>
         </View>

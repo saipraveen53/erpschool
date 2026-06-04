@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, useWindowDimensions, Platform } from 'react-native';
 import { Mail, ChevronRight, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { rootApi } from '../../utils/axiosInstance';
 
 export default function ForgotPassword() {
   const { width } = useWindowDimensions();
@@ -19,28 +20,22 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      const baseUrl = Platform.OS === 'web' ? 'http://localhost:8081' : 'http://192.168.88.20:8081';
-      const response = await fetch(`${baseUrl}/api/superAdmin/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': '*/*'
-        },
-        body: JSON.stringify({ username })
+      const response = await rootApi.post('/api/superAdmin/auth/forgot-password', {
+        username
       });
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         Alert.alert(
           "OTP Sent", 
           "Please check your email for the reset instructions.",
           [{ text: "Continue", onPress: () => router.push(`/super-admin/reset-password?username=${encodeURIComponent(username)}`) }]
         );
       } else {
-        const errorText = await response.text();
-        Alert.alert("Failed", `Could not process request: ${errorText}`);
+        Alert.alert("Failed", `Could not process request`);
       }
-    } catch (error) {
-      Alert.alert("Error", "A network error occurred. Please try again.");
+    } catch (error: any) {
+      const errorText = error.response?.data?.message || error.message || "A network error occurred.";
+      Alert.alert("Error", errorText);
       console.error(error);
     } finally {
       setLoading(false);
@@ -166,7 +161,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 15,
     color: '#A0522D',
-  },
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {})
+  } as any,
   button: {
     backgroundColor: '#E35336',
     borderRadius: 10,

@@ -1,29 +1,67 @@
-import { Slot, usePathname, useRouter } from "expo-router";
+import { Slot, usePathname, useRouter, useGlobalSearchParams } from "expo-router";
 import {
   Bell,
   ChevronDown,
+  ChevronRight,
   CreditCard,
   FileText,
   LayoutDashboard,
   Search,
   Users,
   Menu,
-  X
+  X,
+  Layers,
+  Truck,
+  Banknote,
+  User,
+  UserPlus,
+  ShieldAlert,
+  BookOpen,
+  ClipboardList,
+  Calendar,
+  Bus
 } from "lucide-react-native";
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View, Modal, useWindowDimensions, Platform, StatusBar } from "react-native";
-import { useState } from "react";
-
+import { StyleSheet, Text, TouchableOpacity, View, Modal, useWindowDimensions, Platform, StatusBar, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useState, useEffect } from "react";
+import { rootApi } from "../../utils/axiosInstance";
 export default function SuperAdminLayout() {
   const { width } = useWindowDimensions();
   const pathname = usePathname();
   const router = useRouter();
+  const { defaultRole } = useGlobalSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isInviteExpanded, setIsInviteExpanded] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await rootApi.get("/api/profile/me");
+        if (response.data) {
+          setProfileData(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, route: "/super-admin" },
-    { name: "Users", icon: Users, route: "/super-admin/users" },
-    { name: "Subscriptions", icon: CreditCard, route: "/super-admin/subscriptions" },
-    { name: "Reports", icon: FileText, route: "/super-admin/reports" },
+    { name: "Security", icon: ShieldAlert, route: "/super-admin/security" },
+    { name: "Teachers", icon: Users, route: "/super-admin/users" },
+    { name: "Classes", icon: Layers, route: "/super-admin/class-sections" },
+    { name: "Drivers", icon: Truck, route: "/super-admin/drivers" },
+    { name: "Billing", icon: Banknote, route: "/super-admin/billing" },
+    { name: "Notices", icon: Bell, route: "/super-admin/notices" },
+    { name: "Exams", icon: BookOpen, route: "/super-admin/exams" },
+    { name: "Reports", icon: ClipboardList, route: "/super-admin/reports" },
+    { name: "Leaves", icon: FileText, route: "/super-admin/leaves" },
+    { name: "Holidays", icon: Calendar, route: "/super-admin/holidays" },
+    { name: "Transport", icon: Bus, route: "/super-admin/transport" },
+    { name: "Profile", icon: User, route: "/super-admin/profile" },
   ];
 
   const isMobile = width < 768;
@@ -43,80 +81,92 @@ export default function SuperAdminLayout() {
             <Text style={styles.logoSubtitle}>Super Admin</Text>
           </View>
 
-          <View style={styles.navMenu}>
+          <ScrollView style={styles.navMenu} showsVerticalScrollIndicator={false}>
             {menuItems.map((item) => {
+              if (item.name === "Profile") return null;
+              
               const isActive = item.route === "/super-admin"
                 ? pathname === "/super-admin"
                 : pathname.startsWith(item.route);
 
+              const isDashboard = item.name === "Dashboard";
+
               return (
-                <TouchableOpacity
-                  key={item.name}
-                  style={[styles.navItem, isActive && styles.navItemActive]}
-                  onPress={() => router.push(item.route as any)}
-                >
-                  <item.icon
-                    size={20}
-                    color={isActive ? "#E35336" : "#78716C"}
-                    style={styles.navIcon}
-                  />
-                  <Text style={[styles.navText, isActive && styles.navTextActive]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
+                <View key={item.name}>
+                  <TouchableOpacity
+                    style={[
+                      styles.navItem, 
+                      isActive && styles.navItemActive
+                    ]}
+                    onPress={() => router.push(item.route as any)}
+                  >
+                    <item.icon
+                      size={20}
+                      color={isActive ? "#E35336" : "#78716C"}
+                      style={styles.navIcon}
+                    />
+                    <Text style={[
+                      styles.navText, 
+                      isActive && styles.navTextActive
+                    ]}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {isDashboard && (
+                    <View style={{ marginBottom: 4 }}>
+                      <TouchableOpacity
+                        style={[
+                          styles.navItem, 
+                          pathname.includes("/super-admin/invite") && styles.navItemActive
+                        ]}
+                        onPress={() => setIsInviteExpanded(!isInviteExpanded)}
+                      >
+                        <UserPlus size={20} color={pathname.includes("/super-admin/invite") ? "#E35336" : "#78716C"} style={styles.navIcon} />
+                        <Text style={[styles.navText, pathname.includes("/super-admin/invite") && styles.navTextActive, { flex: 1 }]}>
+                          Invite Staff
+                        </Text>
+                        {isInviteExpanded ? <ChevronDown size={16} color="#78716C" /> : <ChevronRight size={16} color="#78716C" />}
+                      </TouchableOpacity>
+                      {isInviteExpanded && (
+                        <View style={{ paddingLeft: 44, marginTop: 4, marginBottom: 8, gap: 14 }}>
+                          <TouchableOpacity onPress={() => router.push("/super-admin/invite-principal")}>
+                            <Text style={{ fontSize: 14, color: pathname === "/super-admin/invite-principal" && (!defaultRole || defaultRole === 'principle') ? "#E35336" : "#78716C", fontWeight: pathname === "/super-admin/invite-principal" && (!defaultRole || defaultRole === 'principle') ? '700' : '500' }}>Principal</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => router.push("/super-admin/invite-principal?defaultRole=vice_principal")}>
+                            <Text style={{ fontSize: 14, color: pathname === "/super-admin/invite-principal" && defaultRole === "vice_principal" ? "#E35336" : "#78716C", fontWeight: pathname === "/super-admin/invite-principal" && defaultRole === "vice_principal" ? '700' : '500' }}>Vice Principal</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => router.push("/super-admin/invite-principal?defaultRole=admin")}>
+                            <Text style={{ fontSize: 14, color: pathname === "/super-admin/invite-principal" && defaultRole === "admin" ? "#E35336" : "#78716C", fontWeight: pathname === "/super-admin/invite-principal" && defaultRole === "admin" ? '700' : '500' }}>System Admin</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
               );
             })}
-          </View>
+            
+            <TouchableOpacity
+              style={[
+                styles.navItem, 
+                { marginTop: "auto", backgroundColor: "#FEF2F2", borderColor: "#FCA5A5", borderWidth: 1 }
+              ]}
+              onPress={() => router.push("/super-admin/profile" as any)}
+            >
+              <User size={20} color="#DC2626" style={styles.navIcon} />
+              <Text style={[styles.navText, { color: "#DC2626", fontWeight: "700" }]}>
+                Profile
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       )}
 
       
       <View style={styles.mainContent}>
-        <View style={styles.topHeader}>
-          {isMobile && (
-            <TouchableOpacity 
-              style={{ marginRight: 16 }}
-              onPress={() => setIsDrawerOpen(true)}
-            >
-              <Menu size={24} color="#1C1917" />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity 
-            style={[styles.searchContainer, isMobile && { flex: 1, paddingHorizontal: 12, marginRight: 8 }]}
-            onPress={() => router.push("/super-admin/search" as any)}
-          >
-            <Search size={18} color="#A8A29E" />
-            {!isMobile && <Text style={styles.searchText}>Search anything...</Text>}
-          </TouchableOpacity>
 
-          <View style={styles.headerRight}>
-            <TouchableOpacity 
-              style={styles.iconButton}
-              onPress={() => router.push("/super-admin/notifications" as any)}
-            >
-              <Bell size={20} color="#57534E" />
-              <View style={styles.badge} />
-            </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.profileContainer}
-              onPress={() => router.push("/super-admin/profile" as any)}
-            >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>SA</Text>
-              </View>
-              {!isMobile && (
-                <View style={styles.profileTextContainer}>
-                  <Text style={styles.profileName}>Super Admin</Text>
-                  <Text style={styles.profileRole}>System Owner</Text>
-                </View>
-              )}
-              <ChevronDown size={16} color="#A8A29E" style={{ marginLeft: 8 }} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        
         <View style={styles.pageContainer}>
           <Slot />
         </View>
@@ -141,33 +191,91 @@ export default function SuperAdminLayout() {
                   <X size={24} color="#1C1917" />
                 </TouchableOpacity>
               </View>
-              <View style={styles.drawerMenu}>
+              <ScrollView style={styles.drawerMenu} showsVerticalScrollIndicator={false}>
                 {menuItems.map((item) => {
+                  if (item.name === "Profile") return null;
+
                   const isActive = item.route === "/super-admin"
                     ? pathname === "/super-admin"
                     : pathname.startsWith(item.route);
 
+                  const isDashboard = item.name === "Dashboard";
+
                   return (
-                    <TouchableOpacity
-                      key={item.name}
-                      style={[styles.navItem, isActive && styles.navItemActive]}
-                      onPress={() => {
-                        setIsDrawerOpen(false);
-                        router.push(item.route as any);
-                      }}
-                    >
-                      <item.icon
-                        size={20}
-                        color={isActive ? "#E35336" : "#78716C"}
-                        style={styles.navIcon}
-                      />
-                      <Text style={[styles.navText, isActive && styles.navTextActive]}>
-                        {item.name}
-                      </Text>
-                    </TouchableOpacity>
+                    <View key={item.name}>
+                      <TouchableOpacity
+                        style={[
+                          styles.navItem, 
+                          isActive && styles.navItemActive
+                        ]}
+                        onPress={() => {
+                          setIsDrawerOpen(false);
+                          router.push(item.route as any);
+                        }}
+                      >
+                        <item.icon
+                          size={20}
+                          color={isActive ? "#E35336" : "#78716C"}
+                          style={styles.navIcon}
+                        />
+                        <Text style={[
+                          styles.navText, 
+                          isActive && styles.navTextActive
+                        ]}>
+                          {item.name}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {isDashboard && (
+                        <View style={{ marginBottom: 4 }}>
+                          <TouchableOpacity
+                            style={[
+                              styles.navItem, 
+                              pathname.includes("/super-admin/invite") && styles.navItemActive
+                            ]}
+                            onPress={() => setIsInviteExpanded(!isInviteExpanded)}
+                          >
+                            <UserPlus size={20} color={pathname.includes("/super-admin/invite") ? "#E35336" : "#78716C"} style={styles.navIcon} />
+                            <Text style={[styles.navText, pathname.includes("/super-admin/invite") && styles.navTextActive, { flex: 1 }]}>
+                              Invite Staff
+                            </Text>
+                            {isInviteExpanded ? <ChevronDown size={16} color="#78716C" /> : <ChevronRight size={16} color="#78716C" />}
+                          </TouchableOpacity>
+                          {isInviteExpanded && (
+                            <View style={{ paddingLeft: 44, marginTop: 4, marginBottom: 8, gap: 14 }}>
+                              <TouchableOpacity onPress={() => { router.push("/super-admin/invite-principal"); setIsDrawerOpen(false); }}>
+                                <Text style={{ fontSize: 14, color: pathname === "/super-admin/invite-principal" && (!defaultRole || defaultRole === 'principle') ? "#E35336" : "#78716C", fontWeight: pathname === "/super-admin/invite-principal" && (!defaultRole || defaultRole === 'principle') ? '700' : '500' }}>Principal</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => { if(isMobile) setIsDrawerOpen(false); router.push("/super-admin/invite-principal?defaultRole=vice_principal"); }}>
+                                <Text style={{ fontSize: 14, color: pathname === "/super-admin/invite-principal" && defaultRole === "vice_principal" ? "#E35336" : "#78716C", fontWeight: pathname === "/super-admin/invite-principal" && defaultRole === "vice_principal" ? '700' : '500' }}>Vice Principal</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => { if(isMobile) setIsDrawerOpen(false); router.push("/super-admin/invite-principal?defaultRole=admin"); }}>
+                                <Text style={{ fontSize: 14, color: pathname === "/super-admin/invite-principal" && defaultRole === "admin" ? "#E35336" : "#78716C", fontWeight: pathname === "/super-admin/invite-principal" && defaultRole === "admin" ? '700' : '500' }}>System Admin</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
                   );
                 })}
-              </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.navItem, 
+                    { marginTop: "auto", backgroundColor: "#FEF2F2", borderColor: "#FCA5A5", borderWidth: 1 }
+                  ]}
+                  onPress={() => {
+                    setIsDrawerOpen(false);
+                    router.push("/super-admin/profile" as any);
+                  }}
+                >
+                  <User size={20} color="#DC2626" style={styles.navIcon} />
+                  <Text style={[styles.navText, { color: "#DC2626", fontWeight: "700" }]}>
+                    Profile
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
             </View>
             <TouchableOpacity 
               style={styles.drawerCloseArea} 
@@ -178,6 +286,16 @@ export default function SuperAdminLayout() {
         </Modal>
       )}
       </>
+      )}
+
+      {/* FAB Menu Button for Mobile */}
+      {isMobile && pathname !== "/super-admin/onboarding" && pathname !== "/super-admin/forgot-password" && pathname !== "/super-admin/reset-password" && (
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={() => setIsDrawerOpen(true)}
+        >
+          <Menu size={24} color="#FFFFFF" />
+        </TouchableOpacity>
       )}
     </SafeAreaView>
   );
@@ -219,6 +337,7 @@ const styles = StyleSheet.create({
   },
   navMenu: {
     paddingHorizontal: 12,
+    flex: 1,
   },
   navItem: {
     flexDirection: "row",
@@ -276,6 +395,7 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
+    marginLeft: "auto",
   },
   iconButton: {
     width: 40,
@@ -367,4 +487,21 @@ const styles = StyleSheet.create({
     padding: 16,
     flex: 1,
   },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E35336', // Red color
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    zIndex: 1000
+  }
 });

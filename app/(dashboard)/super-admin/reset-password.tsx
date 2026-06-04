@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import { Lock, KeyRound, User, ChevronRight, ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Platform } from 'react-native';
+import { rootApi } from '../../utils/axiosInstance';
 
 export default function ResetPassword() {
   const { width } = useWindowDimensions();
@@ -35,33 +36,25 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      const baseUrl = Platform.OS === 'web' ? 'http://localhost:8081' : 'http://192.168.88.20:8081';
-      const response = await fetch(`${baseUrl}/api/superAdmin/auth/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': '*/*'
-        },
-        body: JSON.stringify({
-          username: form.username,
-          otp: form.otp,
-          newPassword: form.newPassword,
-          confirmNewPassword: form.confirmNewPassword
-        })
+      const response = await rootApi.post('/api/superAdmin/auth/reset-password', {
+        username: form.username,
+        otp: form.otp,
+        newPassword: form.newPassword,
+        confirmNewPassword: form.confirmNewPassword
       });
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         Alert.alert(
           "Success", 
-          "Your password has been reset successfully. You can now log in.",
+          "Your password has been successfully reset.",
           [{ text: "Go to Login", onPress: () => router.replace('/login') }]
         );
       } else {
-        const errorText = await response.text();
-        Alert.alert("Failed", `Could not reset password: ${errorText}`);
+        Alert.alert("Failed", `Could not reset password`);
       }
-    } catch (error) {
-      Alert.alert("Error", "A network error occurred. Please try again.");
+    } catch (error: any) {
+      const errorText = error.response?.data?.message || error.message || "A network error occurred.";
+      Alert.alert("Error", errorText);
       console.error(error);
     } finally {
       setLoading(false);
@@ -240,7 +233,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 15,
     color: '#A0522D',
-  },
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {})
+  } as any,
   button: {
     backgroundColor: '#E35336',
     borderRadius: 10,

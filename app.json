@@ -30,9 +30,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-       
       "bundler": "metro",
-    
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
@@ -50,7 +48,8 @@
             "backgroundColor": "#2563eb"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

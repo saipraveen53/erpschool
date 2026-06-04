@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Lock, MapPin, Phone, Briefcase, ChevronRight, Eye, EyeOff } from 'lucide-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { rootApi } from '../../utils/axiosInstance';
 
 export default function CompleteOnboarding() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const router = useRouter();
   
-  // Extract token from URL /super-admin/onboarding?token=XYZ
   const { token } = useLocalSearchParams();
 
   const [form, setForm] = useState({
@@ -33,33 +33,25 @@ export default function CompleteOnboarding() {
 
     setLoading(true);
     try {
-      const baseUrl = Platform.OS === 'web' ? 'http://localhost:8081' : 'http://192.168.88.20:8081';
-      const response = await fetch(`${baseUrl}/api/principle/complete-onboarding?token=${token}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': '*/*'
-        },
-        body: JSON.stringify({
-          password: form.password,
-          experience: form.experience,
-          address: form.address,
-          phoneNo: form.phoneNo
-        })
+      const response = await rootApi.post(`/api/principle/complete-onboarding?token=${token}`, {
+        password: form.password,
+        experience: form.experience,
+        address: form.address,
+        phoneNo: form.phoneNo
       });
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         Alert.alert(
           "Success", 
           "Onboarding completed successfully! You can now log in.",
           [{ text: "Go to Login", onPress: () => router.replace('/login') }]
         );
       } else {
-        const errorText = await response.text();
-        Alert.alert("Failed", `Could not complete onboarding: ${errorText}`);
+        Alert.alert("Failed", `Could not complete onboarding`);
       }
-    } catch (error) {
-      Alert.alert("Error", "A network error occurred. Please try again.");
+    } catch (error: any) {
+      const errorText = error.response?.data?.message || error.message || "A network error occurred.";
+      Alert.alert("Error", errorText);
       console.error(error);
     } finally {
       setLoading(false);
@@ -211,7 +203,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 15,
     color: '#A0522D',
-  },
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {})
+  } as any,
   button: {
     backgroundColor: '#E35336',
     borderRadius: 10,

@@ -1,10 +1,11 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, useWindowDimensions } from "react-native";
 import { User, Mail, Phone, Shield, Camera, Bell, Lock, LogOut, Eye, EyeOff } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, Alert as RNAlert, Platform } from "react-native";
+import { rootApi } from "../../utils/axiosInstance";
 
 export default function SuperAdminProfile() {
   const { width } = useWindowDimensions();
@@ -12,11 +13,34 @@ export default function SuperAdminProfile() {
   const router = useRouter();
   const { logout } = useAuth();
 
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: "Super Admin",
     email: "superadmin@example.com",
     phone: "+1 (555) 000-0000",
+    role: "Super Administrator"
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await rootApi.get("/api/profile/me");
+        if (response.data) {
+          setFormData({
+            name: response.data.fullName || "Super Admin",
+            email: response.data.email || "",
+            phone: response.data.phone || "",
+            role: response.data.role || "Super Administrator"
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -55,31 +79,21 @@ export default function SuperAdminProfile() {
 
     setLoadingPassword(true);
     try {
-      const token = await AsyncStorage.getItem("userToken");
-      const baseUrl = Platform.OS === 'web' ? 'http://localhost:8081' : 'http://192.168.88.20:8081';
-      const response = await fetch(`${baseUrl}/api/superAdmin/auth/change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': '*/*',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          oldPassword: passwordForm.oldPassword,
-          newPassword: passwordForm.newPassword,
-          confirmNewPassword: passwordForm.confirmNewPassword
-        })
+      const response = await rootApi.post('/api/superAdmin/auth/change-password', {
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
+        confirmNewPassword: passwordForm.confirmNewPassword
       });
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         RNAlert.alert("Success", "Your password has been changed successfully.");
         setPasswordForm({ oldPassword: '', newPassword: '', confirmNewPassword: '' });
       } else {
-        const errorText = await response.text();
-        RNAlert.alert("Failed", `Could not change password: ${errorText}`);
+        RNAlert.alert("Failed", `Could not change password`);
       }
-    } catch (error) {
-      RNAlert.alert("Error", "A network error occurred. Please try again.");
+    } catch (error: any) {
+      const errorText = error.response?.data?.message || error.message || "A network error occurred.";
+      RNAlert.alert("Error", errorText);
       console.error(error);
     } finally {
       setLoadingPassword(false);
@@ -103,7 +117,7 @@ export default function SuperAdminProfile() {
         <View style={[styles.headerInfo, { alignItems: isMobile ? "center" : "flex-start" }]}>
           <View style={styles.roleBadge}>
             <Shield size={12} color="#E35336" style={{ marginRight: 4 }} />
-            <Text style={styles.roleText}>Super Administrator</Text>
+            <Text style={styles.roleText}>{formData.role}</Text>
           </View>
           <Text style={styles.profileName}>{formData.name}</Text>
           <Text style={styles.profileEmail}>{formData.email}</Text>
@@ -324,7 +338,13 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: "600", color: "#705244", marginBottom: 8 },
   inputContainer: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#E6D8D2", borderRadius: 10, backgroundColor: "#F5F5DC", paddingHorizontal: 14 },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, paddingVertical: 12, fontSize: 15, color: "#A0522D" },
+  input: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    fontSize: 15, 
+    color: "#A0522D",
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {})
+  } as any,
   
   saveButton: { backgroundColor: "#E35336", paddingVertical: 14, borderRadius: 10, alignItems: "center", marginTop: 8 },
   saveButtonText: { color: "#fff", fontWeight: "bold", fontSize: 15 },

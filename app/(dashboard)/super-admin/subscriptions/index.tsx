@@ -109,11 +109,7 @@ export default function SubscriptionsManagement() {
           /* ── Desktop Table Layout ── */
           <View style={styles.tableContainer}>
             <View style={styles.tableHeader}>
-              <View style={{ width: 40, justifyContent: "center" }}>
-                <TouchableOpacity onPress={toggleSelectAll} style={[styles.checkbox, selectedIds.length === filteredSubscriptions.length && filteredSubscriptions.length > 0 && styles.checkboxActive]}>
-                  {selectedIds.length === filteredSubscriptions.length && filteredSubscriptions.length > 0 && <View style={styles.checkboxInner} />}
-                </TouchableOpacity>
-              </View>
+
               <Text style={[styles.th, { flex: 2.5 }]}>Service</Text>
               <Text style={[styles.th, { flex: 1.5 }]}>Plan</Text>
               <Text style={[styles.th, { flex: 1.5 }]}>Amount</Text>
@@ -122,11 +118,7 @@ export default function SubscriptionsManagement() {
             </View>
             {filteredSubscriptions.map(sub => (
               <View key={sub.id} style={styles.tableRow}>
-                <View style={[styles.td, { width: 40 }]}>
-                  <TouchableOpacity onPress={() => toggleSelect(sub.id)} style={[styles.checkbox, selectedIds.includes(sub.id) && styles.checkboxActive]}>
-                    {selectedIds.includes(sub.id) && <View style={styles.checkboxInner} />}
-                  </TouchableOpacity>
-                </View>
+
                 <View style={[styles.td, { flex: 2.5, flexDirection: "row", alignItems: "center" }]}>
                   <View style={styles.iconWrap}>
                     <CreditCard size={15} color="#E35336" />

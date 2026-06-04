@@ -1,133 +1,225 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from "react-native";
-import { Download, Building2, Users, TrendingUp, Filter, FileText, Database, ArrowRight } from "lucide-react-native";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, TextInput, ActivityIndicator, Alert, Platform } from "react-native";
+import { Search, User, BookOpen, GraduationCap, CheckCircle, XCircle, Award } from "lucide-react-native";
+import { useState, useEffect } from "react";
+import { rootApi } from "../../../utils/axiosInstance";
+import { useLocalSearchParams } from "expo-router";
 
-export default function ReportsAnalytics() {
+export default function StudentReportViewer() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-  const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState("All");
+  const [studentId, setStudentId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
 
-  const reports = [
-    { id: "1", title: "School Performance Overview", type: "PDF", date: "Today, 10:30 AM", size: "2.4 MB", icon: Building2 },
-    { id: "2", title: "Global User Growth Analytics", type: "Excel", date: "Yesterday, 14:15 PM", size: "1.1 MB", icon: Users },
-    { id: "3", title: "Revenue & Subscriptions", type: "CSV", date: "Oct 1, 2026", size: "856 KB", icon: TrendingUp },
-    { id: "4", title: "System Error Logs", type: "TXT", date: "Sep 28, 2026", size: "4.2 MB", icon: Database },
-  ];
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
 
-  const filteredReports = activeTab === "All" ? reports : reports.filter(r => r.type === activeTab);
+  const { studentId: paramStudentId } = useLocalSearchParams<{ studentId?: string }>();
+
+  useEffect(() => {
+    fetchAllStudents();
+  }, []);
+
+  const fetchAllStudents = async () => {
+    try {
+      const response = await rootApi.get('/api/student/allStudents');
+      if (response.data && Array.isArray(response.data)) {
+        setAllStudents(response.data);
+      }
+    } catch(e) {
+      console.error("Failed to fetch all students for dropdown:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (paramStudentId) {
+      setStudentId(paramStudentId);
+      handleSearch(paramStudentId);
+    }
+  }, [paramStudentId]);
+
+  const handleSearch = async (searchId: string = studentId) => {
+    if (!searchId.trim()) {
+      return Alert.alert("Error", "Please enter a Student ID");
+    }
+
+    try {
+      setLoading(true);
+      setReportData(null);
+      const response = await rootApi.get(`/api/student/${searchId.trim()}/report`);
+      if (response.data) {
+        setReportData(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch report:", error);
+      Alert.alert("Error", "Failed to fetch student report. Please check the ID and try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
-      <View style={[styles.header, { padding: isMobile ? 16 : 24 }]}>
-        <View>
-          <Text style={[styles.headerTitle, { fontSize: isMobile ? 22 : 28 }]}>System Reports</Text>
-          <Text style={styles.headerSubtitle}>Analyze platform metrics and download data exports</Text>
-        </View>
-        {!isMobile && (
-          <TouchableOpacity style={styles.primaryBtn}>
-            <FileText size={18} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.primaryBtnText}>Generate New</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        {/* Analytics Summary Cards */}
-        <View style={[styles.statsGrid, { flexDirection: isMobile ? "column" : "row" }]}>
-          <View style={[styles.statCard, { backgroundColor: "#E35336" }]}>
-            <View style={styles.statTop}>
-              <View style={[styles.iconBox, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-                <FileText size={20} color="#fff" />
-              </View>
-              <Text style={styles.statLabel}>Total Reports</Text>
-            </View>
-            <Text style={styles.statValue}>1,284</Text>
-            <Text style={styles.statTrend}>+12% this month</Text>
+      {/* Header & Search */}
+      <View style={[styles.header, { padding: isMobile ? 16 : 24, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: 16, zIndex: 100, elevation: 100 }]}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Award size={24} color="#E35336" />
+            <Text style={[styles.headerTitle, { fontSize: isMobile ? 20 : 26 }]}>Student Reports</Text>
           </View>
-
-          <View style={[styles.statCard, { backgroundColor: "#F4A460" }]}>
-            <View style={styles.statTop}>
-              <View style={[styles.iconBox, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-                <Database size={20} color="#fff" />
-              </View>
-              <Text style={styles.statLabel}>Storage Used</Text>
-            </View>
-            <Text style={styles.statValue}>45.2 GB</Text>
-            <Text style={styles.statTrend}>68% of capacity</Text>
-          </View>
-
-          <View style={[styles.statCard, { backgroundColor: "#A0522D" }]}>
-            <View style={styles.statTop}>
-              <View style={[styles.iconBox, { backgroundColor: "rgba(255,255,255,0.2)" }]}>
-                <Download size={20} color="#fff" />
-              </View>
-              <Text style={styles.statLabel}>Total Downloads</Text>
-            </View>
-            <Text style={styles.statValue}>8,920</Text>
-            <Text style={styles.statTrend}>+5% this week</Text>
-          </View>
+          <Text style={styles.headerSubtitle}>Search and view detailed academic performance reports.</Text>
         </View>
 
-        {/* Filters */}
-        <View style={styles.filtersRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-            {["All", "PDF", "Excel", "CSV", "TXT"].map(tab => (
-              <TouchableOpacity 
-                key={tab} 
-                onPress={() => setActiveTab(tab)}
-                style={[styles.filterTab, activeTab === tab && styles.filterTabActive]}
+        <View style={{ zIndex: 50, width: 320, maxWidth: '100%' }}>
+          <View style={[styles.searchContainer, { width: '100%' }]}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Enter Student ID (e.g., STU2026004)"
+              placeholderTextColor="#8A6B5D"
+              value={studentId}
+              onChangeText={(t) => {
+                setStudentId(t);
+                if (t.trim() === '') {
+                  setReportData(null);
+                  setShowDropdown(false);
+                } else {
+                  setShowDropdown(true);
+                }
+              }}
+              onSubmitEditing={() => {
+                setShowDropdown(false);
+                handleSearch();
+              }}
+              onFocus={() => setShowDropdown(true)}
+            />
+            <TouchableOpacity style={styles.searchBtn} onPress={() => {
+              setShowDropdown(false);
+              handleSearch();
+            }} disabled={loading}>
+              {loading ? <ActivityIndicator size="small" color="#fff" /> : <Search size={20} color="#fff" />}
+            </TouchableOpacity>
+          </View>
+
+          {showDropdown && allStudents.length > 0 && (
+            <View style={styles.dropdownContainer}>
+              <ScrollView 
+                nestedScrollEnabled 
+                keyboardShouldPersistTaps="handled" 
+                style={[{ maxHeight: 200 }, Platform.OS === 'web' ? { overflowY: 'auto' } : ({} as any)]} 
+                showsVerticalScrollIndicator={true}
               >
-                <Text style={[styles.filterTabText, activeTab === tab && styles.filterTabTextActive]}>{tab}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Filter size={18} color="#A0522D" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Reports List */}
-        <View style={styles.reportsWrapper}>
-          <Text style={styles.sectionTitle}>Recent Exports</Text>
-          {filteredReports.map((report, idx) => {
-            const isLast = idx === filteredReports.length - 1;
-            return (
-              <View key={report.id} style={[styles.reportCard, !isLast && styles.reportCardBorder]}>
-                <View style={styles.reportInfo}>
-                  <View style={styles.reportIconContainer}>
-                    <report.icon size={22} color="#E35336" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.reportTitle} numberOfLines={1}>{report.title}</Text>
-                    <View style={styles.reportMetaRow}>
-                      <View style={styles.formatBadge}>
-                        <Text style={styles.formatBadgeText}>{report.type}</Text>
-                      </View>
-                      <Text style={styles.reportMetaText}>• {report.size}</Text>
-                      <Text style={styles.reportMetaText}>• {report.date}</Text>
-                    </View>
-                  </View>
-                </View>
-                <TouchableOpacity 
-                  style={styles.downloadAction}
-                  onPress={() => router.push(`/super-admin/reports/${report.id}/download` as any)}
-                >
-                  <Text style={styles.downloadActionText}>Download</Text>
-                  <ArrowRight size={16} color="#E35336" />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-          {filteredReports.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No reports found for this format.</Text>
+                {allStudents
+                  .filter(s => s.studentId?.toLowerCase().includes(studentId.toLowerCase()) || s.studentName?.toLowerCase().includes(studentId.toLowerCase()) || s.fullName?.toLowerCase().includes(studentId.toLowerCase()))
+                  .map((stu, i) => (
+                    <TouchableOpacity 
+                      key={i} 
+                      style={styles.dropdownItem} 
+                      onPress={() => {
+                        setStudentId(stu.studentId);
+                        setShowDropdown(false);
+                        handleSearch(stu.studentId);
+                      }}
+                    >
+                      <Text style={{ fontWeight: '600', color: '#A0522D' }}>{stu.studentId}</Text>
+                      <Text style={{ color: '#8A6B5D', fontSize: 13 }}>{stu.studentName || stu.fullName}</Text>
+                    </TouchableOpacity>
+                  ))}
+              </ScrollView>
             </View>
           )}
         </View>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: isMobile ? 12 : 24, paddingBottom: 40 }}>
+        {!reportData && !loading && (
+          <View style={styles.emptyStateContainer}>
+            <View style={styles.emptyIconCircle}>
+              <Search size={32} color="#E35336" />
+            </View>
+            <Text style={styles.emptyTitle}>Search Student Report</Text>
+            <Text style={styles.emptyText}>Enter a student ID in the search bar above to fetch their academic report card.</Text>
+          </View>
+        )}
+
+        {reportData && (
+          <View style={styles.reportContainer}>
+            {/* Student Profile Overview */}
+            <View style={styles.profileCard}>
+              <View style={styles.profileHeader}>
+                <View style={styles.avatarCircle}>
+                  <User size={32} color="#E35336" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.studentName}>{reportData.fullName}</Text>
+                  <Text style={styles.studentDetails}>ID: {reportData.studentId}  •  Roll No: {reportData.rollNumber}</Text>
+                </View>
+                <View style={styles.scoreBadge}>
+                  <Text style={styles.scoreBadgeLabel}>Aggregate</Text>
+                  <Text style={styles.scoreBadgeValue}>{reportData.totalAggregatedPercentage}%</Text>
+                </View>
+              </View>
+              
+              <View style={styles.profileFooter}>
+                <View style={styles.footerItem}>
+                  <GraduationCap size={16} color="#8A6B5D" style={{ marginRight: 6 }} />
+                  <Text style={styles.footerItemText}>Class: {reportData.classSectionId}</Text>
+                </View>
+                <View style={styles.footerItem}>
+                  <BookOpen size={16} color="#8A6B5D" style={{ marginRight: 6 }} />
+                  <Text style={styles.footerItemText}>Year: {reportData.academicYear}</Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.sectionTitle}>Exam Performances</Text>
+
+            {reportData.examPerformances?.length === 0 ? (
+              <Text style={{ color: '#8A6B5D' }}>No exam performances recorded.</Text>
+            ) : (
+              reportData.examPerformances?.map((exam: any, idx: number) => (
+                <View key={idx} style={styles.examCard}>
+                  <View style={styles.examHeader}>
+                    <View>
+                      <Text style={styles.examName}>{exam.examName}</Text>
+                      <Text style={styles.examIdTag}>{exam.examId}</Text>
+                    </View>
+                    <View style={styles.examResultBox}>
+                      <Text style={styles.examPercentage}>{exam.examPercentage}%</Text>
+                      <View style={[styles.statusBadge, { backgroundColor: exam.overallResultStatus === 'PASS' ? '#dcfce7' : '#fee2e2' }]}>
+                        {exam.overallResultStatus === 'PASS' ? (
+                          <CheckCircle size={12} color="#16a34a" style={{ marginRight: 4 }} />
+                        ) : (
+                          <XCircle size={12} color="#ef4444" style={{ marginRight: 4 }} />
+                        )}
+                        <Text style={[styles.statusText, { color: exam.overallResultStatus === 'PASS' ? '#16a34a' : '#ef4444' }]}>
+                          {exam.overallResultStatus}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.tableContainer}>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.tableHeaderText, { flex: 2 }]}>Subject ID</Text>
+                      <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}>Marks</Text>
+                      <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}>Attendance</Text>
+                      <Text style={[styles.tableHeaderText, { flex: 2 }]}>Remarks</Text>
+                    </View>
+                    {exam.subjectMarks?.map((sub: any, sIdx: number) => (
+                      <View key={sIdx} style={styles.tableRow}>
+                        <Text style={[styles.tableRowText, { flex: 2, fontWeight: '600', color: '#A0522D' }]}>{sub.subjectId}</Text>
+                        <Text style={[styles.tableRowText, { flex: 1, textAlign: 'center' }]}>{sub.obtainedMarks}</Text>
+                        <Text style={[styles.tableRowText, { flex: 1, textAlign: 'center', color: sub.attendanceStatus === 'PRESENT' ? '#16a34a' : '#ef4444' }]}>{sub.attendanceStatus}</Text>
+                        <Text style={[styles.tableRowText, { flex: 2, color: '#8A6B5D' }]} numberOfLines={1}>{sub.remarks || "-"}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -135,45 +227,53 @@ export default function ReportsAnalytics() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5DC" },
-  header: { backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#E6D8D2", flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  headerTitle: { fontWeight: "800", color: "#A0522D", letterSpacing: -0.5 },
-  headerSubtitle: { fontSize: 14, color: "#8A6B5D", marginTop: 6 },
-  primaryBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#E35336", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
-  primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  header: { backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#E6D8D2", justifyContent: "space-between", zIndex: 100 },
+  headerTitle: { fontWeight: "bold", color: "#A0522D" },
+  headerSubtitle: { fontSize: 14, color: "#8A6B5D", marginTop: 4 },
   
-  contentContainer: { padding: 20, paddingBottom: 60 },
-  
-  statsGrid: { gap: 16, marginBottom: 32 },
-  statCard: { flex: 1, borderRadius: 20, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
-  statTop: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  iconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 12 },
-  statLabel: { color: "rgba(255,255,255,0.9)", fontSize: 14, fontWeight: "600" },
-  statValue: { color: "#ffffff", fontSize: 32, fontWeight: "800", marginBottom: 4 },
-  statTrend: { color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: "500" },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5DC', borderRadius: 8, paddingLeft: 12, borderWidth: 1, borderColor: '#E6D8D2', width: 320, maxWidth: '100%' },
+  searchInput: { flex: 1, height: 44, color: '#A0522D', fontSize: 14, ...({ outlineStyle: 'none' } as any) },
+  searchBtn: { backgroundColor: '#E35336', width: 44, height: 44, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
 
-  filtersRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 },
-  filterTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: "#fff", borderWidth: 1, borderColor: "#E6D8D2" },
-  filterTabActive: { backgroundColor: "#A0522D", borderColor: "#A0522D" },
-  filterTabText: { fontSize: 14, fontWeight: "600", color: "#8A6B5D" },
-  filterTabTextActive: { color: "#fff" },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#fff", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#E6D8D2", marginLeft: 12 },
+  dropdownContainer: { position: 'absolute', top: 50, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#E6D8D2', zIndex: 100, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 },
+  dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5DC', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
-  reportsWrapper: { backgroundColor: "#fff", borderRadius: 20, padding: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#A0522D", marginBottom: 20 },
-  
-  reportCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16 },
-  reportCardBorder: { borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
-  reportInfo: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 16 },
-  reportIconContainer: { width: 48, height: 48, borderRadius: 14, backgroundColor: "rgba(244, 164, 96, 0.15)", justifyContent: "center", alignItems: "center", marginRight: 16 },
-  reportTitle: { fontSize: 16, fontWeight: "700", color: "#1e293b", marginBottom: 6 },
-  reportMetaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  formatBadge: { backgroundColor: "#F5F5DC", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  formatBadgeText: { fontSize: 11, fontWeight: "700", color: "#A0522D" },
-  reportMetaText: { fontSize: 13, color: "#8A6B5D" },
-  
-  downloadAction: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(227, 83, 54, 0.1)", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, gap: 6 },
-  downloadActionText: { color: "#E35336", fontSize: 13, fontWeight: "700" },
+  emptyStateContainer: { alignItems: "center", marginTop: 60, padding: 24, backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#E6D8D2', borderStyle: 'dashed' },
+  emptyIconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#F5F5DC', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: '#A0522D', marginBottom: 8 },
+  emptyText: { textAlign: "center", color: "#8A6B5D", fontSize: 14, maxWidth: 300 },
 
-  emptyState: { padding: 40, alignItems: "center" },
-  emptyStateText: { color: "#8A6B5D", fontSize: 14, fontWeight: "500" },
+  reportContainer: { gap: 24 },
+  
+  profileCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E6D8D2', shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  profileHeader: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+  avatarCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#F5F5DC', alignItems: 'center', justifyContent: 'center' },
+  studentName: { fontSize: 22, fontWeight: 'bold', color: '#A0522D', marginBottom: 4 },
+  studentDetails: { fontSize: 14, color: '#8A6B5D' },
+  
+  scoreBadge: { backgroundColor: '#E35336', padding: 12, borderRadius: 12, alignItems: 'center' },
+  scoreBadgeLabel: { color: '#F5F5DC', fontSize: 10, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
+  scoreBadgeValue: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+
+  profileFooter: { flexDirection: 'row', gap: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#E6D8D2' },
+  footerItem: { flexDirection: 'row', alignItems: 'center' },
+  footerItemText: { fontSize: 14, color: '#A0522D', fontWeight: '500' },
+
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#A0522D', marginTop: 8 },
+
+  examCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#E6D8D2' },
+  examHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  examName: { fontSize: 16, fontWeight: 'bold', color: '#A0522D', marginBottom: 4 },
+  examIdTag: { fontSize: 12, color: '#8A6B5D' },
+  
+  examResultBox: { alignItems: 'flex-end' },
+  examPercentage: { fontSize: 20, fontWeight: 'bold', color: '#A0522D', marginBottom: 4 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  statusText: { fontSize: 11, fontWeight: 'bold' },
+
+  tableContainer: { backgroundColor: '#fff', borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: '#E6D8D2' },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#F5F5DC', padding: 12, borderBottomWidth: 1, borderBottomColor: '#E6D8D2' },
+  tableHeaderText: { fontSize: 12, fontWeight: '600', color: '#8A6B5D' },
+  tableRow: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#E6D8D2', alignItems: 'center' },
+  tableRowText: { fontSize: 13, color: '#A0522D' }
 });
