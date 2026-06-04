@@ -1,10 +1,12 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios, {
   AxiosError,
   AxiosInstance,
   AxiosResponse,
   InternalAxiosRequestConfig,
-} from 'axios';
+} from "axios";
+ 
+
 
 // Helper to decode JWT and get expiry timestamp (seconds)
 const getTokenExpiry = (token: string): number | null => {
@@ -84,7 +86,7 @@ const getToken = async (): Promise<string | null> => {
     return null;
   }
 };
-
+ 
 const createAxiosInstance = (baseURL: string): AxiosInstance => {
   const instance: AxiosInstance = axios.create({
     baseURL,
@@ -132,7 +134,7 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
       }
       return config;
     },
-    (error: AxiosError): Promise<AxiosError> => Promise.reject(error)
+    (error: AxiosError): Promise<AxiosError> => Promise.reject(error),
   );
 
   // Response interceptor: handle 401 globally and log remaining time on success
@@ -169,5 +171,8 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
   return instance;
 };
 
-export const rootApi = createAxiosInstance('http://192.168.88.20:8081');
+export const root2Api: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083");
+export const rootApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081");
+export const studentdashboardApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081");
+export const examsApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081");
 export const root1Api = createAxiosInstance('http://192.168.88.19:8081');

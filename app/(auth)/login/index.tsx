@@ -112,6 +112,40 @@ export default function LoginScreen() {
     // OTP verified – manually store user data and navigate
     if (!demoUserData) return;
 
+  // Complete list of demo credentials for all dashboard roles
+  const demoCredentials = [
+    {
+      role: "Super Admin",
+      email: "superadmin@school.com",
+      password: "super123",
+    },
+    { role: "Admin", email: "admin@school.com", password: "admin123" },
+    {
+      role: "Principal",
+      email: "principal@school.com",
+      password: "principal123",
+    },
+    { role: "Vice Principal", email: "vice@school.com", password: "vice123" },
+    { role: "Teacher", email: "teacher@school.com", password: "teacher123" },
+    { role: "Student", email: "student@school.com", password: "student123" },
+    { role: "Parent", email: "parent@school.com", password: "parent123" },
+    { role: "Driver", email: "driver@school.com", password: "driver123" },
+    {
+      role: "Housekeeping",
+      email: "housekeeping@school.com",
+      password: "house123",
+    },
+    {
+      role: "Receptionist",
+      email: "receptionist@school.com",
+      password: "reception123",
+    },
+    {
+      role: "Librarian",
+      email: "librarian@school.com",
+      password: "librarian123",
+    },
+  ];
     try {
       // Create fake token and store in AsyncStorage
       const fakeToken = `fake-jwt-token-${Date.now()}`;

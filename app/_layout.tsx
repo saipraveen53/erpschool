@@ -33,7 +33,7 @@ export default function RootLayout() {
   const pathname = usePathname();
   const rootNavigationState = useRootNavigationState();
   const [hasNavigated, setHasNavigated] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<any>(null);
 
   useEffect(() => {
     const checkAndNavigate = async () => {
