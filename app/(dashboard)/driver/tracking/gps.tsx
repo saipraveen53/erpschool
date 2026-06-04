@@ -130,7 +130,7 @@ export default function GPSTracking() {
   };
 
   // ------------------------------------------------
-  // WEB VERSION - UNCHANGED
+  // WEB VERSION - FIXED (replaced <Text> with <span>)
   // ------------------------------------------------
   if (isWeb) {
     return (
@@ -166,21 +166,21 @@ export default function GPSTracking() {
                   
                   <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md rounded-xl p-4 shadow-lg">
                     <div className="flex items-center justify-between mb-2">
-                      <Text className="text-sm font-semibold text-gray-800">Current Location</Text>
+                      <span className="text-sm font-semibold text-gray-800">Current Location</span>
                       {isTracking ? (
                         <div className="flex items-center gap-1">
                           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                          <Text className="text-xs text-green-600">Live</Text>
+                          <span className="text-xs text-green-600">Live</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
                           <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                          <Text className="text-xs text-gray-500">Offline</Text>
+                          <span className="text-xs text-gray-500">Offline</span>
                         </div>
                       )}
                     </div>
-                    <Text className="text-lg font-bold text-gray-900">{location.address}</Text>
-                    <Text className="text-xs text-gray-500 mt-1 font-mono">{location.lat.toFixed(4)}° N, {location.lng.toFixed(4)}° E</Text>
+                    <span className="text-lg font-bold text-gray-900">{location.address}</span>
+                    <span className="text-xs text-gray-500 mt-1 font-mono block">{location.lat.toFixed(4)}° N, {location.lng.toFixed(4)}° E</span>
                   </div>
                 </div>
               </div>
@@ -274,7 +274,7 @@ export default function GPSTracking() {
                     {isTracking && (
                       <div className="mt-4 p-3 bg-green-50 rounded-xl flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <Text className="text-sm text-green-700">Your location is being shared with parents and admin</Text>
+                        <span className="text-sm text-green-700">Your location is being shared with parents and admin</span>
                       </div>
                     )}
                   </div>
@@ -329,7 +329,7 @@ export default function GPSTracking() {
   }
 
   // ------------------------------------------------
-  // NATIVE VERSION (Android/iOS) - BENTO CARD DESIGN
+  // NATIVE VERSION (Android/iOS) - unchanged
   // ------------------------------------------------
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#eef2fb" }} edges={["top", "bottom"]}>

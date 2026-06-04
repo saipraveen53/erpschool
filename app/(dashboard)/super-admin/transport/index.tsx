@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator, Modal, TextInput, Alert, Platform } from "react-native";
-import { Bus, Map, Users, AlertTriangle, Calendar, Plus, X, ChevronRight, CheckCircle, Clock } from "lucide-react-native";
-import { useState, useEffect } from "react";
-import { rootApi } from "../../../utils/axiosInstance";
 import { useRouter } from "expo-router";
+import { AlertTriangle, Bus, Calendar, CheckCircle, ChevronRight, Clock, Map, Plus, X } from "lucide-react-native";
+import { createElement, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { rootApi } from "../../../utils/axiosInstance";
 
 export default function TransportDashboard() {
   const { width } = useWindowDimensions();
@@ -259,22 +259,64 @@ export default function TransportDashboard() {
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={[styles.formGroup, { flex: 1 }]}>
                   <Text style={styles.label}>Pickup Start Time</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={routeForm.pickupStartTime} 
-                    onChangeText={t => setRouteForm({...routeForm, pickupStartTime: t})} 
-                    placeholder="8:00AM" 
-                  />
+                  {Platform.OS === 'web' ? (
+                    createElement('input', {
+                      type: 'time',
+                      value: routeForm.pickupStartTime,
+                      onChange: (e: any) => setRouteForm({ ...routeForm, pickupStartTime: e.target.value }),
+                      style: {
+                        backgroundColor: '#F5F5DC',
+                        borderWidth: 1,
+                        borderColor: '#E6D8D2',
+                        borderRadius: 8,
+                        padding: 12,
+                        fontSize: 15,
+                        color: '#A0522D',
+                        fontFamily: 'inherit',
+                        outline: 'none',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }
+                    })
+                  ) : (
+                    <TextInput 
+                      style={styles.input} 
+                      value={routeForm.pickupStartTime} 
+                      onChangeText={t => setRouteForm({...routeForm, pickupStartTime: t})} 
+                      placeholder="8:00 AM" 
+                    />
+                  )}
                 </View>
 
                 <View style={[styles.formGroup, { flex: 1 }]}>
                   <Text style={styles.label}>Drop Start Time</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={routeForm.dropStartTime} 
-                    onChangeText={t => setRouteForm({...routeForm, dropStartTime: t})} 
-                    placeholder="4:00PM" 
-                  />
+                  {Platform.OS === 'web' ? (
+                    createElement('input', {
+                      type: 'time',
+                      value: routeForm.dropStartTime,
+                      onChange: (e: any) => setRouteForm({ ...routeForm, dropStartTime: e.target.value }),
+                      style: {
+                        backgroundColor: '#F5F5DC',
+                        borderWidth: 1,
+                        borderColor: '#E6D8D2',
+                        borderRadius: 8,
+                        padding: 12,
+                        fontSize: 15,
+                        color: '#A0522D',
+                        fontFamily: 'inherit',
+                        outline: 'none',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                      }
+                    })
+                  ) : (
+                    <TextInput 
+                      style={styles.input} 
+                      value={routeForm.dropStartTime} 
+                      onChangeText={t => setRouteForm({...routeForm, dropStartTime: t})} 
+                      placeholder="4:00 PM" 
+                    />
+                  )}
                 </View>
               </View>
 

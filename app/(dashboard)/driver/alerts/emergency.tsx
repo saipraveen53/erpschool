@@ -152,7 +152,7 @@ export default function EmergencyAlert() {
   };
 
   // ------------------------------------------------
-  // WEB VERSION - UNCHANGED
+  // WEB VERSION - FIXED (replaced <Text> with <span>)
   // ------------------------------------------------
   if (isWeb) {
     return (
@@ -200,12 +200,12 @@ export default function EmergencyAlert() {
                               className="mx-auto"
                             />
                           </div>
-                          <Text className="text-white font-bold text-xl mb-1">
+                          <span className="text-white font-bold text-xl mb-1 block">
                             CANCEL EMERGENCY
-                          </Text>
-                          <Text className="text-white/70 text-xs">
+                          </span>
+                          <span className="text-white/70 text-xs">
                             Tap to cancel emergency mode
-                          </Text>
+                          </span>
                         </>
                       ) : (
                         <>
@@ -214,12 +214,12 @@ export default function EmergencyAlert() {
                             color="white"
                             className="mx-auto mb-2 group-hover:scale-110 transition-transform"
                           />
-                          <Text className="text-white font-bold text-xl mb-1">
+                          <span className="text-white font-bold text-xl mb-1 block">
                             SEND EMERGENCY ALERT
-                          </Text>
-                          <Text className="text-white/70 text-xs">
+                          </span>
+                          <span className="text-white/70 text-xs">
                             All contacts will be notified
-                          </Text>
+                          </span>
                         </>
                       )}
                     </button>
@@ -227,9 +227,9 @@ export default function EmergencyAlert() {
                   {isEmergencyMode && (
                     <div className="mt-2 flex items-center justify-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-[#0065ea] animate-ping" />
-                      <Text className="text-xs font-medium text-[#0065ea]">
+                      <span className="text-xs font-medium text-[#0065ea]">
                         Emergency Mode Active
-                      </Text>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -242,7 +242,7 @@ export default function EmergencyAlert() {
                     <p className="text-xl font-bold text-gray-800">
                       {contacts.length}
                     </p>
-                    <p className="text-xs text-gray-500">Contacts</p>
+                    <span className="text-xs text-gray-500">Contacts</span>
                   </div>
 
                   <div className="bg-white rounded-xl shadow p-3 text-center">
@@ -250,7 +250,7 @@ export default function EmergencyAlert() {
                       <Clock size={16} color="#f97316" />
                     </div>
                     <p className="text-xl font-bold text-gray-800">24/7</p>
-                    <p className="text-xs text-gray-500">Support</p>
+                    <span className="text-xs text-gray-500">Support</span>
                   </div>
 
                   <div className="bg-white rounded-xl shadow p-3 text-center">
@@ -258,7 +258,7 @@ export default function EmergencyAlert() {
                       <Shield size={16} color="#10b981" />
                     </div>
                     <p className="text-xl font-bold text-gray-800">Safe</p>
-                    <p className="text-xs text-gray-500">Protected</p>
+                    <span className="text-xs text-gray-500">Protected</span>
                   </div>
                 </div>
               </div>
@@ -292,19 +292,19 @@ export default function EmergencyAlert() {
                             <User size={20} color="#ff4b00" />
                           </div>
                           <div>
-                            <Text className="text-base font-bold text-gray-800">
+                            <span className="text-base font-bold text-gray-800 block">
                               {contact.name}
-                            </Text>
-                            <Text className="text-xs text-gray-500">
+                            </span>
+                            <span className="text-xs text-gray-500">
                               {contact.relation}
-                            </Text>
+                            </span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg mb-3">
-                          <Text className="text-xs text-gray-500">Phone</Text>
-                          <Text className="text-xs font-semibold text-gray-800">
+                          <span className="text-xs text-gray-500">Phone</span>
+                          <span className="text-xs font-semibold text-gray-800">
                             {contact.number}
-                          </Text>
+                          </span>
                         </div>
                         <button
                           onClick={() => makeCall(contact.number)}
@@ -383,7 +383,7 @@ export default function EmergencyAlert() {
   }
 
   // ------------------------------------------------
-  // NATIVE VERSION (Android/iOS) - REDESIGNED WITH BENTO CARDS
+  // NATIVE VERSION (Android/iOS) - unchanged
   // ------------------------------------------------
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#eef2fb" }} edges={["top", "bottom"]}>

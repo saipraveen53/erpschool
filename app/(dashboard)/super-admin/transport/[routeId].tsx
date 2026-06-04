@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator, Modal, TextInput, Alert, Platform } from "react-native";
-import { Bus, User, Users, ChevronLeft, Plus, X, Phone, MapPin } from "lucide-react-native";
-import { useState, useEffect, createElement } from "react";
-import { rootApi } from "../../../utils/axiosInstance";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChevronLeft, MapPin, Plus, X } from "lucide-react-native";
+import { createElement, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { rootApi } from "../../../utils/axiosInstance";
 
 export default function RouteDetails() {
   const { routeId } = useLocalSearchParams();
@@ -44,7 +44,11 @@ export default function RouteDetails() {
         if (route) setRouteDetails(route);
       }
 
-      // Fetch assigned students endpoint not provided by backend, skipping.
+      // Fetch assigned students
+      const studentsRes = await rootApi.get(`/api/student/transport/route/${routeId}/students`);
+      if (studentsRes.data && Array.isArray(studentsRes.data)) {
+        setStudents(studentsRes.data);
+      }
     } catch (e) {
       console.error("Failed to fetch route details", e);
     } finally {
