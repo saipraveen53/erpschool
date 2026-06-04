@@ -1,13 +1,18 @@
-// app/admin/classes/sections.tsx
+import React, {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+ TouchableOpacity,
   TextInput,
   useWindowDimensions,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 
 import { StatusBar } from "expo-status-bar";
@@ -15,128 +20,256 @@ import { StatusBar } from "expo-status-bar";
 import {
   Search,
   Plus,
-  Phone,
-  Mail,
-  MapPin,
-  CalendarDays,
-  Clock3,
+  School2,
   BookOpen,
-  UserCheck,
+  CalendarDays,
   CircleCheckBig,
+  ArrowLeft,
+  Users,
+  FileText,
 } from "lucide-react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-/* ========================================= */
-/* COLORS */
-/* ========================================= */
-
-const PRIMARY = "#A0522D";
-const BACKGROUND = "#F5F5DC";
-const WHITE = "#FFFFFF";
-
-const TEXT_DARK = "#000000";
-const BORDER = "#E5E7EB";
+import { sectionApi } from "@/app/utils/axiosInstance";
 
 /* ========================================= */
-/* DATA */
+/* UPDATED COLORS */
 /* ========================================= */
 
-const sectionsData = [
-  {
-    id: 1,
-    section: "Class 1 - A",
-    teacher: "Mrs. Priya",
-    students: [
-      "Aarav",
-      "Rohan",
-      "Ananya",
-      "Diya",
-    ],
-    totalStudents: 32,
-    room: "101",
-    shift: "Morning",
-    floor: "1st Floor",
-    subject: "Primary Basics",
-    phone: "+91 9876543210",
-    email: "priya@edux.com",
-  },
+const COLORS = {
+  background: "#F4F8FB",
 
-  {
-    id: 2,
-    section: "Class 1 - B",
-    teacher: "Mr. Rahul",
-    students: [
-      "Vivaan",
-      "Kabir",
-      "Ishita",
-      "Sneha",
-    ],
-    totalStudents: 30,
-    room: "102",
-    shift: "Morning",
-    floor: "1st Floor",
-    subject: "Primary Basics",
-    phone: "+91 9988776655",
-    email: "rahul@edux.com",
-  },
+  card: "#FFFFFF",
 
-  {
-    id: 3,
-    section: "Class 2 - A",
-    teacher: "Mrs. Kavya",
-    students: [
-      "Arjun",
-      "Meera",
-      "Aditya",
-      "Nisha",
-    ],
-    totalStudents: 36,
-    room: "201",
-    shift: "Afternoon",
-    floor: "2nd Floor",
-    subject: "Mathematics",
-    phone: "+91 9123456789",
-    email: "kavya@edux.com",
-  },
+  primary: "#203744",
 
-  {
-    id: 4,
-    section: "Class 3 - A",
-    teacher: "Mr. Arjun",
-    students: [
-      "Rahul",
-      "Kiran",
-      "Pooja",
-      "Sai",
-    ],
-    totalStudents: 40,
-    room: "301",
-    shift: "Morning",
-    floor: "3rd Floor",
-    subject: "Science",
-    phone: "+91 9345678912",
-    email: "arjun@edux.com",
-  },
-];
+  accent: "#22C7E5",
+
+  secondaryDark: "#162A33",
+
+  lightAccent: "#DDF8FD",
+
+  textDark: "#1E293B",
+
+  textLight: "#64748B",
+
+  border: "#DCE7EF",
+
+  white: "#FFFFFF",
+};
+
+const PRIMARY = COLORS.primary;
+
+const ACCENT = COLORS.accent;
+
+const DARK = COLORS.secondaryDark;
+
+const BACKGROUND =
+  COLORS.background;
+
+const WHITE = COLORS.card;
+
+const TEXT_DARK =
+  COLORS.textDark;
+
+const TEXT_LIGHT =
+  COLORS.textLight;
 
 /* ========================================= */
 /* COMPONENT */
 /* ========================================= */
 
 export default function SectionsPage() {
-  const { width } = useWindowDimensions();
+  const { width } =
+    useWindowDimensions();
 
   const isMobile = width < 768;
+
+  const [activePage, setActivePage] =
+    useState("");
+
+  const [
+    selectedSection,
+    setSelectedSection,
+  ] = useState<any>(null);
+
+  const [sectionsData, setSectionsData] =
+    useState<any[]>([]);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [searchText, setSearchText] =
+    useState("");
+
+  /* ========================================= */
+  /* FETCH SECTIONS */
+  /* ========================================= */
+
+  const fetchSections = async () => {
+    try {
+      setLoading(true);
+
+      const response =
+        await sectionApi.get(
+          "/api/student/class-sections",
+        );
+
+      setSectionsData(response.data);
+    } catch (error) {
+      console.log(
+        "Fetch Sections Error:",
+        error,
+      );
+
+      Alert.alert(
+        "Error",
+        "Failed to fetch sections",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ========================================= */
+  /* INITIAL LOAD */
+  /* ========================================= */
+
+  useEffect(() => {
+    fetchSections();
+  }, []);
+
+  /* ========================================= */
+  /* FILTERED DATA */
+  /* ========================================= */
+
+  const filteredSections =
+    sectionsData.filter(
+      (item: any) =>
+        `${item.className} ${item.section}`
+          .toLowerCase()
+          .includes(
+            searchText.toLowerCase(),
+          ),
+    );
+
+  /* ========================================= */
+  /* SECTION DETAILS */
+  /* ========================================= */
+
+  const renderSectionDetails = () => {
+    if (!selectedSection) return null;
+
+    return (
+      <View style={styles.detailsCard}>
+        <Text style={styles.detailsTitle}>
+          Class{" "}
+          {selectedSection.className} -
+          {selectedSection.section}
+        </Text>
+
+        <View style={styles.infoRow}>
+          <Users
+            size={18}
+            color={ACCENT}
+          />
+
+          <Text style={styles.infoText}>
+            Teacher:{" "}
+            {selectedSection.classTeacherName ||
+              "Not Assigned"}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <School2
+            size={18}
+            color={ACCENT}
+          />
+
+          <Text style={styles.infoText}>
+            Capacity:{" "}
+            {selectedSection.capacity}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <BookOpen
+            size={18}
+            color={ACCENT}
+          />
+
+          <Text style={styles.infoText}>
+            Current Strength:{" "}
+            {
+              selectedSection.currentStrength
+            }
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <CalendarDays
+            size={18}
+            color={ACCENT}
+          />
+
+          <Text style={styles.infoText}>
+            Academic Year:{" "}
+            {
+              selectedSection.academicYear
+            }
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <FileText
+            size={18}
+            color={ACCENT}
+          />
+
+          <Text style={styles.infoText}>
+            Subjects Count:{" "}
+            {
+              selectedSection.subjectIds
+                ?.length
+            }
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <CircleCheckBig
+            size={18}
+            color={ACCENT}
+          />
+
+          <Text style={styles.infoText}>
+            Section ID:{" "}
+            {
+              selectedSection.classSectionId
+            }
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  /* ========================================= */
+  /* MAIN UI */
+  /* ========================================= */
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
 
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={
+          false
+        }
         contentContainerStyle={{
-          padding: isMobile ? 16 : 22,
+          padding: isMobile
+            ? 16
+            : 22,
           paddingBottom: 120,
         }}
       >
@@ -144,24 +277,39 @@ export default function SectionsPage() {
 
         <View style={styles.header}>
           <View>
-            <Text style={styles.heading}>
+            <Text
+              style={[
+                styles.heading,
+                isMobile && {
+                  fontSize: 24,
+                },
+              ]}
+            >
               Sections Management
             </Text>
 
-            <Text style={styles.subheading}>
-              Manage class sections, teachers and
-              students
+            <Text
+              style={styles.subheading}
+            >
+              Manage academic
+              sections and schedules
             </Text>
           </View>
 
           {!isMobile && (
             <TouchableOpacity
-              activeOpacity={0.9}
               style={styles.addButton}
             >
-              <Plus size={16} color="#FFFFFF" />
+              <Plus
+                size={16}
+                color={COLORS.white}
+              />
 
-              <Text style={styles.addButtonText}>
+              <Text
+                style={
+                  styles.addButtonText
+                }
+              >
                 Add Section
               </Text>
             </TouchableOpacity>
@@ -171,312 +319,390 @@ export default function SectionsPage() {
         {/* SEARCH */}
 
         <View style={styles.searchBox}>
-          <Search size={18} color="#6B7280" />
+          <Search
+            size={18}
+            color={ACCENT}
+          />
 
           <TextInput
             placeholder="Search sections..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={
+              TEXT_LIGHT
+            }
             style={styles.searchInput}
+            value={searchText}
+            onChangeText={
+              setSearchText
+            }
           />
         </View>
 
-        {/* SECTION TABLES */}
+        {/* BACK BUTTON */}
 
-        <Text style={styles.sectionTitle}>
-          Sections Information
-        </Text>
+        {(activePage !== "" ||
+          selectedSection) && (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              setActivePage("");
+              setSelectedSection(
+                null,
+              );
+            }}
+          >
+            <ArrowLeft
+              size={18}
+              color={COLORS.white}
+            />
 
-        <View style={styles.tablesWrapper}>
-          {sectionsData.map((item) => (
+            <Text
+              style={styles.backText}
+            >
+              Back
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* LOADING */}
+
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color={ACCENT}
+            style={{
+              marginTop: 50,
+            }}
+          />
+        ) : activePage === "" &&
+          !selectedSection ? (
+          <>
+            {/* SECTION BUTTONS */}
+
+            <Text
+              style={styles.sectionTitle}
+            >
+              Section Wise
+              Information
+            </Text>
+
             <View
-              key={item.id}
               style={[
-                styles.singleTableContainer,
-                !isMobile && styles.desktopCard,
+                styles.buttonGrid,
+                isMobile && {
+                  flexDirection:
+                    "column",
+                },
               ]}
             >
-              {/* HEADER */}
-
-              <View style={styles.singleHeader}>
-                <Text style={styles.singleHeaderText}>
-                  {item.section}
-                </Text>
-              </View>
-
-              {/* BODY */}
-
-              <View style={styles.singleBody}>
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Teacher
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {item.teacher}
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Students
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {item.students.join(", ")}
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Total Students
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {item.totalStudents}
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Main Subject
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {item.subject}
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Shift
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {item.shift}
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Floor
-                  </Text>
-
-                  <View style={styles.iconRow}>
-                    <MapPin
-                      size={15}
-                      color={PRIMARY}
+              {filteredSections.map(
+                (
+                  item: any,
+                  index,
+                ) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.bigButton,
+                      isMobile && {
+                        width: "100%",
+                      },
+                    ]}
+                    onPress={() =>
+                      setSelectedSection(
+                        item,
+                      )
+                    }
+                  >
+                    <School2
+                      size={34}
+                      color={ACCENT}
                     />
 
-                    <Text style={styles.valueInline}>
-                      {item.floor}
+                    <Text
+                      style={
+                        styles.buttonTitle
+                      }
+                    >
+                      Class{" "}
+                      {
+                        item.className
+                      }{" "}
+                      -{" "}
+                      {item.section}
                     </Text>
-                  </View>
-                </View>
 
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Room No
-                  </Text>
-
-                  <Text style={styles.value}>
-                    {item.room}
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Contact
-                  </Text>
-
-                  <View style={styles.iconRow}>
-                    <Phone
-                      size={15}
-                      color={PRIMARY}
-                    />
-
-                    <Text style={styles.valueInline}>
-                      {item.phone}
+                    <Text
+                      style={
+                        styles.buttonDesc
+                      }
+                    >
+                      {
+                        item.academicYear
+                      }
                     </Text>
-                  </View>
-                </View>
-
-                <View style={styles.row}>
-                  <Text style={styles.label}>
-                    Email
-                  </Text>
-
-                  <View style={styles.iconRow}>
-                    <Mail
-                      size={15}
-                      color={PRIMARY}
-                    />
-
-                    <Text style={styles.valueInline}>
-                      {item.email}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.lastRow}>
-                  <Text style={styles.label}>
-                    Schedule
-                  </Text>
-
-                  <View style={styles.iconRow}>
-                    <CalendarDays
-                      size={15}
-                      color={PRIMARY}
-                    />
-
-                    <Text style={styles.valueInline}>
-                      Monday - Friday
-                    </Text>
-                  </View>
-                </View>
-              </View>
+                  </TouchableOpacity>
+                ),
+              )}
             </View>
-          ))}
-        </View>
 
-        {/* ================================= */}
-        {/* SECTION SCHEDULE */}
-        {/* ================================= */}
+            {/* UTILITIES */}
 
-        <Text style={styles.sectionTitle}>
-          Weekly Schedule
-        </Text>
-
-        <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <Clock3 size={18} color={PRIMARY} />
-
-            <Text style={styles.infoText}>
-              Morning Shift: 8:30 AM - 1:00 PM
+            <Text
+              style={styles.sectionTitle}
+            >
+              Academic Utilities
             </Text>
+
+            <View
+              style={[
+                styles.buttonGrid,
+                isMobile && {
+                  flexDirection:
+                    "column",
+                },
+              ]}
+            >
+              {/* WEEKLY SCHEDULE */}
+
+              <TouchableOpacity
+                style={[
+                  styles.bigButton,
+                  isMobile && {
+                    width: "100%",
+                  },
+                ]}
+                onPress={() =>
+                  setActivePage(
+                    "schedule",
+                  )
+                }
+              >
+                <CalendarDays
+                  size={34}
+                  color={ACCENT}
+                />
+
+                <Text
+                  style={
+                    styles.buttonTitle
+                  }
+                >
+                  Weekly Schedule
+                </Text>
+
+                <Text
+                  style={
+                    styles.buttonDesc
+                  }
+                >
+                  View school timings
+                </Text>
+              </TouchableOpacity>
+
+              {/* SUBJECT INFO */}
+
+              <TouchableOpacity
+                style={[
+                  styles.bigButton,
+                  isMobile && {
+                    width: "100%",
+                  },
+                ]}
+                onPress={() =>
+                  setActivePage(
+                    "subjects",
+                  )
+                }
+              >
+                <BookOpen
+                  size={34}
+                  color={ACCENT}
+                />
+
+                <Text
+                  style={
+                    styles.buttonTitle
+                  }
+                >
+                  Subject Information
+                </Text>
+
+                <Text
+                  style={
+                    styles.buttonDesc
+                  }
+                >
+                  Academic subject
+                  data
+                </Text>
+              </TouchableOpacity>
+
+              {/* GUIDELINES */}
+
+              <TouchableOpacity
+                style={[
+                  styles.bigButton,
+                  isMobile && {
+                    width: "100%",
+                  },
+                ]}
+                onPress={() =>
+                  setActivePage(
+                    "guidelines",
+                  )
+                }
+              >
+                <CircleCheckBig
+                  size={34}
+                  color={ACCENT}
+                />
+
+                <Text
+                  style={
+                    styles.buttonTitle
+                  }
+                >
+                  Guidelines
+                </Text>
+
+                <Text
+                  style={
+                    styles.buttonDesc
+                  }
+                >
+                  School rules and
+                  policies
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : selectedSection ? (
+          renderSectionDetails()
+        ) : (
+          <View style={styles.detailsCard}>
+            {activePage ===
+              "schedule" && (
+              <>
+                <Text
+                  style={
+                    styles.detailsTitle
+                  }
+                >
+                  Weekly Schedule
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Morning Shift:
+                  8:30 AM - 1:00 PM
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Afternoon Shift:
+                  1:30 PM - 5:00 PM
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Saturday
+                  Activities: 10:00 AM
+                </Text>
+              </>
+            )}
+
+            {activePage ===
+              "subjects" && (
+              <>
+                <Text
+                  style={
+                    styles.detailsTitle
+                  }
+                >
+                  Subject Information
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Mathematics Lab
+                  Available
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Science
+                  Practicals Every
+                  Wednesday
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • English
+                  Communication
+                  Classes on Fridays
+                </Text>
+              </>
+            )}
+
+            {activePage ===
+              "guidelines" && (
+              <>
+                <Text
+                  style={
+                    styles.detailsTitle
+                  }
+                >
+                  Section Guidelines
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Attendance before
+                  10:00 AM
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Homework updates
+                  every Friday
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailText
+                  }
+                >
+                  • Monthly Parent
+                  Meetings
+                </Text>
+              </>
+            )}
           </View>
-
-          <View style={styles.infoRow}>
-            <Clock3 size={18} color={PRIMARY} />
-
-            <Text style={styles.infoText}>
-              Afternoon Shift: 1:30 PM - 5:00 PM
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <CalendarDays
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              Saturday Activities: 10:00 AM
-            </Text>
-          </View>
-        </View>
-
-        {/* ================================= */}
-        {/* SUBJECT INFORMATION */}
-        {/* ================================= */}
-
-        <Text style={styles.sectionTitle}>
-          Subject Information
-        </Text>
-
-        <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <BookOpen
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              Mathematics Lab Available for
-              Classes 2 & 3
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <BookOpen
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              Science Practical Sessions Every
-              Wednesday
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <BookOpen
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              English Communication Classes on
-              Fridays
-            </Text>
-          </View>
-        </View>
-
-        {/* ================================= */}
-        {/* CLASS RULES */}
-        {/* ================================= */}
-
-        <Text style={styles.sectionTitle}>
-          Section Guidelines
-        </Text>
-
-        <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <CircleCheckBig
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              Attendance must be updated before
-              10:00 AM
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <CircleCheckBig
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              Homework reports submitted every
-              Friday
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <CircleCheckBig
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              Parent meetings conducted monthly
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <UserCheck
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.infoText}>
-              Class teachers responsible for
-              discipline records
-            </Text>
-          </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -489,12 +715,14 @@ export default function SectionsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BACKGROUND,
+    backgroundColor:
+      COLORS.background,
   },
 
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     marginBottom: 20,
   },
@@ -502,17 +730,17 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 30,
     fontWeight: "900",
-    color: PRIMARY,
+    color: DARK,
   },
 
   subheading: {
     marginTop: 4,
     fontSize: 13,
-    color: "#000000",
+    color: TEXT_LIGHT,
   },
 
   addButton: {
-    backgroundColor: PRIMARY,
+    backgroundColor: ACCENT,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 18,
@@ -521,145 +749,128 @@ const styles = StyleSheet.create({
   },
 
   addButtonText: {
-    color: "#FFFFFF",
+    color: COLORS.white,
     marginLeft: 6,
     fontWeight: "700",
     fontSize: 13,
   },
 
   searchBox: {
-    backgroundColor: WHITE,
+    backgroundColor:
+      COLORS.lightAccent,
     height: 54,
     borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 28,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 14,
-    color: "#000000",
+    color: TEXT_DARK,
+  },
+
+  backButton: {
+    backgroundColor: DARK,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+    marginBottom: 20,
+  },
+
+  backText: {
+    color: COLORS.white,
+    marginLeft: 8,
+    fontWeight: "700",
   },
 
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "900",
-    color: PRIMARY,
+    color: DARK,
     marginBottom: 18,
     marginTop: 6,
   },
 
-  /* TABLE GRID */
-
-  tablesWrapper: {
+  buttonGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
   },
 
-  desktopCard: {
-    width: "48.5%",
-  },
-
-  singleTableContainer: {
-    backgroundColor: WHITE,
+  bigButton: {
+    width: "48%",
+    backgroundColor:
+      COLORS.lightAccent,
     borderRadius: 22,
-    marginBottom: 22,
-    overflow: "hidden",
+    paddingVertical: 32,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: BORDER,
-    width: "100%",
+    borderColor: COLORS.border,
   },
 
-  singleHeader: {
-    backgroundColor: PRIMARY,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-  },
-
-  singleHeaderText: {
-    color: "#FFFFFF",
+  buttonTitle: {
+    marginTop: 16,
     fontSize: 18,
     fontWeight: "800",
+    color: DARK,
+    textAlign: "center",
   },
 
-  singleBody: {
-    paddingHorizontal: 18,
-    paddingVertical: 6,
+  buttonDesc: {
+    marginTop: 8,
+    fontSize: 12,
+    color: TEXT_LIGHT,
+    textAlign: "center",
+    lineHeight: 18,
   },
 
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F1F1",
-  },
-
-  lastRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingVertical: 16,
-  },
-
-  label: {
-    width: "38%",
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#000000",
-  },
-
-  value: {
-    width: "58%",
-    fontSize: 14,
-    color: "#000000",
-    fontWeight: "600",
-    lineHeight: 22,
-  },
-
-  iconRow: {
-    width: "58%",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  valueInline: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#000000",
-    fontWeight: "600",
-  },
-
-  /* EXTRA INFORMATION */
-
-  infoContainer: {
-    backgroundColor: WHITE,
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 24,
+  detailsCard: {
+    backgroundColor:
+      COLORS.lightAccent,
+    borderRadius: 24,
+    padding: 22,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: COLORS.border,
+  },
+
+  detailsTitle: {
+    fontSize: 24,
+    fontWeight: "900",
+    color: DARK,
+    marginBottom: 20,
   },
 
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    marginBottom: 18,
   },
 
   infoText: {
     marginLeft: 12,
-    color: "#000000",
-    fontSize: 14,
+    fontSize: 15,
+    color: TEXT_DARK,
     fontWeight: "600",
     flex: 1,
-    lineHeight: 22,
+  },
+
+  detailText: {
+    fontSize: 15,
+    color: TEXT_DARK,
+    marginBottom: 16,
+    lineHeight: 24,
+    fontWeight: "600",
   },
 });

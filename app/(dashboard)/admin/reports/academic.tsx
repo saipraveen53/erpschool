@@ -9,6 +9,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from "react-native";
+
 import { StatusBar } from "expo-status-bar";
 
 import {
@@ -33,13 +34,29 @@ import {
   Filter,
 } from "lucide-react-native";
 
-const PRIMARY = "#A0522D";
-const BACKGROUND = "#F5F5DC";
+/* ========================================= */
+/* UPDATED COLORS */
+/* ========================================= */
+
+const PRIMARY = "#203744";
+
+const ACCENT = "#22C7E5";
+
+const BACKGROUND = "#F1F5F9";
+
 const CARD = "#FFFFFF";
-const LIGHT = "#E7D7C9";
+
+const LIGHT = "#E7FAFD";
+
+const BORDER = "#DCE7EF";
+
+const TEXT_DARK = "#1E293B";
+
+const TEXT_LIGHT = "#64748B";
 
 export default function AcademicReportsPage() {
-  const { width } = useWindowDimensions();
+  const { width } =
+    useWindowDimensions();
 
   const isMobile = width < 768;
 
@@ -54,6 +71,8 @@ export default function AcademicReportsPage() {
       ]}
       showsVerticalScrollIndicator={false}
     >
+      <StatusBar style="dark" />
+
       {/* HEADER */}
 
       <View style={styles.header}>
@@ -63,17 +82,28 @@ export default function AcademicReportsPage() {
           </Text>
 
           <Text style={styles.subheading}>
-            Analyze student performance, attendance and academic growth
+            Analyze student
+            performance, attendance
+            and academic growth
           </Text>
         </View>
 
         {/* DESKTOP ONLY */}
 
         {!isMobile && (
-          <TouchableOpacity style={styles.addButton}>
-            <Plus size={16} color="#fff" />
+          <TouchableOpacity
+            style={styles.addButton}
+          >
+            <Plus
+              size={16}
+              color="#fff"
+            />
 
-            <Text style={styles.addButtonText}>
+            <Text
+              style={
+                styles.addButtonText
+              }
+            >
               Generate Report
             </Text>
           </TouchableOpacity>
@@ -85,20 +115,35 @@ export default function AcademicReportsPage() {
       <View style={styles.heroCard}>
         <View style={styles.heroLeft}>
           <Sparkles
-            size={isMobile ? 30 : 36}
+            size={
+              isMobile ? 30 : 36
+            }
             color="#fff"
           />
 
           <Text style={styles.heroTitle}>
-            Smart Academic Analytics
+            Smart Academic
+            Analytics
           </Text>
 
-          <Text style={styles.heroSubtitle}>
-            AI-powered academic insights with real-time performance tracking
+          <Text
+            style={
+              styles.heroSubtitle
+            }
+          >
+            AI-powered academic
+            insights with real-time
+            performance tracking
           </Text>
 
-          <TouchableOpacity style={styles.heroButton}>
-            <Text style={styles.heroButtonText}>
+          <TouchableOpacity
+            style={styles.heroButton}
+          >
+            <Text
+              style={
+                styles.heroButtonText
+              }
+            >
               Explore Insights
             </Text>
           </TouchableOpacity>
@@ -110,7 +155,11 @@ export default function AcademicReportsPage() {
             color={PRIMARY}
           />
 
-          <Text style={styles.heroBadgeText}>
+          <Text
+            style={
+              styles.heroBadgeText
+            }
+          >
             95% Success
           </Text>
         </View>
@@ -118,17 +167,31 @@ export default function AcademicReportsPage() {
 
       {/* SEARCH */}
 
-      <View style={styles.searchContainer}>
-        <Search size={18} color="#6B7280" />
+      <View
+        style={
+          styles.searchContainer
+        }
+      >
+        <Search
+          size={18}
+          color={TEXT_LIGHT}
+        />
 
         <TextInput
           placeholder="Search reports..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={
+            TEXT_LIGHT
+          }
           style={styles.searchInput}
         />
 
-        <TouchableOpacity style={styles.filterButton}>
-          <Filter size={16} color={PRIMARY} />
+        <TouchableOpacity
+          style={styles.filterButton}
+        >
+          <Filter
+            size={16}
+            color={PRIMARY}
+          />
         </TouchableOpacity>
       </View>
 
@@ -136,75 +199,85 @@ export default function AcademicReportsPage() {
 
       <View style={styles.statsGrid}>
         <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#dbeafe" },
-          ]}
+          style={styles.statCard}
         >
-          <Users size={28} color={PRIMARY} />
+          <Users
+            size={28}
+            color={ACCENT}
+          />
 
-          <Text style={styles.statValue}>
+          <Text
+            style={styles.statValue}
+          >
             1.2K
           </Text>
 
-          <Text style={styles.statLabel}>
+          <Text
+            style={styles.statLabel}
+          >
             Students
           </Text>
         </View>
 
         <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#dcfce7" },
-          ]}
+          style={styles.statCard}
         >
           <TrendingUp
             size={28}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.statValue}>
+          <Text
+            style={styles.statValue}
+          >
             92%
           </Text>
 
-          <Text style={styles.statLabel}>
+          <Text
+            style={styles.statLabel}
+          >
             Performance
           </Text>
         </View>
 
         <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#fde68a" },
-          ]}
+          style={styles.statCard}
         >
           <ClipboardCheck
             size={28}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.statValue}>
+          <Text
+            style={styles.statValue}
+          >
             94%
           </Text>
 
-          <Text style={styles.statLabel}>
+          <Text
+            style={styles.statLabel}
+          >
             Attendance
           </Text>
         </View>
 
         <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#ede9fe" },
-          ]}
+          style={styles.statCard}
         >
-          <Trophy size={28} color={PRIMARY} />
+          <Trophy
+            size={28}
+            color={ACCENT}
+          />
 
-          <Text style={styles.statValue}>
+          <Text
+            style={styles.statValue}
+          >
             86
           </Text>
 
-          <Text style={styles.statLabel}>
+          <Text
+            style={styles.statLabel}
+          >
             Toppers
           </Text>
         </View>
@@ -217,29 +290,42 @@ export default function AcademicReportsPage() {
       </Text>
 
       <View style={styles.reportGrid}>
-        <TouchableOpacity style={styles.reportCard}>
-          <View style={styles.reportIcon}>
+        <TouchableOpacity
+          style={styles.reportCard}
+        >
+          <View
+            style={
+              styles.reportIcon
+            }
+          >
             <BarChart3
               size={26}
               color="#fff"
             />
           </View>
 
-          <Text style={styles.reportTitle}>
+          <Text
+            style={
+              styles.reportTitle
+            }
+          >
             Performance Report
           </Text>
 
-          <Text style={styles.reportDesc}>
+          <Text
+            style={styles.reportDesc}
+          >
             Analyze marks & grades
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.reportCard}>
+        <TouchableOpacity
+          style={styles.reportCard}
+        >
           <View
-            style={[
-              styles.reportIcon,
-              { backgroundColor: "#7C2D12" },
-            ]}
+            style={
+              styles.reportIcon
+            }
           >
             <PieChart
               size={26}
@@ -247,21 +333,28 @@ export default function AcademicReportsPage() {
             />
           </View>
 
-          <Text style={styles.reportTitle}>
+          <Text
+            style={
+              styles.reportTitle
+            }
+          >
             Attendance Analytics
           </Text>
 
-          <Text style={styles.reportDesc}>
+          <Text
+            style={styles.reportDesc}
+          >
             Track attendance trends
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.reportCard}>
+        <TouchableOpacity
+          style={styles.reportCard}
+        >
           <View
-            style={[
-              styles.reportIcon,
-              { backgroundColor: "#92400E" },
-            ]}
+            style={
+              styles.reportIcon
+            }
           >
             <BookOpen
               size={26}
@@ -269,11 +362,17 @@ export default function AcademicReportsPage() {
             />
           </View>
 
-          <Text style={styles.reportTitle}>
+          <Text
+            style={
+              styles.reportTitle
+            }
+          >
             Subject Analysis
           </Text>
 
-          <Text style={styles.reportDesc}>
+          <Text
+            style={styles.reportDesc}
+          >
             Compare subject growth
           </Text>
         </TouchableOpacity>
@@ -285,22 +384,42 @@ export default function AcademicReportsPage() {
         Top Performers
       </Text>
 
-      <View style={styles.listContainer}>
-        <TouchableOpacity style={styles.studentCard}>
-          <View style={styles.studentLeft}>
-            <View style={styles.iconBox}>
+      <View
+        style={
+          styles.listContainer
+        }
+      >
+        <TouchableOpacity
+          style={styles.studentCard}
+        >
+          <View
+            style={
+              styles.studentLeft
+            }
+          >
+            <View
+              style={styles.iconBox}
+            >
               <Star
                 size={20}
-                color={PRIMARY}
+                color={ACCENT}
               />
             </View>
 
             <View>
-              <Text style={styles.studentName}>
+              <Text
+                style={
+                  styles.studentName
+                }
+              >
                 Rahul Sharma
               </Text>
 
-              <Text style={styles.studentClass}>
+              <Text
+                style={
+                  styles.studentClass
+                }
+              >
                 Grade 10 • 98%
               </Text>
             </View>
@@ -308,25 +427,41 @@ export default function AcademicReportsPage() {
 
           <ChevronRight
             size={18}
-            color="#6B7280"
+            color={TEXT_LIGHT}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.studentCard}>
-          <View style={styles.studentLeft}>
-            <View style={styles.iconBox}>
+        <TouchableOpacity
+          style={styles.studentCard}
+        >
+          <View
+            style={
+              styles.studentLeft
+            }
+          >
+            <View
+              style={styles.iconBox}
+            >
               <Trophy
                 size={20}
-                color={PRIMARY}
+                color={ACCENT}
               />
             </View>
 
             <View>
-              <Text style={styles.studentName}>
+              <Text
+                style={
+                  styles.studentName
+                }
+              >
                 Priya Patel
               </Text>
 
-              <Text style={styles.studentClass}>
+              <Text
+                style={
+                  styles.studentClass
+                }
+              >
                 Grade 9 • 97%
               </Text>
             </View>
@@ -334,25 +469,41 @@ export default function AcademicReportsPage() {
 
           <ChevronRight
             size={18}
-            color="#6B7280"
+            color={TEXT_LIGHT}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.studentCard}>
-          <View style={styles.studentLeft}>
-            <View style={styles.iconBox}>
+        <TouchableOpacity
+          style={styles.studentCard}
+        >
+          <View
+            style={
+              styles.studentLeft
+            }
+          >
+            <View
+              style={styles.iconBox}
+            >
               <GraduationCap
                 size={20}
-                color={PRIMARY}
+                color={ACCENT}
               />
             </View>
 
             <View>
-              <Text style={styles.studentName}>
+              <Text
+                style={
+                  styles.studentName
+                }
+              >
                 Aryan Gupta
               </Text>
 
-              <Text style={styles.studentClass}>
+              <Text
+                style={
+                  styles.studentClass
+                }
+              >
                 Grade 8 • 96%
               </Text>
             </View>
@@ -360,7 +511,7 @@ export default function AcademicReportsPage() {
 
           <ChevronRight
             size={18}
-            color="#6B7280"
+            color={TEXT_LIGHT}
           />
         </TouchableOpacity>
       </View>
@@ -372,47 +523,67 @@ export default function AcademicReportsPage() {
       </Text>
 
       <View style={styles.quickGrid}>
-        <TouchableOpacity style={styles.quickCard}>
+        <TouchableOpacity
+          style={styles.quickCard}
+        >
           <Download
             size={28}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.quickTitle}>
+          <Text
+            style={styles.quickTitle}
+          >
             Export Reports
           </Text>
 
-          <Text style={styles.quickDesc}>
-            Download academic reports
+          <Text
+            style={styles.quickDesc}
+          >
+            Download academic
+            reports
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.quickCard}>
+        <TouchableOpacity
+          style={styles.quickCard}
+        >
           <Upload
             size={28}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.quickTitle}>
+          <Text
+            style={styles.quickTitle}
+          >
             Upload Data
           </Text>
 
-          <Text style={styles.quickDesc}>
-            Import marks & attendance
+          <Text
+            style={styles.quickDesc}
+          >
+            Import marks &
+            attendance
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.quickCard}>
+        <TouchableOpacity
+          style={styles.quickCard}
+        >
           <Bell
             size={28}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.quickTitle}>
+          <Text
+            style={styles.quickTitle}
+          >
             Notify Parents
           </Text>
 
-          <Text style={styles.quickDesc}>
+          <Text
+            style={styles.quickDesc}
+          >
             Send academic alerts
           </Text>
         </TouchableOpacity>
@@ -424,48 +595,88 @@ export default function AcademicReportsPage() {
         Academic Insights
       </Text>
 
-      <View style={styles.analyticsContainer}>
-        <View style={styles.analyticsCard}>
+      <View
+        style={
+          styles.analyticsContainer
+        }
+      >
+        <View
+          style={
+            styles.analyticsCard
+          }
+        >
           <TrendingUp
             size={24}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.analyticsValue}>
+          <Text
+            style={
+              styles.analyticsValue
+            }
+          >
             +12%
           </Text>
 
-          <Text style={styles.analyticsLabel}>
+          <Text
+            style={
+              styles.analyticsLabel
+            }
+          >
             Overall Improvement
           </Text>
         </View>
 
-        <View style={styles.analyticsCard}>
+        <View
+          style={
+            styles.analyticsCard
+          }
+        >
           <CalendarDays
             size={24}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.analyticsValue}>
+          <Text
+            style={
+              styles.analyticsValue
+            }
+          >
             94%
           </Text>
 
-          <Text style={styles.analyticsLabel}>
+          <Text
+            style={
+              styles.analyticsLabel
+            }
+          >
             Attendance Rate
           </Text>
         </View>
 
-        <View style={styles.analyticsCard}>
+        <View
+          style={
+            styles.analyticsCard
+          }
+        >
           <FileSpreadsheet
             size={24}
-            color={PRIMARY}
+            color={ACCENT}
           />
 
-          <Text style={styles.analyticsValue}>
+          <Text
+            style={
+              styles.analyticsValue
+            }
+          >
             120+
           </Text>
 
-          <Text style={styles.analyticsLabel}>
+          <Text
+            style={
+              styles.analyticsLabel
+            }
+          >
             Reports Generated
           </Text>
         </View>
@@ -477,44 +688,93 @@ export default function AcademicReportsPage() {
         Recent Activity
       </Text>
 
-      <View style={styles.activityContainer}>
-        <View style={styles.activityCard}>
-          <View style={styles.activityDot} />
+      <View
+        style={
+          styles.activityContainer
+        }
+      >
+        <View
+          style={styles.activityCard}
+        >
+          <View
+            style={
+              styles.activityDot
+            }
+          />
 
           <View>
-            <Text style={styles.activityTitle}>
-              Grade 10 report generated
+            <Text
+              style={
+                styles.activityTitle
+              }
+            >
+              Grade 10 report
+              generated
             </Text>
 
-            <Text style={styles.activityTime}>
+            <Text
+              style={
+                styles.activityTime
+              }
+            >
               2 hours ago
             </Text>
           </View>
         </View>
 
-        <View style={styles.activityCard}>
-          <View style={styles.activityDot} />
+        <View
+          style={styles.activityCard}
+        >
+          <View
+            style={
+              styles.activityDot
+            }
+          />
 
           <View>
-            <Text style={styles.activityTitle}>
-              Attendance analytics updated
+            <Text
+              style={
+                styles.activityTitle
+              }
+            >
+              Attendance analytics
+              updated
             </Text>
 
-            <Text style={styles.activityTime}>
+            <Text
+              style={
+                styles.activityTime
+              }
+            >
               Today
             </Text>
           </View>
         </View>
 
-        <View style={styles.activityCard}>
-          <View style={styles.activityDot} />
+        <View
+          style={styles.activityCard}
+        >
+          <View
+            style={
+              styles.activityDot
+            }
+          />
 
           <View>
-            <Text style={styles.activityTitle}>
-              Parent notifications sent
+            <Text
+              style={
+                styles.activityTitle
+              }
+            >
+              Parent notifications
+              sent
             </Text>
 
-            <Text style={styles.activityTime}>
+            <Text
+              style={
+                styles.activityTime
+              }
+            >
               Yesterday
             </Text>
           </View>
@@ -527,7 +787,8 @@ export default function AcademicReportsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BACKGROUND,
+    backgroundColor:
+      BACKGROUND,
   },
 
   content: {
@@ -536,7 +797,8 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     flexWrap: "wrap",
     marginBottom: 22,
@@ -550,13 +812,14 @@ const styles = StyleSheet.create({
 
   subheading: {
     marginTop: 6,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     fontSize: 13,
     maxWidth: 520,
   },
 
   addButton: {
-    backgroundColor: PRIMARY,
+    backgroundColor:
+      ACCENT,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 16,
@@ -572,12 +835,14 @@ const styles = StyleSheet.create({
   },
 
   heroCard: {
-    backgroundColor: PRIMARY,
+    backgroundColor:
+      PRIMARY,
     borderRadius: 24,
     padding: 20,
     marginBottom: 22,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
   },
 
@@ -594,7 +859,7 @@ const styles = StyleSheet.create({
   },
 
   heroSubtitle: {
-    color: "#F5F5DC",
+    color: "#DCE7EF",
     marginTop: 8,
     lineHeight: 20,
     fontSize: 12,
@@ -602,7 +867,8 @@ const styles = StyleSheet.create({
 
   heroButton: {
     marginTop: 16,
-    backgroundColor: "#7A3B1A",
+    backgroundColor:
+      ACCENT,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
@@ -616,7 +882,8 @@ const styles = StyleSheet.create({
   },
 
   heroBadge: {
-    backgroundColor: "#fff",
+    backgroundColor:
+      "#fff",
     padding: 16,
     borderRadius: 20,
     alignItems: "center",
@@ -637,12 +904,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 22,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   searchInput: {
     flex: 1,
     marginLeft: 10,
     fontSize: 13,
+    color: TEXT_DARK,
   },
 
   filterButton: {
@@ -657,7 +927,8 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
@@ -666,19 +937,22 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 18,
     marginBottom: 14,
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   statValue: {
     fontSize: 28,
     fontWeight: "900",
-    color: "#111827",
+    color: TEXT_DARK,
     marginTop: 12,
   },
 
   statLabel: {
     marginTop: 6,
     fontSize: 11,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
   },
 
   sectionTitle: {
@@ -690,7 +964,8 @@ const styles = StyleSheet.create({
 
   reportGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
@@ -699,13 +974,16 @@ const styles = StyleSheet.create({
     backgroundColor: CARD,
     borderRadius: 20,
     padding: 14,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   reportIcon: {
     width: 58,
     height: 58,
     borderRadius: 18,
-    backgroundColor: PRIMARY,
+    backgroundColor:
+      ACCENT,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -714,12 +992,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontWeight: "800",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   reportDesc: {
     marginTop: 6,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     fontSize: 11,
     lineHeight: 18,
   },
@@ -734,8 +1012,11 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   studentLeft: {
@@ -756,18 +1037,19 @@ const styles = StyleSheet.create({
   studentName: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   studentClass: {
     marginTop: 4,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     fontSize: 11,
   },
 
   quickGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
@@ -776,25 +1058,28 @@ const styles = StyleSheet.create({
     backgroundColor: CARD,
     borderRadius: 20,
     padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   quickTitle: {
     marginTop: 12,
     fontSize: 14,
     fontWeight: "800",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   quickDesc: {
     marginTop: 6,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     lineHeight: 18,
     fontSize: 11,
   },
 
   analyticsContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
@@ -804,6 +1089,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 20,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   analyticsValue: {
@@ -815,7 +1102,7 @@ const styles = StyleSheet.create({
 
   analyticsLabel: {
     marginTop: 6,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     textAlign: "center",
     fontSize: 11,
   },
@@ -831,25 +1118,28 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   activityDot: {
     width: 12,
     height: 12,
     borderRadius: 20,
-    backgroundColor: PRIMARY,
+    backgroundColor:
+      ACCENT,
     marginRight: 14,
   },
 
   activityTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   activityTime: {
     marginTop: 4,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     fontSize: 11,
   },
 });

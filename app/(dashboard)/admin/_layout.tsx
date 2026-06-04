@@ -3,7 +3,6 @@
 import { Stack, router, usePathname } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
 
-
 import {
   Image,
   ScrollView,
@@ -42,13 +41,30 @@ import {
 } from "lucide-react-native";
 
 /* ======================================= */
-/* THEME */
+/* UPDATED THEME COLORS */
 /* ======================================= */
 
-const PRIMARY = "#A0522D";
-const BACKGROUND = "#F5F5DC";
+const PRIMARY = "#12B5CB";
+
+const PRIMARY_DARK = "#0E8EA0";
+
+const SIDEBAR = "#24343D";
+
+const SIDEBAR_LIGHT = "#2D3F49";
+
+const BACKGROUND = "#FFFFFF";
+
 const WHITE = "#FFFFFF";
-const LIGHT_BROWN = "#E7D7C9";
+
+const LIGHT_CARD = "#EDF4F7";
+
+const LIGHT_BLUE = "#EAF7FA";
+
+const BORDER = "#DCE7EC";
+
+const TEXT = "#1E293B";
+
+const SUB_TEXT = "#64748B";
 
 /* ======================================= */
 /* MENU ITEMS */
@@ -163,21 +179,6 @@ const menuItems = [
         title: "Overview",
         route: "/admin/fees",
       },
-
-      {
-        title: "Payments",
-        route: "/admin/fees/payments",
-      },
-
-      {
-        title: "Receipts",
-        route: "/admin/fees/receipts",
-      },
-
-      {
-        title: "Structure",
-        route: "/admin/fees/structure",
-      },
     ],
   },
 
@@ -203,11 +204,6 @@ const menuItems = [
       },
 
       {
-        title: "Marks Entry",
-        route: "/admin/examination/marks-entry",
-      },
-
-      {
         title: "Results",
         route: "/admin/examination/results",
       },
@@ -224,16 +220,6 @@ const menuItems = [
         title: "Overview",
         route: "/admin/library",
       },
-
-      {
-        title: "Books",
-        route: "/admin/library/books",
-      },
-
-      {
-        title: "Issued Books",
-        route: "/admin/library/issued",
-      },
     ],
   },
 
@@ -246,11 +232,6 @@ const menuItems = [
       {
         title: "Overview",
         route: "/admin/timetable",
-      },
-
-      {
-        title: "Setup",
-        route: "/admin/timetable/setup",
       },
     ],
   },
@@ -265,21 +246,6 @@ const menuItems = [
         title: "Overview",
         route: "/admin/transport",
       },
-
-      {
-        title: "Buses",
-        route: "/admin/transport/buses",
-      },
-
-      {
-        title: "Routes",
-        route: "/admin/transport/routes",
-      },
-
-      {
-        title: "Tracking",
-        route: "/admin/transport/tracking",
-      },
     ],
   },
 
@@ -292,16 +258,6 @@ const menuItems = [
       {
         title: "Overview",
         route: "/admin/communication",
-      },
-
-      {
-        title: "Circulars",
-        route: "/admin/communication/circulars",
-      },
-
-      {
-        title: "Notices",
-        route: "/admin/communication/notices",
       },
     ],
   },
@@ -358,6 +314,7 @@ function Sidebar({
   setCollapsed,
 }: any) {
   const pathname = usePathname();
+
   const { logout } = useAuth();
 
   const [openMenus, setOpenMenus] =
@@ -380,10 +337,11 @@ function Sidebar({
             ? 260
             : 270,
 
-        backgroundColor: WHITE,
+        backgroundColor: SIDEBAR,
 
         borderRightWidth: 1,
-        borderRightColor: "#ECECEC",
+
+        borderRightColor: "#314550",
 
         paddingTop: isMobile ? 50 : 18,
 
@@ -395,7 +353,7 @@ function Sidebar({
         height: "100%",
       }}
     >
-      {/* CLOSE BUTTON */}
+      {/* MOBILE CLOSE BUTTON */}
 
       {isMobile && (
         <TouchableOpacity
@@ -415,19 +373,22 @@ function Sidebar({
             right: 12,
 
             width: 36,
+
             height: 36,
 
             borderRadius: 100,
 
-            backgroundColor: "#F3F4F6",
+            backgroundColor:
+              SIDEBAR_LIGHT,
 
             justifyContent: "center",
+
             alignItems: "center",
 
             zIndex: 999,
           }}
         >
-          <X size={18} color="#111827" />
+          <X size={18} color="#FFFFFF" />
         </TouchableOpacity>
       )}
 
@@ -440,17 +401,22 @@ function Sidebar({
           }
           style={{
             position: "absolute",
+
             top: 24,
+
             right: -12,
 
             width: 28,
+
             height: 28,
 
             borderRadius: 100,
 
-            backgroundColor: WHITE,
+            backgroundColor:
+              SIDEBAR_LIGHT,
 
             justifyContent: "center",
+
             alignItems: "center",
 
             elevation: 5,
@@ -461,12 +427,12 @@ function Sidebar({
           {collapsed ? (
             <ChevronRight
               size={16}
-              color="#111827"
+              color="#FFFFFF"
             />
           ) : (
             <ChevronLeft
               size={16}
-              color="#111827"
+              color="#FFFFFF"
             />
           )}
         </TouchableOpacity>
@@ -477,6 +443,7 @@ function Sidebar({
       <View
         style={{
           flexDirection: "row",
+
           alignItems: "center",
 
           marginBottom: 24,
@@ -487,6 +454,7 @@ function Sidebar({
         <View
           style={{
             width: 42,
+
             height: 42,
 
             borderRadius: 12,
@@ -494,6 +462,7 @@ function Sidebar({
             backgroundColor: PRIMARY,
 
             justifyContent: "center",
+
             alignItems: "center",
           }}
         >
@@ -507,9 +476,10 @@ function Sidebar({
           <Text
             style={{
               fontSize: 24,
+
               fontWeight: "800",
 
-              color: PRIMARY,
+              color: "#FFFFFF",
 
               marginLeft: 12,
             }}
@@ -573,6 +543,7 @@ function Sidebar({
                       "space-between",
 
                     paddingVertical: 13,
+
                     paddingHorizontal: 14,
 
                     borderRadius: 16,
@@ -588,6 +559,7 @@ function Sidebar({
                   <View
                     style={{
                       flexDirection: "row",
+
                       alignItems: "center",
                     }}
                   >
@@ -596,7 +568,7 @@ function Sidebar({
                       color={
                         active
                           ? "#FFFFFF"
-                          : "#6B7280"
+                          : "#AFC2CB"
                       }
                     />
 
@@ -614,7 +586,7 @@ function Sidebar({
 
                           color: active
                             ? "#FFFFFF"
-                            : "#374151",
+                            : "#D7E6EC",
                         }}
                       >
                         {item.title}
@@ -633,7 +605,7 @@ function Sidebar({
                             color={
                               active
                                 ? "#FFFFFF"
-                                : "#6B7280"
+                                : "#AFC2CB"
                             }
                           />
                         ) : (
@@ -642,7 +614,7 @@ function Sidebar({
                             color={
                               active
                                 ? "#FFFFFF"
-                                : "#6B7280"
+                                : "#AFC2CB"
                             }
                           />
                         )}
@@ -658,6 +630,7 @@ function Sidebar({
                     <View
                       style={{
                         marginLeft: 18,
+
                         marginBottom: 10,
                       }}
                     >
@@ -690,6 +663,7 @@ function Sidebar({
                               }}
                               style={{
                                 paddingVertical: 10,
+
                                 paddingHorizontal: 14,
 
                                 borderRadius: 12,
@@ -698,7 +672,7 @@ function Sidebar({
 
                                 backgroundColor:
                                   childActive
-                                    ? LIGHT_BROWN
+                                    ? "rgba(18,181,203,0.15)"
                                     : "transparent",
                               }}
                             >
@@ -714,7 +688,7 @@ function Sidebar({
                                   color:
                                     childActive
                                       ? PRIMARY
-                                      : "#6B7280",
+                                      : "#B7C8D0",
                                 }}
                               >
                                 {
@@ -733,66 +707,69 @@ function Sidebar({
         )}
       </ScrollView>
 
-{/* LOGOUT */}
+      {/* LOGOUT */}
 
-<View
-  style={{
-    borderTopWidth: 1,
-    borderTopColor: "#EFEFEF",
-
-    paddingTop: 12,
-    paddingBottom: 10,
-  }}
->
-  <TouchableOpacity
-    activeOpacity={0.85}
-    onPress={async () => {
-      try {
-        await logout();
-
-        router.replace("/");
-      } catch (error) {
-        console.log(
-          "Logout Error:",
-          error
-        );
-      }
-    }}
-    style={{
-      flexDirection: "row",
-
-      alignItems: "center",
-
-      paddingVertical: 13,
-      paddingHorizontal: 14,
-
-      borderRadius: 16,
-
-      backgroundColor: "#FEE2E2",
-    }}
-  >
-    <LogOut
-      size={20}
-      color="#DC2626"
-    />
-
-    {!collapsed && (
-      <Text
+      <View
         style={{
-          marginLeft: 14,
+          borderTopWidth: 1,
 
-          fontSize: 14,
+          borderTopColor: "#314550",
 
-          fontWeight: "700",
+          paddingTop: 12,
 
-          color: "#DC2626",
+          paddingBottom: 10,
         }}
       >
-        Logout
-      </Text>
-    )}
-  </TouchableOpacity>
-</View>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={async () => {
+            try {
+              await logout();
+
+              router.replace("/");
+            } catch (error) {
+              console.log(
+                "Logout Error:",
+                error
+              );
+            }
+          }}
+          style={{
+            flexDirection: "row",
+
+            alignItems: "center",
+
+            paddingVertical: 13,
+
+            paddingHorizontal: 14,
+
+            borderRadius: 16,
+
+            backgroundColor: "#30414A",
+          }}
+        >
+          <LogOut
+            size={20}
+            color="#FF6B6B"
+          />
+
+          {!collapsed && (
+            <Text
+              style={{
+                marginLeft: 14,
+
+                fontSize: 14,
+
+                fontWeight: "700",
+
+                color: "#FF6B6B",
+              }}
+            >
+              Logout
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -809,7 +786,8 @@ function Navbar({
     <View
       style={{
         paddingTop:
-          isMobile && Platform.OS === "android"
+          isMobile &&
+          Platform.OS === "android"
             ? RNStatusBar.currentHeight
             : isMobile
             ? 44
@@ -817,15 +795,18 @@ function Navbar({
 
         height: isMobile ? 95 : 70,
 
-        backgroundColor: WHITE,
+        backgroundColor: "#FFFFFF",
 
         borderBottomWidth: 1,
-        borderBottomColor: "#ECECEC",
+
+        borderBottomColor: BORDER,
 
         flexDirection: "row",
+
         alignItems: "center",
 
-        justifyContent: "space-between",
+        justifyContent:
+          "space-between",
 
         paddingHorizontal:
           isMobile ? 14 : 24,
@@ -836,6 +817,7 @@ function Navbar({
       <View
         style={{
           flexDirection: "row",
+
           alignItems: "center",
 
           flex: 1,
@@ -850,13 +832,16 @@ function Navbar({
             }
             style={{
               width: 38,
+
               height: 38,
 
               borderRadius: 12,
 
-              backgroundColor: "#F5F5F5",
+              backgroundColor:
+                LIGHT_CARD,
 
               justifyContent: "center",
+
               alignItems: "center",
 
               marginRight: 10,
@@ -878,16 +863,19 @@ function Navbar({
             height: isMobile ? 38 : 40,
 
             borderWidth: 1,
-            borderColor: "#EFEFEF",
+
+            borderColor: BORDER,
 
             borderRadius: 20,
 
             flexDirection: "row",
+
             alignItems: "center",
 
             paddingHorizontal: 12,
 
-            backgroundColor: "#FAFAFA",
+            backgroundColor:
+              LIGHT_CARD,
           }}
         >
           <TextInput
@@ -900,7 +888,7 @@ function Navbar({
                 ? 12
                 : 13,
 
-              color: "#111827",
+              color: TEXT,
 
               paddingVertical: 0,
             }}
@@ -913,12 +901,13 @@ function Navbar({
         </View>
       </View>
 
-      {/* DESKTOP PROFILE */}
+      {/* PROFILE */}
 
       {!isMobile && (
         <View
           style={{
             flexDirection: "row",
+
             alignItems: "center",
 
             marginLeft: 14,
@@ -930,6 +919,7 @@ function Navbar({
             }}
             style={{
               width: 42,
+
               height: 42,
 
               borderRadius: 100,
@@ -963,9 +953,11 @@ export default function AdminLayout() {
     <View
       style={{
         flex: 1,
+
         flexDirection: "row",
 
-        backgroundColor: BACKGROUND,
+        backgroundColor:
+          BACKGROUND,
       }}
     >
       <StatusBar style="light" />
@@ -986,6 +978,7 @@ export default function AdminLayout() {
                 position: "absolute",
 
                 width: "100%",
+
                 height: "100%",
 
                 backgroundColor:
@@ -1000,6 +993,7 @@ export default function AdminLayout() {
                 position: "absolute",
 
                 left: 0,
+
                 top: 0,
 
                 height: "100%",
@@ -1028,7 +1022,7 @@ export default function AdminLayout() {
         />
       )}
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
 
       <View
         style={{

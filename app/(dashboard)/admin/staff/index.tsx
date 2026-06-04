@@ -1,3 +1,4 @@
+import React from "react";
 import {
   View,
   Text,
@@ -5,204 +6,286 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
+
 import { StatusBar } from "expo-status-bar";
+import { router } from "expo-router";
 
 import {
-  Users,
   Search,
-  UserCheck,
-  Briefcase,
-  Activity,
-  ArrowRight,
   Filter,
-  Download,
   Sparkles,
-  CalendarCheck,
-  ShieldCheck,
+  UserPlus,
+  IdCard,
+  ArrowRight,
+  User,
+  Briefcase,
 } from "lucide-react-native";
 
-const PRIMARY = "#A0522D";
-const BG = "#F5F5DC";
-const CARD = "#FFFFFF";
+/* ======================================= */
+/* UPDATED STAFF THEME COLORS */
+/* ======================================= */
 
-const { width } = Dimensions.get("window");
+const COLORS = {
+  background: "#F4F8FB",
+  card: "#FFFFFF",
 
-export default function StaffIndex() {
+  /* MAIN COLORS */
+  primary: "#1E293B",
+  accent: "#22C7E5",
+
+  white: "#FFFFFF",
+
+  /* TEXT */
+  textMain: "#1E293B",
+  textSub: "#64748B",
+
+  /* BORDERS */
+  border: "#DCE7EF",
+
+  /* LIGHT CYAN */
+  lightAccent: "#DDF8FD",
+};
+
+export default function StaffOverview() {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+
+  /* ======================================= */
+  /* RECENT STAFF */
+  /* ======================================= */
+
+  const recentStaff = [
+    {
+      id: 1,
+      name: "Dr. Priya Sharma",
+      department: "Mathematics Department",
+    },
+
+    {
+      id: 2,
+      name: "Mr. Arjun Mehta",
+      department: "Physics Department",
+    },
+
+    {
+      id: 3,
+      name: "Mrs. Kavya Reddy",
+      department: "English Department",
+    },
+  ];
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      <StatusBar style="dark" />
+
+      {/* ======================================= */}
       {/* HEADER */}
+      {/* ======================================= */}
 
       <View style={styles.header}>
-        <View>
-          <Text style={styles.heading}>
-            Staff Management
+        <Text style={styles.heading}>
+          Staff Hub
+        </Text>
+
+        <Text style={styles.subheading}>
+          Manage faculty operations and staff performance
+        </Text>
+      </View>
+
+      {/* ======================================= */}
+      {/* HERO CARD */}
+      {/* ======================================= */}
+
+      <View style={styles.heroCard}>
+        <View style={styles.sparkleBox}>
+          <Sparkles size={28} color={COLORS.accent} />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={styles.heroTitle}>
+            AI Faculty Insights
           </Text>
 
-          <Text style={styles.subheading}>
-            Smart faculty and employee administration system
+          <Text style={styles.heroText}>
+            Monitor attendance, department productivity,
+            teaching quality and staff activities seamlessly.
           </Text>
+
+          <TouchableOpacity style={styles.heroButton}>
+            <Text style={styles.heroButtonText}>
+              View Analytics
+            </Text>
+
+            <ArrowRight
+              size={16}
+              color={COLORS.white}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* HERO */}
-
-      <View style={styles.heroCard}>
-        <Sparkles size={38} color="#fff" />
-
-        <Text style={styles.heroTitle}>
-          AI Faculty Intelligence
-        </Text>
-
-        <Text style={styles.heroText}>
-          Monitor staff attendance, teaching performance, workload and
-          departmental activities with smart analytics
-        </Text>
-      </View>
-
+      {/* ======================================= */}
       {/* SEARCH */}
+      {/* ======================================= */}
 
       <View style={styles.searchContainer}>
-        <Search size={18} color="#6B7280" />
+        <Search
+          size={20}
+          color={COLORS.textSub}
+        />
 
         <TextInput
           placeholder="Search staff..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={COLORS.textSub}
           style={styles.searchInput}
         />
 
         <TouchableOpacity style={styles.filterButton}>
-          <Filter size={18} color={PRIMARY} />
+          <Filter
+            size={18}
+            color={COLORS.primary}
+          />
         </TouchableOpacity>
       </View>
 
-      {/* STATS */}
-
-      <View style={styles.grid}>
-        <View style={[styles.card, { backgroundColor: "#dbeafe" }]}>
-          <Users size={30} color={PRIMARY} />
-
-          <Text style={styles.number}>
-            285
-          </Text>
-
-          <Text style={styles.label}>
-            Total Staff
-          </Text>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: "#dcfce7" }]}>
-          <UserCheck size={30} color={PRIMARY} />
-
-          <Text style={styles.number}>
-            97%
-          </Text>
-
-          <Text style={styles.label}>
-            Attendance
-          </Text>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: "#fde68a" }]}>
-          <Briefcase size={30} color={PRIMARY} />
-
-          <Text style={styles.number}>
-            24
-          </Text>
-
-          <Text style={styles.label}>
-            Departments
-          </Text>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: "#ede9fe" }]}>
-          <Activity size={30} color={PRIMARY} />
-
-          <Text style={styles.number}>
-            91%
-          </Text>
-
-          <Text style={styles.label}>
-            Productivity
-          </Text>
-        </View>
-      </View>
-
-      {/* QUICK ACTIONS */}
+      {/* ======================================= */}
+      {/* QUICK ACCESS */}
+      {/* ======================================= */}
 
       <Text style={styles.sectionTitle}>
-        Quick Actions
+        Quick Access
       </Text>
 
-      <View style={styles.actionsGrid}>
-        <TouchableOpacity style={styles.actionCard}>
-          <Users size={28} color={PRIMARY} />
+      <View
+        style={[
+          styles.overviewContainer,
+          {
+            flexDirection: isMobile
+              ? "column"
+              : "row",
+          },
+        ]}
+      >
+        {[
+          {
+            label: "Add Staff",
+            icon: UserPlus,
+            route: "/admin/staff/addstaff",
+          },
 
-          <Text style={styles.actionTitle}>
-            Staff List
-          </Text>
-        </TouchableOpacity>
+          {
+            label: "Staff Profile",
+            icon: IdCard,
+            route: "/admin/staff/staffprofile",
+          },
+        ].map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.overviewButton,
+              {
+                width: isMobile
+                  ? "100%"
+                  : "48%",
+              },
+            ]}
+            onPress={() =>
+              router.push(item.route)
+            }
+          >
+            <View style={styles.overviewIcon}>
+              <item.icon
+                size={24}
+                color={COLORS.accent}
+              />
+            </View>
 
-        <TouchableOpacity style={styles.actionCard}>
-          <Download size={28} color={PRIMARY} />
-
-          <Text style={styles.actionTitle}>
-            Export
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionCard}>
-          <CalendarCheck size={28} color={PRIMARY} />
-
-          <Text style={styles.actionTitle}>
-            Schedule
-          </Text>
-        </TouchableOpacity>
+            <Text style={styles.overviewText}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* STAFF LIST */}
+      {/* ======================================= */}
+      {/* RECENT STAFF */}
+      {/* ======================================= */}
 
       <Text style={styles.sectionTitle}>
         Faculty Members
       </Text>
 
-      {[1, 2, 3, 4].map((item) => (
-        <TouchableOpacity key={item} style={styles.staffCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.staffName}>
-              Dr. Priya Sharma
-            </Text>
+      <View style={styles.listContainer}>
+        {recentStaff.map((staff) => (
+          <TouchableOpacity
+            key={staff.id}
+            style={styles.listItem}
+            onPress={() =>
+              router.push(
+                "/admin/staff/staffprofile"
+              )
+            }
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <View style={styles.avatar}>
+                <User
+                  size={20}
+                  color={COLORS.primary}
+                />
+              </View>
 
-            <Text style={styles.staffInfo}>
-              Mathematics Department
-            </Text>
-          </View>
+              <View>
+                <Text style={styles.listTitle}>
+                  {staff.name}
+                </Text>
 
-          <ArrowRight size={18} color="#6B7280" />
-        </TouchableOpacity>
-      ))}
+                <Text style={styles.listSub}>
+                  {staff.department}
+                </Text>
+              </View>
+            </View>
 
-      {/* SECURITY */}
+            <ArrowRight
+              size={18}
+              color={COLORS.textSub}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* ======================================= */}
+      {/* STAFF PERFORMANCE */}
+      {/* ======================================= */}
 
       <Text style={styles.sectionTitle}>
-        Staff Security
+        Staff Performance
       </Text>
 
-      <View style={styles.securityCard}>
-        <ShieldCheck size={38} color={PRIMARY} />
+      <View style={styles.performanceCard}>
+        <Briefcase
+          size={40}
+          color={COLORS.accent}
+        />
 
-        <Text style={styles.securityTitle}>
-          Verified Staff Records
+        <Text style={styles.performanceTitle}>
+          Faculty Productivity
         </Text>
 
-        <Text style={styles.securityText}>
-          All employee records are secured with smart access control and
-          biometric authentication
+        <Text style={styles.performanceText}>
+          Track department achievements, attendance,
+          lectures handled, and teaching performance
+          using AI-driven monitoring tools.
         </Text>
       </View>
     </ScrollView>
@@ -210,178 +293,236 @@ export default function StaffIndex() {
 }
 
 const styles = StyleSheet.create({
+  /* ======================================= */
+  /* MAIN */
+  /* ======================================= */
+
   container: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: COLORS.background,
   },
 
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
+    padding: 20,
     paddingBottom: 100,
   },
 
+  /* ======================================= */
+  /* HEADER */
+  /* ======================================= */
+
   header: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
 
   heading: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "900",
-    color: PRIMARY,
+    color: COLORS.primary,
   },
 
   subheading: {
+    color: COLORS.textSub,
     marginTop: 4,
-    color: "#6B7280",
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
   },
 
+  /* ======================================= */
+  /* HERO */
+  /* ======================================= */
+
   heroCard: {
-    backgroundColor: PRIMARY,
-    borderRadius: 20,
+    backgroundColor: COLORS.primary,
+    borderRadius: 22,
     padding: 20,
-    marginBottom: 18,
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  sparkleBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: COLORS.lightAccent,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
   },
 
   heroTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "900",
-    marginTop: 10,
+    color: COLORS.white,
+    fontSize: 19,
+    fontWeight: "800",
   },
 
   heroText: {
-    color: "#F5F5DC",
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 20,
+    color: "#DDEAF4",
+    marginTop: 5,
+    fontSize: 12,
+    lineHeight: 18,
   },
 
+  heroButton: {
+    marginTop: 14,
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    alignItems: "center",
+  },
+
+  heroButtonText: {
+    color: COLORS.white,
+    fontWeight: "700",
+    marginRight: 8,
+    fontSize: 13,
+  },
+
+  /* ======================================= */
+  /* SEARCH */
+  /* ======================================= */
+
   searchContainer: {
-    backgroundColor: CARD,
-    borderRadius: 14,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   searchInput: {
     flex: 1,
     marginLeft: 10,
     fontSize: 14,
+    color: COLORS.textMain,
   },
 
   filterButton: {
-    width: 36,
-    height: 36,
+    padding: 8,
     borderRadius: 10,
-    backgroundColor: "#F3E8E2",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: COLORS.lightAccent,
   },
 
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  card: {
-    width: "48%",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  number: {
-    fontSize: 24,
-    fontWeight: "900",
-    marginTop: 10,
-    color: "#111827",
-  },
-
-  label: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 12,
-  },
+  /* ======================================= */
+  /* SECTION */
+  /* ======================================= */
 
   sectionTitle: {
     fontSize: 20,
     fontWeight: "900",
-    color: PRIMARY,
+    color: COLORS.primary,
     marginBottom: 14,
+    marginTop: 8,
   },
 
-  actionsGrid: {
+  /* ======================================= */
+  /* QUICK ACCESS */
+  /* ======================================= */
+
+  overviewContainer: {
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+
+  overviewButton: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 10,
+  },
+
+  overviewIcon: {
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: COLORS.lightAccent,
+  },
+
+  overviewText: {
+    color: COLORS.primary,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  /* ======================================= */
+  /* STAFF LIST */
+  /* ======================================= */
+
+  listContainer: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  listItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  actionCard: {
-    width: width * 0.27,
-    backgroundColor: CARD,
-    borderRadius: 18,
+    alignItems: "center",
     paddingVertical: 16,
     paddingHorizontal: 10,
-    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
 
-  actionTitle: {
-    marginTop: 8,
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: COLORS.lightAccent,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+
+  listTitle: {
     fontWeight: "700",
-    color: "#111827",
-    fontSize: 11,
-    textAlign: "center",
+    color: COLORS.primary,
+    fontSize: 14,
   },
 
-  staffCard: {
-    backgroundColor: CARD,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  staffName: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  staffInfo: {
-    marginTop: 3,
-    color: "#6B7280",
+  listSub: {
+    color: COLORS.textSub,
     fontSize: 12,
+    marginTop: 2,
   },
 
-  securityCard: {
-    backgroundColor: CARD,
+  /* ======================================= */
+  /* PERFORMANCE CARD */
+  /* ======================================= */
+
+  performanceCard: {
+    backgroundColor: COLORS.card,
     borderRadius: 22,
-    padding: 22,
+    padding: 24,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
     marginTop: 6,
   },
 
-  securityTitle: {
-    marginTop: 12,
-    fontSize: 18,
+  performanceTitle: {
+    marginTop: 14,
+    fontSize: 19,
     fontWeight: "900",
-    color: "#111827",
+    color: COLORS.primary,
     textAlign: "center",
   },
 
-  securityText: {
-    marginTop: 8,
+  performanceText: {
+    marginTop: 10,
     textAlign: "center",
-    color: "#6B7280",
+    color: COLORS.textSub,
     lineHeight: 20,
     fontSize: 13,
   },

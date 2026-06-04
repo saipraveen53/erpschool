@@ -9,6 +9,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from "react-native";
+
 import { StatusBar } from "expo-status-bar";
 
 import {
@@ -43,14 +44,29 @@ import {
   Wand2,
 } from "lucide-react-native";
 
-const PRIMARY = "#A0522D";
-const DARK = "#7C2D12";
-const BG = "#F5F5DC";
+/* ========================================= */
+/* UPDATED COLORS */
+/* ========================================= */
+
+const PRIMARY = "#203744";
+
+const ACCENT = "#22C7E5";
+
+const BG = "#F1F5F9";
+
 const CARD = "#FFFFFF";
-const LIGHT = "#E7D7C9";
+
+const LIGHT = "#E7FAFD";
+
+const BORDER = "#DCE7EF";
+
+const TEXT_DARK = "#1E293B";
+
+const TEXT_LIGHT = "#64748B";
 
 export default function ReportsDashboard() {
-  const { width } = useWindowDimensions();
+  const { width } =
+    useWindowDimensions();
 
   const isMobile = width < 768;
 
@@ -65,6 +81,8 @@ export default function ReportsDashboard() {
       ]}
       showsVerticalScrollIndicator={false}
     >
+      <StatusBar style="dark" />
+
       {/* ================= HEADER ================= */}
 
       <View style={styles.header}>
@@ -74,18 +92,29 @@ export default function ReportsDashboard() {
           </Text>
 
           <Text style={styles.subheading}>
-            Smart analytics hub for academics, attendance, finance and student
+            Smart analytics hub for
+            academics, attendance,
+            finance and student
             performance insights
           </Text>
         </View>
 
-        {/* DESKTOP ONLY */}
-
         {!isMobile && (
-          <TouchableOpacity style={styles.createButton}>
-            <Plus size={16} color="#fff" />
+          <TouchableOpacity
+            style={
+              styles.createButton
+            }
+          >
+            <Plus
+              size={18}
+              color="#fff"
+            />
 
-            <Text style={styles.createButtonText}>
+            <Text
+              style={
+                styles.createButtonText
+              }
+            >
               Generate Report
             </Text>
           </TouchableOpacity>
@@ -97,21 +126,37 @@ export default function ReportsDashboard() {
       <View style={styles.heroCard}>
         <View style={styles.heroLeft}>
           <Sparkles
-            size={isMobile ? 30 : 36}
+            size={
+              isMobile ? 32 : 38
+            }
             color="#fff"
           />
 
           <Text style={styles.heroTitle}>
-            AI Powered Reporting System
+            AI Powered Reporting
+            System
           </Text>
 
-          <Text style={styles.heroSubtitle}>
-            Generate powerful academic, attendance and financial insights with
-            smart analytics and automated reporting
+          <Text
+            style={
+              styles.heroSubtitle
+            }
+          >
+            Generate powerful
+            academic, attendance and
+            financial insights with
+            smart analytics and
+            automated reporting
           </Text>
 
-          <TouchableOpacity style={styles.heroButton}>
-            <Text style={styles.heroButtonText}>
+          <TouchableOpacity
+            style={styles.heroButton}
+          >
+            <Text
+              style={
+                styles.heroButtonText
+              }
+            >
               Explore Analytics
             </Text>
           </TouchableOpacity>
@@ -119,15 +164,23 @@ export default function ReportsDashboard() {
 
         <View style={styles.heroBadge}>
           <FileBarChart2
-            size={30}
+            size={32}
             color={PRIMARY}
           />
 
-          <Text style={styles.heroBadgeValue}>
+          <Text
+            style={
+              styles.heroBadgeValue
+            }
+          >
             120+
           </Text>
 
-          <Text style={styles.heroBadgeLabel}>
+          <Text
+            style={
+              styles.heroBadgeLabel
+            }
+          >
             Reports Generated
           </Text>
         </View>
@@ -135,17 +188,31 @@ export default function ReportsDashboard() {
 
       {/* ================= SEARCH ================= */}
 
-      <View style={styles.searchContainer}>
-        <Search size={18} color="#6B7280" />
+      <View
+        style={
+          styles.searchContainer
+        }
+      >
+        <Search
+          size={20}
+          color={TEXT_LIGHT}
+        />
 
         <TextInput
           placeholder="Search reports..."
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={
+            TEXT_LIGHT
+          }
           style={styles.searchInput}
         />
 
-        <TouchableOpacity style={styles.filterButton}>
-          <Filter size={16} color={PRIMARY} />
+        <TouchableOpacity
+          style={styles.filterButton}
+        >
+          <Filter
+            size={18}
+            color={PRIMARY}
+          />
         </TouchableOpacity>
       </View>
 
@@ -153,81 +220,85 @@ export default function ReportsDashboard() {
 
       <View style={styles.statsGrid}>
         <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#dbeafe" },
-          ]}
+          style={styles.statsCard}
         >
           <GraduationCap
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
-          <Text style={styles.statsValue}>
+          <Text
+            style={styles.statsValue}
+          >
             1.2K
           </Text>
 
-          <Text style={styles.statsLabel}>
+          <Text
+            style={styles.statsLabel}
+          >
             Students
           </Text>
         </View>
 
         <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#dcfce7" },
-          ]}
+          style={styles.statsCard}
         >
           <TrendingUp
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
-          <Text style={styles.statsValue}>
+          <Text
+            style={styles.statsValue}
+          >
             94%
           </Text>
 
-          <Text style={styles.statsLabel}>
+          <Text
+            style={styles.statsLabel}
+          >
             Performance Rate
           </Text>
         </View>
 
         <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#fde68a" },
-          ]}
+          style={styles.statsCard}
         >
           <Wallet
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
-          <Text style={styles.statsValue}>
+          <Text
+            style={styles.statsValue}
+          >
             ₹48L
           </Text>
 
-          <Text style={styles.statsLabel}>
+          <Text
+            style={styles.statsLabel}
+          >
             Fee Collection
           </Text>
         </View>
 
         <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#ede9fe" },
-          ]}
+          style={styles.statsCard}
         >
           <ClipboardCheck
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
-          <Text style={styles.statsValue}>
+          <Text
+            style={styles.statsValue}
+          >
             120+
           </Text>
 
-          <Text style={styles.statsLabel}>
+          <Text
+            style={styles.statsLabel}
+          >
             Reports Generated
           </Text>
         </View>
@@ -240,63 +311,91 @@ export default function ReportsDashboard() {
       </Text>
 
       <View style={styles.modulesGrid}>
-        <TouchableOpacity style={styles.moduleCard}>
-          <View style={styles.moduleIcon}>
+        <TouchableOpacity
+          style={styles.moduleCard}
+        >
+          <View
+            style={
+              styles.moduleIcon
+            }
+          >
             <BookOpen
-              size={26}
+              size={28}
               color="#fff"
             />
           </View>
 
-          <Text style={styles.moduleTitle}>
+          <Text
+            style={
+              styles.moduleTitle
+            }
+          >
             Academic Reports
           </Text>
 
-          <Text style={styles.moduleDesc}>
-            Student marks and performance analytics
+          <Text
+            style={styles.moduleDesc}
+          >
+            Student marks and
+            performance analytics
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.moduleCard}>
+        <TouchableOpacity
+          style={styles.moduleCard}
+        >
           <View
-            style={[
-              styles.moduleIcon,
-              { backgroundColor: DARK },
-            ]}
+            style={
+              styles.moduleIcon
+            }
           >
             <UserCheck
-              size={26}
+              size={28}
               color="#fff"
             />
           </View>
 
-          <Text style={styles.moduleTitle}>
+          <Text
+            style={
+              styles.moduleTitle
+            }
+          >
             Attendance Reports
           </Text>
 
-          <Text style={styles.moduleDesc}>
-            Daily attendance analytics
+          <Text
+            style={styles.moduleDesc}
+          >
+            Daily attendance
+            analytics
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.moduleCard}>
+        <TouchableOpacity
+          style={styles.moduleCard}
+        >
           <View
-            style={[
-              styles.moduleIcon,
-              { backgroundColor: "#92400E" },
-            ]}
+            style={
+              styles.moduleIcon
+            }
           >
             <IndianRupee
-              size={26}
+              size={28}
               color="#fff"
             />
           </View>
 
-          <Text style={styles.moduleTitle}>
+          <Text
+            style={
+              styles.moduleTitle
+            }
+          >
             Financial Reports
           </Text>
 
-          <Text style={styles.moduleDesc}>
+          <Text
+            style={styles.moduleDesc}
+          >
             Fee collection insights
           </Text>
         </TouchableOpacity>
@@ -309,10 +408,12 @@ export default function ReportsDashboard() {
       </Text>
 
       <View style={styles.aiContainer}>
-        <TouchableOpacity style={styles.aiCard}>
+        <TouchableOpacity
+          style={styles.aiCard}
+        >
           <BrainCircuit
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
           <Text style={styles.aiTitle}>
@@ -320,14 +421,17 @@ export default function ReportsDashboard() {
           </Text>
 
           <Text style={styles.aiDesc}>
-            Forecast academic performance
+            Forecast academic
+            performance
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.aiCard}>
+        <TouchableOpacity
+          style={styles.aiCard}
+        >
           <ShieldCheck
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
           <Text style={styles.aiTitle}>
@@ -339,10 +443,12 @@ export default function ReportsDashboard() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.aiCard}>
+        <TouchableOpacity
+          style={styles.aiCard}
+        >
           <PieChart
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
           <Text style={styles.aiTitle}>
@@ -362,81 +468,107 @@ export default function ReportsDashboard() {
       </Text>
 
       <View style={styles.listContainer}>
-        <TouchableOpacity style={styles.reportCard}>
+        <TouchableOpacity
+          style={styles.reportCard}
+        >
           <View style={styles.cardLeft}>
-            <View style={styles.iconBox}>
+            <View
+              style={styles.iconBox}
+            >
               <GraduationCap
-                size={20}
-                color={PRIMARY}
+                size={22}
+                color={ACCENT}
               />
             </View>
 
             <View>
-              <Text style={styles.cardTitle}>
-                Grade 10 Academic Report
+              <Text
+                style={styles.cardTitle}
+              >
+                Grade 10 Academic
+                Report
               </Text>
 
-              <Text style={styles.cardInfo}>
+              <Text
+                style={styles.cardInfo}
+              >
                 Updated today
               </Text>
             </View>
           </View>
 
           <ChevronRight
-            size={18}
-            color="#6B7280"
+            size={20}
+            color={TEXT_LIGHT}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.reportCard}>
+        <TouchableOpacity
+          style={styles.reportCard}
+        >
           <View style={styles.cardLeft}>
-            <View style={styles.iconBox}>
+            <View
+              style={styles.iconBox}
+            >
               <CalendarDays
-                size={20}
-                color={PRIMARY}
+                size={22}
+                color={ACCENT}
               />
             </View>
 
             <View>
-              <Text style={styles.cardTitle}>
+              <Text
+                style={styles.cardTitle}
+              >
                 Attendance Report
               </Text>
 
-              <Text style={styles.cardInfo}>
+              <Text
+                style={styles.cardInfo}
+              >
                 Monthly analytics
               </Text>
             </View>
           </View>
 
           <ChevronRight
-            size={18}
-            color="#6B7280"
+            size={20}
+            color={TEXT_LIGHT}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.reportCard}>
+        <TouchableOpacity
+          style={styles.reportCard}
+        >
           <View style={styles.cardLeft}>
-            <View style={styles.iconBox}>
+            <View
+              style={styles.iconBox}
+            >
               <Wallet
-                size={20}
-                color={PRIMARY}
+                size={22}
+                color={ACCENT}
               />
             </View>
 
             <View>
-              <Text style={styles.cardTitle}>
-                Fee Collection Analytics
+              <Text
+                style={styles.cardTitle}
+              >
+                Fee Collection
+                Analytics
               </Text>
 
-              <Text style={styles.cardInfo}>
+              <Text
+                style={styles.cardInfo}
+              >
                 Revenue insights
               </Text>
             </View>
           </View>
 
           <ChevronRight
-            size={18}
-            color="#6B7280"
+            size={20}
+            color={TEXT_LIGHT}
           />
         </TouchableOpacity>
       </View>
@@ -448,48 +580,67 @@ export default function ReportsDashboard() {
       </Text>
 
       <View style={styles.quickGrid}>
-        <TouchableOpacity style={styles.quickCard}>
+        <TouchableOpacity
+          style={styles.quickCard}
+        >
           <Wand2
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
-          <Text style={styles.quickTitle}>
+          <Text
+            style={styles.quickTitle}
+          >
             Auto Generate
           </Text>
 
-          <Text style={styles.quickDesc}>
+          <Text
+            style={styles.quickDesc}
+          >
             AI powered reports
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.quickCard}>
+        <TouchableOpacity
+          style={styles.quickCard}
+        >
           <Download
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
-          <Text style={styles.quickTitle}>
+          <Text
+            style={styles.quickTitle}
+          >
             Export Reports
           </Text>
 
-          <Text style={styles.quickDesc}>
+          <Text
+            style={styles.quickDesc}
+          >
             PDF & Excel reports
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.quickCard}>
+        <TouchableOpacity
+          style={styles.quickCard}
+        >
           <Bell
-            size={28}
-            color={PRIMARY}
+            size={30}
+            color={ACCENT}
           />
 
-          <Text style={styles.quickTitle}>
+          <Text
+            style={styles.quickTitle}
+          >
             Smart Alerts
           </Text>
 
-          <Text style={styles.quickDesc}>
-            Notifications and updates
+          <Text
+            style={styles.quickDesc}
+          >
+            Notifications and
+            updates
           </Text>
         </TouchableOpacity>
       </View>
@@ -500,48 +651,88 @@ export default function ReportsDashboard() {
         Advanced Reporting Tools
       </Text>
 
-      <View style={styles.advancedContainer}>
-        <View style={styles.advancedCard}>
+      <View
+        style={
+          styles.advancedContainer
+        }
+      >
+        <View
+          style={
+            styles.advancedCard
+          }
+        >
           <MonitorSmartphone
-            size={26}
-            color={PRIMARY}
+            size={28}
+            color={ACCENT}
           />
 
-          <Text style={styles.advancedValue}>
+          <Text
+            style={
+              styles.advancedValue
+            }
+          >
             Mobile Reports
           </Text>
 
-          <Text style={styles.advancedLabel}>
+          <Text
+            style={
+              styles.advancedLabel
+            }
+          >
             Access reports anywhere
           </Text>
         </View>
 
-        <View style={styles.advancedCard}>
+        <View
+          style={
+            styles.advancedCard
+          }
+        >
           <Layers3
-            size={26}
-            color={PRIMARY}
+            size={28}
+            color={ACCENT}
           />
 
-          <Text style={styles.advancedValue}>
+          <Text
+            style={
+              styles.advancedValue
+            }
+          >
             Multi Reports
           </Text>
 
-          <Text style={styles.advancedLabel}>
+          <Text
+            style={
+              styles.advancedLabel
+            }
+          >
             Compare datasets
           </Text>
         </View>
 
-        <View style={styles.advancedCard}>
+        <View
+          style={
+            styles.advancedCard
+          }
+        >
           <BarChart3
-            size={26}
-            color={PRIMARY}
+            size={28}
+            color={ACCENT}
           />
 
-          <Text style={styles.advancedValue}>
+          <Text
+            style={
+              styles.advancedValue
+            }
+          >
             Live Charts
           </Text>
 
-          <Text style={styles.advancedLabel}>
+          <Text
+            style={
+              styles.advancedLabel
+            }
+          >
             Dynamic analytics
           </Text>
         </View>
@@ -553,48 +744,88 @@ export default function ReportsDashboard() {
         Performance Insights
       </Text>
 
-      <View style={styles.analyticsContainer}>
-        <View style={styles.analyticsCard}>
+      <View
+        style={
+          styles.analyticsContainer
+        }
+      >
+        <View
+          style={
+            styles.analyticsCard
+          }
+        >
           <Activity
-            size={26}
-            color="#16A34A"
+            size={28}
+            color={ACCENT}
           />
 
-          <Text style={styles.analyticsValue}>
+          <Text
+            style={
+              styles.analyticsValue
+            }
+          >
             +18%
           </Text>
 
-          <Text style={styles.analyticsLabel}>
+          <Text
+            style={
+              styles.analyticsLabel
+            }
+          >
             Growth Rate
           </Text>
         </View>
 
-        <View style={styles.analyticsCard}>
+        <View
+          style={
+            styles.analyticsCard
+          }
+        >
           <Clock3
-            size={26}
-            color={PRIMARY}
+            size={28}
+            color={ACCENT}
           />
 
-          <Text style={styles.analyticsValue}>
+          <Text
+            style={
+              styles.analyticsValue
+            }
+          >
             2.4s
           </Text>
 
-          <Text style={styles.analyticsLabel}>
+          <Text
+            style={
+              styles.analyticsLabel
+            }
+          >
             Avg Report Speed
           </Text>
         </View>
 
-        <View style={styles.analyticsCard}>
+        <View
+          style={
+            styles.analyticsCard
+          }
+        >
           <AlertTriangle
-            size={26}
-            color="#DC2626"
+            size={28}
+            color={ACCENT}
           />
 
-          <Text style={styles.analyticsValue}>
+          <Text
+            style={
+              styles.analyticsValue
+            }
+          >
             3
           </Text>
 
-          <Text style={styles.analyticsLabel}>
+          <Text
+            style={
+              styles.analyticsLabel
+            }
+          >
             Pending Reviews
           </Text>
         </View>
@@ -606,53 +837,102 @@ export default function ReportsDashboard() {
         Recent Activity
       </Text>
 
-      <View style={styles.activityContainer}>
-        <View style={styles.activityCard}>
+      <View
+        style={
+          styles.activityContainer
+        }
+      >
+        <View
+          style={styles.activityCard}
+        >
           <CheckCircle2
-            size={20}
-            color="#16A34A"
+            size={22}
+            color={ACCENT}
           />
 
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>
-              Academic report generated
+          <View
+            style={
+              styles.activityContent
+            }
+          >
+            <Text
+              style={
+                styles.activityTitle
+              }
+            >
+              Academic report
+              generated
             </Text>
 
-            <Text style={styles.activityTime}>
+            <Text
+              style={
+                styles.activityTime
+              }
+            >
               2 hours ago
             </Text>
           </View>
         </View>
 
-        <View style={styles.activityCard}>
+        <View
+          style={styles.activityCard}
+        >
           <Bell
-            size={20}
-            color={PRIMARY}
+            size={22}
+            color={ACCENT}
           />
 
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>
-              Attendance analytics updated
+          <View
+            style={
+              styles.activityContent
+            }
+          >
+            <Text
+              style={
+                styles.activityTitle
+              }
+            >
+              Attendance analytics
+              updated
             </Text>
 
-            <Text style={styles.activityTime}>
+            <Text
+              style={
+                styles.activityTime
+              }
+            >
               Today
             </Text>
           </View>
         </View>
 
-        <View style={styles.activityCard}>
+        <View
+          style={styles.activityCard}
+        >
           <ArrowUpRight
-            size={20}
-            color="#B45309"
+            size={22}
+            color={ACCENT}
           />
 
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>
-              Financial insights exported
+          <View
+            style={
+              styles.activityContent
+            }
+          >
+            <Text
+              style={
+                styles.activityTitle
+              }
+            >
+              Financial insights
+              exported
             </Text>
 
-            <Text style={styles.activityTime}>
+            <Text
+              style={
+                styles.activityTime
+              }
+            >
               Yesterday
             </Text>
           </View>
@@ -674,27 +954,29 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     flexWrap: "wrap",
-    marginBottom: 22,
+    marginBottom: 24,
   },
 
   heading: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: "900",
     color: PRIMARY,
   },
 
   subheading: {
     marginTop: 6,
-    color: "#6B7280",
-    fontSize: 13,
+    color: TEXT_LIGHT,
+    fontSize: 14,
     maxWidth: 520,
+    lineHeight: 22,
   },
 
   createButton: {
-    backgroundColor: PRIMARY,
+    backgroundColor: ACCENT,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 16,
@@ -705,17 +987,18 @@ const styles = StyleSheet.create({
 
   createButtonText: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 13,
+    fontWeight: "800",
+    fontSize: 14,
   },
 
   heroCard: {
     backgroundColor: PRIMARY,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 22,
+    borderRadius: 28,
+    padding: 22,
+    marginBottom: 24,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
   },
 
@@ -726,22 +1009,22 @@ const styles = StyleSheet.create({
 
   heroTitle: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "900",
     marginTop: 12,
   },
 
   heroSubtitle: {
-    color: "#F5F5DC",
+    color: "#DCE7EF",
     marginTop: 8,
-    lineHeight: 20,
-    fontSize: 12,
+    lineHeight: 22,
+    fontSize: 14,
   },
 
   heroButton: {
     marginTop: 16,
-    backgroundColor: DARK,
-    paddingHorizontal: 14,
+    backgroundColor: ACCENT,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
     alignSelf: "flex-start",
@@ -749,49 +1032,52 @@ const styles = StyleSheet.create({
 
   heroButtonText: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 12,
+    fontWeight: "800",
+    fontSize: 13,
   },
 
   heroBadge: {
     backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 20,
+    padding: 18,
+    borderRadius: 22,
     alignItems: "center",
   },
 
   heroBadgeValue: {
     marginTop: 10,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "900",
     color: PRIMARY,
   },
 
   heroBadgeLabel: {
     marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
+    color: TEXT_LIGHT,
+    fontSize: 12,
   },
 
   searchContainer: {
     backgroundColor: CARD,
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 22,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   searchInput: {
     flex: 1,
     marginLeft: 10,
-    fontSize: 13,
+    fontSize: 14,
+    color: TEXT_DARK,
   },
 
   filterButton: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     backgroundColor: LIGHT,
     justifyContent: "center",
@@ -801,98 +1087,108 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
   statsCard: {
     width: "48%",
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 18,
     marginBottom: 14,
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   statsValue: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "900",
-    color: "#111827",
+    color: TEXT_DARK,
     marginTop: 12,
   },
 
   statsLabel: {
     marginTop: 6,
-    color: "#6B7280",
-    fontSize: 11,
+    color: TEXT_LIGHT,
+    fontSize: 12,
   },
 
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "900",
     color: PRIMARY,
-    marginBottom: 16,
+    marginBottom: 18,
   },
 
   modulesGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
   moduleCard: {
     width: "31%",
     backgroundColor: CARD,
-    borderRadius: 20,
-    padding: 14,
+    borderRadius: 22,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   moduleIcon: {
-    width: 58,
-    height: 58,
+    width: 60,
+    height: 60,
     borderRadius: 18,
-    backgroundColor: PRIMARY,
+    backgroundColor: ACCENT,
     justifyContent: "center",
     alignItems: "center",
   },
 
   moduleTitle: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   moduleDesc: {
     marginTop: 6,
-    color: "#6B7280",
-    lineHeight: 18,
-    fontSize: 11,
+    color: TEXT_LIGHT,
+    lineHeight: 20,
+    fontSize: 12,
   },
 
   aiContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
   aiCard: {
     width: "31%",
     backgroundColor: CARD,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   aiTitle: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   aiDesc: {
     marginTop: 6,
-    color: "#6B7280",
-    lineHeight: 18,
-    fontSize: 11,
+    color: TEXT_LIGHT,
+    lineHeight: 20,
+    fontSize: 12,
   },
 
   listContainer: {
@@ -901,12 +1197,15 @@ const styles = StyleSheet.create({
 
   reportCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   cardLeft: {
@@ -915,8 +1214,8 @@ const styles = StyleSheet.create({
   },
 
   iconBox: {
-    width: 50,
-    height: 50,
+    width: 52,
+    height: 52,
     borderRadius: 16,
     backgroundColor: LIGHT,
     justifyContent: "center",
@@ -925,99 +1224,108 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   cardInfo: {
     marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
+    color: TEXT_LIGHT,
+    fontSize: 12,
   },
 
   quickGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
   quickCard: {
     width: "31%",
     backgroundColor: CARD,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   quickTitle: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   quickDesc: {
     marginTop: 6,
-    color: "#6B7280",
-    lineHeight: 18,
-    fontSize: 11,
+    color: TEXT_LIGHT,
+    lineHeight: 20,
+    fontSize: 12,
   },
 
   advancedContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
   advancedCard: {
     width: "31%",
     backgroundColor: CARD,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingVertical: 20,
     paddingHorizontal: 10,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   advancedValue: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "900",
     color: PRIMARY,
   },
 
   advancedLabel: {
     marginTop: 6,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     textAlign: "center",
-    fontSize: 11,
+    fontSize: 12,
   },
 
   analyticsContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 24,
   },
 
   analyticsCard: {
     width: "31%",
     backgroundColor: CARD,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingVertical: 20,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   analyticsValue: {
     marginTop: 12,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "900",
     color: PRIMARY,
   },
 
   analyticsLabel: {
     marginTop: 6,
-    color: "#6B7280",
+    color: TEXT_LIGHT,
     textAlign: "center",
-    fontSize: 11,
+    fontSize: 12,
   },
 
   activityContainer: {
@@ -1026,12 +1334,14 @@ const styles = StyleSheet.create({
 
   activityCard: {
     backgroundColor: CARD,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
 
   activityContent: {
@@ -1039,14 +1349,14 @@ const styles = StyleSheet.create({
   },
 
   activityTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    color: TEXT_DARK,
   },
 
   activityTime: {
     marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
+    color: TEXT_LIGHT,
+    fontSize: 12,
   },
 });

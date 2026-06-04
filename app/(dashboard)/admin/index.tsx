@@ -1,8 +1,11 @@
-// app/admin/dashboard/index.tsx
+// ======================================================
+// FILE: app/admin/dashboard/index.tsx
+// FULLY UPDATED DASHBOARD
+// TIMETABLE REPLACED ATTENDANCE
+// UPDATED COLORS
+// ======================================================
 
-import React, { useEffect } from "react";
-
-import { StatusBar } from "expo-status-bar";
+import React, { useState } from "react";
 
 import {
   View,
@@ -11,466 +14,1319 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Modal,
   useWindowDimensions,
 } from "react-native";
 
+import { StatusBar } from "expo-status-bar";
+
+import { router } from "expo-router";
+
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
+  FadeInDown,
+  FadeInUp,
+  ZoomIn,
 } from "react-native-reanimated";
 
 import {
   Users,
   GraduationCap,
   School,
-  IndianRupee,
-  Bus,
-  BookOpen,
-  ClipboardCheck,
   Sparkles,
   UserCheck,
+  ArrowRight,
+  X,
+  Bus,
+  Wallet,
+  LibraryBig,
+  UserCog,
+  CalendarDays,
+  BellRing,
+  Megaphone,
 } from "lucide-react-native";
 
-/* ========================================= */
+/* ====================================================== */
 /* COLORS */
-/* ========================================= */
+/* ====================================================== */
 
-const PRIMARY = "#A0522D";
-const BG = "#F5F5DC";
-const CARD = "#FFFFFF";
+const COLORS = {
+  background: "#FFFFFF",
 
-/* ========================================= */
+  card: "#EDF4F7",
+
+  softCard: "#E4EEF2",
+
+  primary: "#12B5CB",
+
+  darkPrimary: "#0E8EA0",
+
+  sidebar: "#24343D",
+
+  sidebarLight: "#2D3F49",
+
+  text: "#1E293B",
+
+  subText: "#64748B",
+
+  white: "#FFFFFF",
+
+  border: "#DCE7EC",
+
+  noticeBg: "#EAF7FA",
+
+  overviewBg: "#F4FAFC",
+};
+
+/* ====================================================== */
 /* COMPONENT */
-/* ========================================= */
+/* ====================================================== */
 
 export default function AdminDashboard() {
-  const { width } = useWindowDimensions();
+  const { width } =
+    useWindowDimensions();
 
   const isMobile = width < 768;
 
-  const fade = useSharedValue(0);
-  const slide = useSharedValue(20);
+  const [
+    activityModal,
+    setActivityModal,
+  ] = useState(false);
 
-  useEffect(() => {
-    fade.value = withSpring(1);
-    slide.value = withSpring(0);
-  }, []);
+  /* ====================================================== */
+  /* NOTICE DATA */
+  /* ====================================================== */
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: fade.value,
-    transform: [{ translateY: slide.value }],
-  }));
+  const notices = [
+    {
+      id: "NOT2026001",
 
-  /* ========================================= */
-  /* DATA */
-  /* ========================================= */
+      noticeName:
+        "WELCOME SCHOOL",
+
+      noticeDescription:
+        "Hello all, the school is reopening on 12 June 2026.",
+
+      noticeType: "GENERAL",
+
+      noticeDate:
+        "2026-06-03",
+    },
+  ];
+
+  /* ====================================================== */
+  /* DASHBOARD STATS */
+  /* ====================================================== */
 
   const stats = [
     {
       title: "Students",
-      value: "2,450",
+
+      value: "120",
+
       icon: (
         <GraduationCap
-          size={24}
-          color={PRIMARY}
+          size={28}
+          color={COLORS.primary}
         />
       ),
-      color: "#DBEAFE",
+
+      route:
+        "/admin/students/addstudents",
     },
 
     {
       title: "Staff",
-      value: "285",
+
+      value: "24",
+
       icon: (
-        <Users size={24} color={PRIMARY} />
+        <Users
+          size={28}
+          color={COLORS.primary}
+        />
       ),
-      color: "#DCFCE7",
+
+      route:
+        "/admin/staff/addstaff",
     },
 
     {
       title: "Classes",
-      value: "42",
+
+      value: "18",
+
       icon: (
-        <School size={24} color={PRIMARY} />
+        <School
+          size={28}
+          color={COLORS.primary}
+        />
       ),
-      color: "#FDE68A",
+
+      route:
+        "/admin/classes",
     },
 
     {
-      title: "Attendance",
-      value: "96%",
+      title: "Timetable",
+
+      value: "12",
+
       icon: (
-        <ClipboardCheck
-          size={24}
-          color={PRIMARY}
+        <CalendarDays
+          size={28}
+          color={COLORS.primary}
         />
       ),
-      color: "#EDE9FE",
+
+      route:
+        "/admin/timetable",
     },
   ];
+
+  /* ====================================================== */
+  /* QUICK ACCESS */
+  /* ====================================================== */
 
   const quickActions = [
     {
       title: "Students",
+
       icon: (
         <GraduationCap
-          size={24}
-          color={PRIMARY}
+          size={30}
+          color={COLORS.primary}
         />
       ),
+
+      route:
+        "/admin/students/addstudents",
     },
 
     {
-      title: "Fees",
+      title: "Staff",
+
       icon: (
-        <IndianRupee
-          size={24}
-          color={PRIMARY}
+        <UserCog
+          size={30}
+          color={COLORS.primary}
         />
       ),
+
+      route:
+        "/admin/staff/addstaff",
+    },
+
+    {
+      title: "Timetable",
+
+      icon: (
+        <CalendarDays
+          size={30}
+          color={COLORS.primary}
+        />
+      ),
+
+      route:
+        "/admin/timetable",
     },
 
     {
       title: "Library",
+
       icon: (
-        <BookOpen
-          size={24}
-          color={PRIMARY}
+        <LibraryBig
+          size={30}
+          color={COLORS.primary}
         />
       ),
+
+      route:
+        "/admin/library",
+    },
+
+    {
+      title: "Fees",
+
+      icon: (
+        <Wallet
+          size={30}
+          color={COLORS.primary}
+        />
+      ),
+
+      route:
+        "/admin/fees",
     },
 
     {
       title: "Transport",
+
       icon: (
-        <Bus size={24} color={PRIMARY} />
+        <Bus
+          size={30}
+          color={COLORS.primary}
+        />
       ),
+
+      route:
+        "/admin/transport",
     },
   ];
 
+  /* ====================================================== */
+  /* RECENT ACTIVITIES */
+  /* ====================================================== */
+
   const activities = [
     {
-      title: "New Student Admission",
-      time: "2 min ago",
+      title:
+        "New student admission completed",
+
+      time: "2 mins ago",
     },
 
     {
-      title: "Fee Payment Received",
-      time: "15 min ago",
+      title:
+        "Timetable updated successfully",
+
+      time: "15 mins ago",
     },
 
     {
-      title: "Bus Route Updated",
+      title:
+        "New teacher added",
+
       time: "1 hour ago",
-    },
-
-    {
-      title: "Exam Schedule Published",
-      time: "2 hours ago",
     },
   ];
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{
-        paddingBottom: 60,
-      }}
-      showsVerticalScrollIndicator={false}
-    >
-      <StatusBar style="dark" />
-
-      {/* HERO */}
-
-      <Animated.View
-        style={[
-          styles.heroCard,
-          animatedStyle,
-        ]}
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{
+          paddingBottom: 80,
+        }}
+        showsVerticalScrollIndicator={
+          false
+        }
       >
-        <View style={styles.heroLeft}>
-          <Sparkles
-            size={32}
-            color="#FFFFFF"
-          />
+        <StatusBar style="dark" />
 
-          <Text style={styles.heroTitle}>
-            Smart ERP
-          </Text>
+        {/* ====================================================== */}
+        {/* HERO SECTION */}
+        {/* ====================================================== */}
 
-          <Text style={styles.heroText}>
-            Manage admissions, fees, and
-            attendance.
-          </Text>
+        <Animated.View
+          entering={FadeInDown}
+          style={[
+            styles.heroCard,
 
-          <TouchableOpacity
-            style={styles.heroButton}
-          >
-            <Text
-              style={styles.heroButtonText}
-            >
-              Analytics
-            </Text>
-          </TouchableOpacity>
-        </View>
+            {
+              flexDirection:
+                isMobile
+                  ? "column"
+                  : "row",
+            },
+          ]}
+        >
+          {/* LEFT */}
 
-        <Image
-          source={{
-            uri:
-              "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-          }}
-          style={styles.heroImage}
-        />
-      </Animated.View>
-
-      {/* STATS */}
-
-      <View style={styles.statsGrid}>
-        {stats.map((item, index) => (
-          <TouchableOpacity
-            key={index}
+          <View
             style={[
-              styles.statCard,
+              styles.heroLeft,
+
               {
-                backgroundColor: item.color,
+                alignItems:
+                  isMobile
+                    ? "center"
+                    : "flex-start",
               },
             ]}
           >
-            {item.icon}
+            <View
+              style={
+                styles.sparkleBox
+              }
+            >
+              <Sparkles
+                size={30}
+                color="#FFFFFF"
+              />
+            </View>
 
-            <Text style={styles.statNumber}>
-              {item.value}
+            <Text
+              style={styles.heroTitle}
+            >
+              EduX Smart ERP
             </Text>
 
-            <Text style={styles.statLabel}>
-              {item.title}
+            <Text
+              style={styles.heroText}
+            >
+              Modern school management
+              dashboard with analytics,
+              timetable tracking and
+              administration tools.
             </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
-      {/* QUICK ACTIONS */}
+            <TouchableOpacity
+              style={
+                styles.heroButton
+              }
+            >
+              <Text
+                style={
+                  styles.heroButtonText
+                }
+              >
+                View Reports
+              </Text>
 
-      <Text style={styles.sectionTitle}>
-        Quick Actions
-      </Text>
+              <ArrowRight
+                size={16}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          </View>
 
-      <View style={styles.quickGrid}>
-        {quickActions.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.quickCard}
-          >
-            {item.icon}
+          {/* RIGHT IMAGE */}
 
-            <Text style={styles.quickText}>
-              {item.title}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* ANALYTICS */}
-
-      <View style={styles.analyticsCard}>
-        <Text style={styles.analyticsLabel}>
-          Monthly Revenue
-        </Text>
-
-        <Text style={styles.analyticsValue}>
-          ₹12.4L
-        </Text>
-      </View>
-
-      {/* RECENT ACTIVITIES */}
-
-      <Text style={styles.sectionTitle}>
-        Recent Activities
-      </Text>
-
-      {activities.map((item, index) => (
-        <View
-          key={index}
-          style={styles.activityCard}
-        >
-          <UserCheck
-            size={20}
-            color={PRIMARY}
+          <Animated.Image
+            entering={ZoomIn}
+            source={{
+              uri: "https://cdn-icons-png.flaticon.com/512/3135/3135755.png",
+            }}
+            style={styles.heroImage}
           />
+        </Animated.View>
+
+        {/* ====================================================== */}
+        {/* OVERVIEW HEADER */}
+        {/* ====================================================== */}
+
+        <View style={styles.row}>
+          <Text
+            style={styles.sectionTitle}
+          >
+            Dashboard Overview
+          </Text>
+
+          <TouchableOpacity
+            onPress={() =>
+              setActivityModal(
+                true,
+              )
+            }
+          >
+            <Text
+              style={
+                styles.activityButton
+              }
+            >
+              Activities
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ====================================================== */}
+        {/* STATS */}
+        {/* ====================================================== */}
+
+        <View
+          style={styles.statsRow}
+        >
+          {stats.map(
+            (item, index) => (
+              <Animated.View
+                key={index}
+                entering={FadeInUp.delay(
+                  index * 100,
+                )}
+                style={{
+                  width: isMobile
+                    ? "48%"
+                    : "23%",
+                }}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  style={
+                    styles.statsCard
+                  }
+                  onPress={() =>
+                    router.push(
+                      item.route as any,
+                    )
+                  }
+                >
+                  {item.icon}
+
+                  <Text
+                    style={
+                      styles.statsValue
+                    }
+                  >
+                    {item.value}
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.statsTitle
+                    }
+                  >
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            ),
+          )}
+        </View>
+
+        {/* ====================================================== */}
+        {/* QUICK ACCESS */}
+        {/* ====================================================== */}
+
+        <Text style={styles.sectionTitle}>
+          Quick Access
+        </Text>
+
+        <View style={styles.grid}>
+          {quickActions.map(
+            (item, index) => (
+              <Animated.View
+                key={index}
+                entering={FadeInUp.delay(
+                  index * 100,
+                )}
+                style={{
+                  width: isMobile
+                    ? "48%"
+                    : "31%",
+                }}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  style={
+                    styles.actionCard
+                  }
+                  onPress={() =>
+                    router.push(
+                      item.route as any,
+                    )
+                  }
+                >
+                  {item.icon}
+
+                  <Text
+                    style={
+                      styles.actionText
+                    }
+                  >
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            ),
+          )}
+        </View>
+
+        {/* ====================================================== */}
+        {/* NOTICE BOARD */}
+        {/* ====================================================== */}
+
+        <View style={styles.row}>
+          <Text
+            style={styles.sectionTitle}
+          >
+            Notice Board
+          </Text>
+
+          <BellRing
+            size={18}
+            color={
+              COLORS.primary
+            }
+          />
+        </View>
+
+        {notices.map(
+          (item, index) => (
+            <TouchableOpacity
+              key={index}
+              activeOpacity={0.9}
+              onPress={() =>
+                router.push(
+                  "/admin/noticeboard",
+                )
+              }
+            >
+              <Animated.View
+                entering={FadeInDown.delay(
+                  index * 100,
+                )}
+                style={
+                  styles.noticeCard
+                }
+              >
+                <View
+                  style={
+                    styles.noticeTop
+                  }
+                >
+                  <View
+                    style={
+                      styles.noticeLeft
+                    }
+                  >
+                    <View
+                      style={
+                        styles.noticeIcon
+                      }
+                    >
+                      <Megaphone
+                        size={22}
+                        color="#FFFFFF"
+                      />
+                    </View>
+
+                    <View
+                      style={{
+                        flex: 1,
+
+                        marginLeft: 12,
+                      }}
+                    >
+                      <Text
+                        style={
+                          styles.noticeTitle
+                        }
+                      >
+                        {
+                          item.noticeName
+                        }
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.noticeType
+                        }
+                      >
+                        {
+                          item.noticeType
+                        }
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View
+                    style={
+                      styles.dateBadge
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.dateText
+                      }
+                    >
+                      03 Jun
+                    </Text>
+                  </View>
+                </View>
+
+                <Text
+                  style={
+                    styles.noticeDesc
+                  }
+                >
+                  {
+                    item.noticeDescription
+                  }
+                </Text>
+              </Animated.View>
+            </TouchableOpacity>
+          ),
+        )}
+
+        {/* ====================================================== */}
+        {/* SCHOOL OVERVIEW */}
+        {/* ====================================================== */}
+
+        <Text style={styles.sectionTitle}>
+          School Overview
+        </Text>
+
+        <View
+          style={styles.overviewCard}
+        >
+          <View
+            style={
+              styles.overviewRow
+            }
+          >
+            <Text
+              style={
+                styles.overviewLabel
+              }
+            >
+              Total Students
+            </Text>
+
+            <Text
+              style={
+                styles.overviewValue
+              }
+            >
+              120
+            </Text>
+          </View>
 
           <View
-            style={{ marginLeft: 15 }}
+            style={
+              styles.overviewRow
+            }
           >
             <Text
-              style={styles.activityTitle}
+              style={
+                styles.overviewLabel
+              }
             >
-              {item.title}
+              Total Staff
             </Text>
 
             <Text
-              style={styles.activityTime}
+              style={
+                styles.overviewValue
+              }
             >
-              {item.time}
+              24
+            </Text>
+          </View>
+
+          <View
+            style={
+              styles.overviewRow
+            }
+          >
+            <Text
+              style={
+                styles.overviewLabel
+              }
+            >
+              Active Classes
+            </Text>
+
+            <Text
+              style={
+                styles.overviewValue
+              }
+            >
+              18
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.overviewRow,
+              {
+                borderBottomWidth: 0,
+              },
+            ]}
+          >
+            <Text
+              style={
+                styles.overviewLabel
+              }
+            >
+              Active Timetables
+            </Text>
+
+            <Text
+              style={[
+                styles.overviewValue,
+
+                {
+                  color:
+                    COLORS.primary,
+                },
+              ]}
+            >
+              12
             </Text>
           </View>
         </View>
-      ))}
-    </ScrollView>
+      </ScrollView>
+
+      {/* ====================================================== */}
+      {/* ACTIVITIES MODAL */}
+      {/* ====================================================== */}
+
+      <Modal
+        visible={activityModal}
+        transparent
+        animationType="slide"
+      >
+        <View
+          style={styles.modalOverlay}
+        >
+          <View
+            style={styles.modalCard}
+          >
+            <View
+              style={
+                styles.modalHeader
+              }
+            >
+              <Text
+                style={
+                  styles.modalTitle
+                }
+              >
+                Recent Activities
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  setActivityModal(
+                    false,
+                  )
+                }
+              >
+                <X
+                  size={22}
+                  color={
+                    COLORS.text
+                  }
+                />
+              </TouchableOpacity>
+            </View>
+
+            {activities.map(
+              (item, index) => (
+                <View
+                  key={index}
+                  style={
+                    styles.activityCard
+                  }
+                >
+                  <View
+                    style={
+                      styles.activityIcon
+                    }
+                  >
+                    <UserCheck
+                      size={15}
+                      color="#FFFFFF"
+                    />
+                  </View>
+
+                  <View
+                    style={{
+                      flex: 1,
+
+                      marginLeft: 12,
+                    }}
+                  >
+                    <Text
+                      style={
+                        styles.activityTitle
+                      }
+                    >
+                      {item.title}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.activityTime
+                      }
+                    >
+                      {item.time}
+                    </Text>
+                  </View>
+                </View>
+              ),
+            )}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
-/* ========================================= */
+/* ====================================================== */
 /* STYLES */
-/* ========================================= */
+/* ====================================================== */
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
-    padding: 16,
+
+    backgroundColor:
+      COLORS.background,
+
+    paddingHorizontal: 14,
+
+    paddingTop: 14,
   },
 
-  /* HERO */
-
   heroCard: {
-    backgroundColor: PRIMARY,
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    marginBottom: 20,
+    backgroundColor:
+      COLORS.sidebar,
+
+    borderRadius: 24,
+
+    paddingHorizontal: 24,
+
+    paddingVertical: 24,
+
+    marginBottom: 26,
+
+    justifyContent:
+      "space-between",
+
+    alignItems: "center",
+
+    borderWidth: 1,
+
+    borderColor: "#30434D",
   },
 
   heroLeft: {
     flex: 1,
   },
 
+  sparkleBox: {
+    width: 62,
+
+    height: 62,
+
+    borderRadius: 18,
+
+    backgroundColor:
+      "rgba(18,181,203,0.18)",
+
+    justifyContent: "center",
+
+    alignItems: "center",
+  },
+
   heroTitle: {
     color: "#FFFFFF",
-    fontSize: 22,
+
+    fontSize: 30,
+
     fontWeight: "900",
-    marginTop: 8,
+
+    marginTop: 16,
+
+    textAlign: "center",
   },
 
   heroText: {
-    color: "#F5F5DC",
-    fontSize: 12,
-    marginTop: 4,
+    color: "#D7E6EC",
+
+    marginTop: 10,
+
+    fontSize: 14,
+
+    lineHeight: 22,
+
+    textAlign: "center",
   },
 
   heroButton: {
-    backgroundColor: "#FFFFFF",
-    alignSelf: "flex-start",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginTop: 12,
+    marginTop: 22,
+
+    backgroundColor:
+      COLORS.primary,
+
+    paddingHorizontal: 22,
+
+    paddingVertical: 13,
+
+    borderRadius: 16,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    alignSelf: "center",
   },
 
   heroButtonText: {
-    color: PRIMARY,
-    fontWeight: "800",
+    color: "#FFFFFF",
+
+    fontWeight: "900",
+
+    fontSize: 14,
+
+    marginRight: 8,
   },
 
   heroImage: {
-    width: 80,
-    height: 80,
+    width: 110,
+
+    height: 110,
+
     resizeMode: "contain",
+
+    marginTop: 18,
   },
 
-  /* STATS */
-
-  statsGrid: {
+  row: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 10,
-  },
 
-  statCard: {
-    width: "23%",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
+    justifyContent:
+      "space-between",
 
-  statNumber: {
-    fontSize: 22,
-    fontWeight: "900",
-    marginTop: 8,
+    alignItems: "center",
   },
-
-  statLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-
-  /* QUICK ACTIONS */
 
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 24,
+
     fontWeight: "900",
-    color: PRIMARY,
-    marginVertical: 12,
+
+    color: COLORS.sidebar,
+
+    marginBottom: 16,
   },
 
-  quickGrid: {
+  activityButton: {
+    color: COLORS.primary,
+
+    fontWeight: "800",
+
+    fontSize: 13,
+  },
+
+  statsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+
+    flexWrap: "wrap",
+
+    justifyContent:
+      "space-between",
+
+    marginBottom: 24,
   },
 
-  quickCard: {
-    width: "23%",
-    backgroundColor: CARD,
-    borderRadius: 16,
-    paddingVertical: 15,
+  statsCard: {
+    backgroundColor:
+      COLORS.card,
+
+    borderRadius: 22,
+
+    paddingVertical: 22,
+
+    alignItems: "center",
+
+    borderWidth: 1,
+
+    borderColor:
+      COLORS.border,
+
+    marginBottom: 14,
+
+    shadowColor: "#000",
+
+    shadowOpacity: 0.05,
+
+    shadowRadius: 10,
+
+    elevation: 3,
+  },
+
+  statsValue: {
+    fontSize: 26,
+
+    fontWeight: "900",
+
+    color: COLORS.primary,
+
+    marginTop: 12,
+  },
+
+  statsTitle: {
+    marginTop: 8,
+
+    color: COLORS.sidebar,
+
+    fontWeight: "700",
+
+    fontSize: 13,
+  },
+
+  grid: {
+    flexDirection: "row",
+
+    flexWrap: "wrap",
+
+    justifyContent:
+      "space-between",
+
+    marginBottom: 20,
+  },
+
+  actionCard: {
+    backgroundColor:
+      COLORS.softCard,
+
+    borderRadius: 22,
+
+    paddingVertical: 24,
+
+    alignItems: "center",
+
+    marginBottom: 16,
+
+    borderWidth: 1,
+
+    borderColor:
+      COLORS.border,
+
+    shadowColor: "#000",
+
+    shadowOpacity: 0.04,
+
+    shadowRadius: 8,
+
+    elevation: 2,
+  },
+
+  actionText: {
+    marginTop: 12,
+
+    color: COLORS.sidebar,
+
+    fontWeight: "800",
+
+    fontSize: 14,
+  },
+
+  noticeCard: {
+    backgroundColor:
+      COLORS.noticeBg,
+
+    borderRadius: 24,
+
+    padding: 20,
+
+    marginBottom: 20,
+
+    borderWidth: 1,
+
+    borderColor:
+      COLORS.border,
+  },
+
+  noticeTop: {
+    flexDirection: "row",
+
+    justifyContent:
+      "space-between",
+
     alignItems: "center",
   },
 
-  quickText: {
-    marginTop: 8,
-    fontSize: 11,
-    fontWeight: "700",
+  noticeLeft: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    flex: 1,
   },
 
-  /* ANALYTICS */
+  noticeIcon: {
+    width: 56,
 
-  analyticsCard: {
-    backgroundColor: CARD,
-    borderRadius: 20,
-    padding: 20,
-    marginVertical: 10,
+    height: 56,
+
+    borderRadius: 18,
+
+    backgroundColor:
+      COLORS.primary,
+
+    justifyContent: "center",
+
+    alignItems: "center",
   },
 
-  analyticsLabel: {
-    color: "#6B7280",
-    fontSize: 12,
-  },
+  noticeTitle: {
+    fontSize: 17,
 
-  analyticsValue: {
-    fontSize: 28,
     fontWeight: "900",
-    marginTop: 5,
+
+    color: COLORS.sidebar,
   },
 
-  /* ACTIVITIES */
+  noticeType: {
+    marginTop: 4,
+
+    color: COLORS.subText,
+
+    fontWeight: "700",
+
+    fontSize: 11,
+  },
+
+  noticeDesc: {
+    marginTop: 16,
+
+    color: COLORS.subText,
+
+    fontSize: 14,
+
+    lineHeight: 24,
+  },
+
+  dateBadge: {
+    backgroundColor:
+      COLORS.primary,
+
+    paddingHorizontal: 12,
+
+    paddingVertical: 8,
+
+    borderRadius: 12,
+  },
+
+  dateText: {
+    color: "#FFFFFF",
+
+    fontWeight: "800",
+
+    fontSize: 11,
+  },
+
+  overviewCard: {
+    backgroundColor:
+      COLORS.overviewBg,
+
+    borderRadius: 24,
+
+    padding: 20,
+
+    marginBottom: 40,
+
+    borderWidth: 1,
+
+    borderColor:
+      COLORS.border,
+  },
+
+  overviewRow: {
+    flexDirection: "row",
+
+    justifyContent:
+      "space-between",
+
+    paddingVertical: 16,
+
+    borderBottomWidth: 1,
+
+    borderBottomColor:
+      "#D9E7ED",
+  },
+
+  overviewLabel: {
+    color: COLORS.subText,
+
+    fontWeight: "700",
+
+    fontSize: 14,
+  },
+
+  overviewValue: {
+    color: COLORS.primary,
+
+    fontWeight: "900",
+
+    fontSize: 15,
+  },
+
+  modalOverlay: {
+    flex: 1,
+
+    backgroundColor:
+      "rgba(0,0,0,0.45)",
+
+    justifyContent: "flex-end",
+  },
+
+  modalCard: {
+    backgroundColor:
+      COLORS.white,
+
+    borderTopLeftRadius: 30,
+
+    borderTopRightRadius: 30,
+
+    padding: 24,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+
+    justifyContent:
+      "space-between",
+
+    alignItems: "center",
+
+    marginBottom: 20,
+  },
+
+  modalTitle: {
+    fontSize: 22,
+
+    fontWeight: "900",
+
+    color: COLORS.sidebar,
+  },
 
   activityCard: {
-    backgroundColor: CARD,
-    borderRadius: 16,
-    padding: 15,
     flexDirection: "row",
+
     alignItems: "center",
-    marginBottom: 10,
+
+    backgroundColor:
+      COLORS.card,
+
+    borderRadius: 18,
+
+    padding: 16,
+
+    marginBottom: 14,
+  },
+
+  activityIcon: {
+    width: 42,
+
+    height: 42,
+
+    borderRadius: 14,
+
+    backgroundColor:
+      COLORS.primary,
+
+    justifyContent: "center",
+
+    alignItems: "center",
   },
 
   activityTitle: {
+    fontWeight: "800",
+
+    color: COLORS.sidebar,
+
     fontSize: 14,
-    fontWeight: "700",
   },
 
   activityTime: {
-    fontSize: 11,
-    color: "#6B7280",
+    marginTop: 4,
+
+    color: COLORS.subText,
+
+    fontSize: 12,
   },
 });

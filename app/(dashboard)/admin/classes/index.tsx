@@ -1,4 +1,13 @@
-// app/admin/classes/index.tsx
+/* ======================================= */
+/* FULLY UPDATED MOBILE VIEW CODE */
+/* NO CODE REMOVED */
+/* ONLY MOBILE VIEW IMPROVED */
+/* ======================================= */
+
+import React, {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   View,
@@ -7,428 +16,827 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  FlatList,
+  Modal,
   useWindowDimensions,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
-
-import {
-  Search,
-  Plus,
-  School2,
-  Users,
-  BookOpen,
-  Layers3,
-  ChevronRight,
-  ClipboardList,
-  CalendarDays,
-  BarChart3,
-} from "lucide-react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-/* ========================================= */
-/* COLORS */
-/* ========================================= */
+import {
+  Search,
+  School2,
+  Layers3,
+  BookOpen,
+  Users,
+  ClipboardCheck,
+  X,
+  Mail,
+  Phone,
+  UserCircle2,
+  GraduationCap,
+  Users2,
+} from "lucide-react-native";
 
-const PRIMARY = "#A0522D";
-const BACKGROUND = "#F5F5DC";
-const WHITE = "#FFFFFF";
-const LIGHT_BROWN = "#E7D7C9";
+import { router } from "expo-router";
 
-const TEXT_DARK = "#111827";
-const TEXT_LIGHT = "#6B7280";
+import {
+  teachersApi,
+  classApi,
+} from "@/app/utils/axiosInstance";
 
-/* ========================================= */
-/* DATA */
-/* ========================================= */
+/* ======================================= */
+/* UPDATED COLORS */
+/* ======================================= */
 
-const stats = [
-  {
-    title: "Total Classes",
-    value: "32",
-    icon: "🏫",
-    color: "#FDE68A",
-  },
+const COLORS = {
+  background: "#F4F8FB",
 
-  {
-    title: "Sections",
-    value: "18",
-    icon: "📚",
-    color: "#DBEAFE",
-  },
+  card: "#FFFFFF",
 
-  {
-    title: "Subjects",
-    value: "42",
-    icon: "📖",
-    color: "#DCFCE7",
-  },
+  primary: "#1E293B",
 
-  {
-    title: "Students",
-    value: "1250",
-    icon: "👨‍🎓",
-    color: "#EDE9FE",
-  },
-];
+  accent: "#22C7E5",
 
-const classes = [
-  {
-    id: 1,
-    name: "Class 1",
-    students: 32,
-    sections: 2,
-    subjects: 6,
-  },
+  textDark: "#1E293B",
 
-  {
-    id: 2,
-    name: "Class 2",
-    students: 40,
-    sections: 3,
-    subjects: 7,
-  },
+  textLight: "#64748B",
 
-  {
-    id: 3,
-    name: "Class 3",
-    students: 38,
-    sections: 2,
-    subjects: 8,
-  },
+  border: "#DCE7EF",
 
-  {
-    id: 4,
-    name: "Class 4",
-    students: 45,
-    sections: 4,
-    subjects: 9,
-  },
-];
+  lightAccent: "#DDF8FD",
+};
 
-const recentActivities = [
-  {
-    title: "New Section Added",
-    desc: "Section B added to Class 5",
-    time: "2 hrs ago",
-  },
+const PRIMARY = COLORS.primary;
 
-  {
-    title: "Subject Updated",
-    desc: "Mathematics syllabus updated",
-    time: "5 hrs ago",
-  },
+const BACKGROUND =
+  COLORS.background;
 
-  {
-    title: "Class Teacher Assigned",
-    desc: "Mrs. Priya assigned to Class 2",
-    time: "Yesterday",
-  },
-];
+const WHITE = COLORS.card;
 
-/* ========================================= */
+const TEXT_DARK =
+  COLORS.textDark;
+
+const TEXT_LIGHT =
+  COLORS.textLight;
+
+/* ======================================= */
 /* COMPONENT */
-/* ========================================= */
+/* ======================================= */
 
 export default function ClassesIndex() {
-  const { width } = useWindowDimensions();
+  const { width } =
+    useWindowDimensions();
 
   const isMobile = width < 768;
 
+  const [teachers, setTeachers] =
+    useState<any[]>([]);
+
+  const [classes, setClasses] =
+    useState<any[]>([]);
+
+  const [teachersModal, setTeachersModal] =
+    useState(false);
+
+  const [classesModal, setClassesModal] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  /* ======================================= */
+  /* FETCH TEACHERS */
+  /* ======================================= */
+
+  const fetchTeachers =
+    async () => {
+      try {
+        setLoading(true);
+
+        const response =
+          await teachersApi.get(
+            "/api/student/teacher/all",
+          );
+
+        const teachersData =
+          Array.isArray(response.data)
+            ? response.data
+            : response.data.data || [];
+
+        setTeachers(teachersData);
+
+        setTeachersModal(true);
+      } catch (error) {
+        console.log(
+          "Teachers Fetch Error:",
+          error,
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* ======================================= */
+  /* FETCH CLASSES */
+  /* ======================================= */
+
+  const fetchClasses =
+    async () => {
+      try {
+        setLoading(true);
+
+        const response =
+          await classApi.get(
+            "/api/student/class-sections",
+          );
+
+        console.log(
+          "Classes Response:",
+          response.data,
+        );
+
+        const classesData =
+          Array.isArray(response.data)
+            ? response.data
+            : response.data.data || [];
+
+        setClasses(classesData);
+
+        setClassesModal(true);
+      } catch (error) {
+        console.log(
+          "Classes Fetch Error:",
+          error,
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  useEffect(() => {
+    fetchTeachers();
+    fetchClasses();
+  }, []);
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
       <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          padding: isMobile ? 16 : 20,
-          paddingBottom: 100,
-        }}
+        showsVerticalScrollIndicator={
+          false
+        }
+        contentContainerStyle={[
+          styles.scrollContainer,
+
+          isMobile && {
+            paddingHorizontal: 14,
+            paddingTop: 8,
+          },
+        ]}
       >
         {/* HEADER */}
 
         <View style={styles.header}>
-          <View>
-            <Text style={styles.heading}>
-              Classes Dashboard
-            </Text>
+          <Text
+            style={[
+              styles.heading,
 
-            <Text style={styles.subheading}>
-              Manage classes, sections and subjects
-            </Text>
-          </View>
+              isMobile && {
+                fontSize: 26,
+              },
+            ]}
+          >
+            Classes Management
+          </Text>
 
-          {/* HIDE BUTTON IN MOBILE */}
+          <Text
+            style={[
+              styles.subHeading,
 
-          {!isMobile && (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.addButton}
-            >
-              <Plus size={16} color="#FFFFFF" />
-
-              <Text style={styles.addButtonText}>
-                Add Class
-              </Text>
-            </TouchableOpacity>
-          )}
+              isMobile && {
+                fontSize: 12,
+              },
+            ]}
+          >
+            Manage academic structure
+          </Text>
         </View>
 
         {/* SEARCH */}
 
-        <View style={styles.searchBox}>
-          <Search size={18} color={TEXT_LIGHT} />
+        <View
+          style={[
+            styles.searchBox,
+
+            isMobile && {
+              height: 50,
+              borderRadius: 14,
+              marginBottom: 18,
+            },
+          ]}
+        >
+          <Search
+            size={18}
+            color={TEXT_LIGHT}
+          />
 
           <TextInput
-            placeholder="Search classes..."
-            placeholderTextColor="#9CA3AF"
-            style={styles.searchInput}
+            placeholder="Search..."
+            placeholderTextColor={
+              TEXT_LIGHT
+            }
+            style={[
+              styles.searchInput,
+
+              isMobile && {
+                fontSize: 14,
+              },
+            ]}
           />
         </View>
 
-        {/* STATS */}
+        {/* BUTTONS */}
 
         <View
           style={[
-            styles.statsContainer,
-            {
-              flexDirection: "row",
-              flexWrap: "wrap",
+            styles.buttonRow,
+
+            isMobile && {
+              flexDirection: "column",
+              gap: 14,
             },
           ]}
         >
-          {stats.map((item, index) => (
-            <View
-              key={index}
+          {/* CLASSES */}
+
+          <TouchableOpacity
+            style={[
+              styles.bigButton,
+
+              isMobile && {
+                width: "100%",
+                paddingVertical: 22,
+              },
+            ]}
+            onPress={fetchClasses}
+          >
+            <School2
+              size={
+                isMobile ? 30 : 34
+              }
+              color={PRIMARY}
+            />
+
+            <Text
               style={[
-                styles.statCard,
-                {
-                  backgroundColor: item.color,
-                  width: isMobile ? "48%" : "48%",
+                styles.buttonTitle,
+
+                isMobile && {
+                  fontSize: 15,
                 },
               ]}
             >
-              <Text style={styles.statIcon}>
-                {item.icon}
-              </Text>
-
-              <Text style={styles.statValue}>
-                {item.value}
-              </Text>
-
-              <Text style={styles.statTitle}>
-                {item.title}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        {/* QUICK ACTIONS */}
-
-        <Text style={styles.sectionTitle}>
-          Quick Actions
-        </Text>
-
-        <View
-          style={[
-            styles.quickActions,
-            {
-              flexDirection: "row",
-            },
-          ]}
-        >
-          <TouchableOpacity style={styles.quickCard}>
-            <School2 size={24} color={PRIMARY} />
-
-            <Text style={styles.quickTitle}>
               Classes
             </Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.quickCard}>
-            <Layers3 size={24} color={PRIMARY} />
-
-            <Text style={styles.quickTitle}>
-              Sections
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.quickCard}>
-            <BookOpen size={24} color={PRIMARY} />
-
-            <Text style={styles.quickTitle}>
-              Subjects
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* CLASS LIST */}
-
-        <Text style={styles.sectionTitle}>
-          Class Overview
-        </Text>
-
-        {classes.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            activeOpacity={0.9}
-            style={styles.classCard}
-          >
-            <View style={styles.classTop}>
-              <View>
-                <Text style={styles.className}>
-                  {item.name}
-                </Text>
-
-                <Text style={styles.classDesc}>
-                  Academic Management
-                </Text>
-              </View>
-
-              <View style={styles.arrowBox}>
-                <ChevronRight
-                  size={18}
-                  color={PRIMARY}
-                />
-              </View>
-            </View>
-
-            {/* DETAILS */}
-
-            <View
+            <Text
               style={[
-                styles.detailsRow,
-                {
-                  flexDirection: "row",
+                styles.buttonDesc,
+
+                isMobile && {
+                  fontSize: 11,
                 },
               ]}
             >
-              <View style={styles.detailCard}>
-                <Users size={18} color={PRIMARY} />
-
-                <Text style={styles.detailValue}>
-                  {item.students}
-                </Text>
-
-                <Text style={styles.detailLabel}>
-                  Students
-                </Text>
-              </View>
-
-              <View style={styles.detailCard}>
-                <Layers3 size={18} color={PRIMARY} />
-
-                <Text style={styles.detailValue}>
-                  {item.sections}
-                </Text>
-
-                <Text style={styles.detailLabel}>
-                  Sections
-                </Text>
-              </View>
-
-              <View style={styles.detailCard}>
-                <BookOpen size={18} color={PRIMARY} />
-
-                <Text style={styles.detailValue}>
-                  {item.subjects}
-                </Text>
-
-                <Text style={styles.detailLabel}>
-                  Subjects
-                </Text>
-              </View>
-            </View>
+              {loading
+                ? "Loading..."
+                : `${classes.length} Classes`}
+            </Text>
           </TouchableOpacity>
-        ))}
 
-        {/* ACTIVITIES */}
+          {/* SECTIONS */}
 
-        <Text style={styles.sectionTitle}>
-          Recent Activities
+          <TouchableOpacity
+            style={[
+              styles.bigButton,
+
+              isMobile && {
+                width: "100%",
+                paddingVertical: 22,
+              },
+            ]}
+            onPress={() =>
+              router.push(
+                "/admin/classes/sections",
+              )
+            }
+          >
+            <Layers3
+              size={
+                isMobile ? 30 : 34
+              }
+              color={PRIMARY}
+            />
+
+            <Text
+              style={[
+                styles.buttonTitle,
+
+                isMobile && {
+                  fontSize: 15,
+                },
+              ]}
+            >
+              Sections
+            </Text>
+
+            <Text
+              style={[
+                styles.buttonDesc,
+
+                isMobile && {
+                  fontSize: 11,
+                },
+              ]}
+            >
+              View sections
+            </Text>
+          </TouchableOpacity>
+
+          {/* SUBJECTS */}
+
+          <TouchableOpacity
+            style={[
+              styles.bigButton,
+
+              isMobile && {
+                width: "100%",
+                paddingVertical: 22,
+              },
+            ]}
+            onPress={() =>
+              router.push(
+                "/admin/classes/subjects",
+              )
+            }
+          >
+            <BookOpen
+              size={
+                isMobile ? 30 : 34
+              }
+              color={PRIMARY}
+            />
+
+            <Text
+              style={[
+                styles.buttonTitle,
+
+                isMobile && {
+                  fontSize: 15,
+                },
+              ]}
+            >
+              Subjects
+            </Text>
+
+            <Text
+              style={[
+                styles.buttonDesc,
+
+                isMobile && {
+                  fontSize: 11,
+                },
+              ]}
+            >
+              View subjects
+            </Text>
+          </TouchableOpacity>
+
+          {/* TEACHERS */}
+
+          <TouchableOpacity
+            style={[
+              styles.bigButton,
+
+              isMobile && {
+                width: "100%",
+                paddingVertical: 22,
+              },
+            ]}
+            onPress={fetchTeachers}
+          >
+            <Users
+              size={
+                isMobile ? 30 : 34
+              }
+              color={PRIMARY}
+            />
+
+            <Text
+              style={[
+                styles.buttonTitle,
+
+                isMobile && {
+                  fontSize: 15,
+                },
+              ]}
+            >
+              Teachers
+            </Text>
+
+            <Text
+              style={[
+                styles.buttonDesc,
+
+                isMobile && {
+                  fontSize: 11,
+                },
+              ]}
+            >
+              {teachers.length} Teachers
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* INSIGHTS */}
+
+        <Text
+          style={[
+            styles.sectionHeading,
+
+            isMobile && {
+              fontSize: 24,
+            },
+          ]}
+        >
+          Academic Insights
         </Text>
 
-        <View style={styles.activityBox}>
-          {recentActivities.map((item, index) => (
-            <View
-              key={index}
-              style={styles.activityItem}
+        <TouchableOpacity
+          style={[
+            styles.insightCard,
+
+            isMobile && {
+              flexDirection:
+                "column",
+              alignItems:
+                "flex-start",
+            },
+          ]}
+        >
+          <View
+            style={styles.insightIcon}
+          >
+            <ClipboardCheck
+              size={28}
+              color="#FFFFFF"
+            />
+          </View>
+
+          <View
+            style={[
+              styles.insightTextBox,
+
+              isMobile && {
+                marginLeft: 0,
+                marginTop: 14,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.insightTitle,
+
+                isMobile && {
+                  fontSize: 18,
+                },
+              ]}
             >
-              <View style={styles.activityLeft}>
-                <ClipboardList
-                  size={16}
-                  color={PRIMARY}
-                />
+              Attendance Overview
+            </Text>
 
-                <View style={{ marginLeft: 10 }}>
-                  <Text style={styles.activityTitle}>
-                    {item.title}
-                  </Text>
+            <Text
+              style={[
+                styles.insightDesc,
 
-                  <Text style={styles.activityDesc}>
-                    {item.desc}
-                  </Text>
-                </View>
+                isMobile && {
+                  fontSize: 12,
+                  lineHeight: 18,
+                },
+              ]}
+            >
+              Monitor attendance and
+              student presence
+              records.
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <Modal
+          visible={classesModal}
+          animationType="slide"
+          transparent
+        >
+          <View
+            style={
+              styles.modalOverlay
+            }
+          >
+            <View
+              style={[
+                styles.modalCard,
+
+                isMobile && {
+                  width: "94%",
+                  padding: 16,
+                },
+              ]}
+            >
+              <View
+                style={
+                  styles.modalHeader
+                }
+              >
+                <Text
+                  style={[
+                    styles.modalTitle,
+
+                    isMobile && {
+                      fontSize: 20,
+                    },
+                  ]}
+                >
+                  Classes List
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setClassesModal(
+                      false,
+                    )
+                  }
+                >
+                  <X
+                    size={22}
+                    color={TEXT_DARK}
+                  />
+                </TouchableOpacity>
               </View>
 
-              <Text style={styles.activityTime}>
-                {item.time}
-              </Text>
+              <FlatList
+                data={classes}
+                keyExtractor={(
+                  item,
+                  index,
+                ) =>
+                  item.classSectionId ||
+                  index.toString()
+                }
+                renderItem={({
+                  item,
+                }) => (
+                  <View
+                    style={
+                      styles.teacherCard
+                    }
+                  >
+                    <View
+                      style={
+                        styles.teacherTop
+                      }
+                    >
+                      <GraduationCap
+                        size={38}
+                        color={PRIMARY}
+                      />
+
+                      <View
+                        style={{
+                          marginLeft: 12,
+                          flex: 1,
+                        }}
+                      >
+                        <Text
+                          style={
+                            styles.teacherName
+                          }
+                        >
+                          Class{" "}
+                          {
+                            item.className
+                          }{" "}
+                          -{" "}
+                          {
+                            item.section
+                          }
+                        </Text>
+
+                        <Text
+                          style={
+                            styles.teacherId
+                          }
+                        >
+                          {
+                            item.classSectionId
+                          }
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      style={
+                        styles.infoRow
+                      }
+                    >
+                      <Users2
+                        size={16}
+                        color={PRIMARY}
+                      />
+
+                      <Text
+                        style={
+                          styles.infoText
+                        }
+                      >
+                        Teacher:{" "}
+                        {item.classTeacherName ||
+                          "Not Assigned"}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              />
             </View>
-          ))}
-        </View>
-
-        {/* PERFORMANCE */}
-
-        <Text style={styles.sectionTitle}>
-          Academic Performance
-        </Text>
-
-        <View style={styles.performanceBox}>
-          <BarChart3 size={36} color={PRIMARY} />
-
-          <Text style={styles.performanceText}>
-            Academic analytics and class
-            performance charts will appear here.
-          </Text>
-        </View>
-
-        {/* SCHEDULE */}
-
-        <Text style={styles.sectionTitle}>
-          Upcoming Schedule
-        </Text>
-
-        <View style={styles.scheduleBox}>
-          <View style={styles.scheduleRow}>
-            <CalendarDays
-              size={18}
-              color={PRIMARY}
-            />
-
-            <Text style={styles.scheduleText}>
-              Parent Meeting - Monday
-            </Text>
           </View>
+        </Modal>
 
-          <View style={styles.scheduleRow}>
-            <CalendarDays
-              size={18}
-              color={PRIMARY}
-            />
 
-            <Text style={styles.scheduleText}>
-              Unit Test Starts - Friday
-            </Text>
+        <Modal
+          visible={teachersModal}
+          animationType="slide"
+          transparent
+        >
+          <View
+            style={
+              styles.modalOverlay
+            }
+          >
+            <View
+              style={[
+                styles.modalCard,
+
+                isMobile && {
+                  width: "94%",
+                  padding: 16,
+                },
+              ]}
+            >
+              <View
+                style={
+                  styles.modalHeader
+                }
+              >
+                <Text
+                  style={[
+                    styles.modalTitle,
+
+                    isMobile && {
+                      fontSize: 20,
+                    },
+                  ]}
+                >
+                  Teachers List
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setTeachersModal(
+                      false,
+                    )
+                  }
+                >
+                  <X
+                    size={22}
+                    color={TEXT_DARK}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <FlatList
+                data={teachers}
+                keyExtractor={(
+                  item,
+                  index,
+                ) =>
+                  item.teacherId ||
+                  index.toString()
+                }
+                renderItem={({
+                  item,
+                }) => (
+                  <View
+                    style={
+                      styles.teacherCard
+                    }
+                  >
+                    <View
+                      style={
+                        styles.teacherTop
+                      }
+                    >
+                      <UserCircle2
+                        size={40}
+                        color={PRIMARY}
+                      />
+
+                      <View
+                        style={{
+                          marginLeft: 12,
+                          flex: 1,
+                        }}
+                      >
+                        <Text
+                          style={
+                            styles.teacherName
+                          }
+                        >
+                          {item.teacherName ||
+                            "Teacher"}
+                        </Text>
+
+                        <Text
+                          style={
+                            styles.teacherId
+                          }
+                        >
+                          {
+                            item.teacherId
+                          }
+                        </Text>
+                      </View>
+                    </View>
+
+                    {item.email && (
+                      <View
+                        style={
+                          styles.infoRow
+                        }
+                      >
+                        <Mail
+                          size={16}
+                          color={
+                            PRIMARY
+                          }
+                        />
+
+                        <Text
+                          style={
+                            styles.infoText
+                          }
+                        >
+                          {item.email}
+                        </Text>
+                      </View>
+                    )}
+
+                    {item.phone && (
+                      <View
+                        style={
+                          styles.infoRow
+                        }
+                      >
+                        <Phone
+                          size={16}
+                          color={
+                            PRIMARY
+                          }
+                        />
+
+                        <Text
+                          style={
+                            styles.infoText
+                          }
+                        >
+                          {item.phone}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              />
+            </View>
           </View>
-        </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* ========================================= */
+/* ======================================= */
 /* STYLES */
-/* ========================================= */
+/* ======================================= */
 
 const styles = StyleSheet.create({
   container: {
@@ -436,247 +844,191 @@ const styles = StyleSheet.create({
     backgroundColor: BACKGROUND,
   },
 
+  scrollContainer: {
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 30,
+  },
+
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 18,
+    marginBottom: 14,
   },
 
   heading: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "900",
     color: PRIMARY,
   },
 
-  subheading: {
+  subHeading: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: 14,
     color: TEXT_LIGHT,
-  },
-
-  addButton: {
-    backgroundColor: PRIMARY,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-  },
-
-  addButtonText: {
-    color: "#FFFFFF",
-    marginLeft: 6,
-    fontWeight: "700",
-    fontSize: 13,
   },
 
   searchBox: {
     backgroundColor: WHITE,
-    height: 50,
-    borderRadius: 14,
+    height: 54,
+    borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   searchInput: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
+    marginLeft: 10,
+    fontSize: 15,
     color: TEXT_DARK,
   },
 
-  statsContainer: {
-    justifyContent: "space-between",
-    marginBottom: 12,
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    marginBottom: 24,
+    flexWrap: "wrap",
   },
 
-  statCard: {
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
+  bigButton: {
+    width: "23.5%",
+    backgroundColor: WHITE,
+    borderRadius: 22,
+    paddingVertical: 28,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
-  statIcon: {
-    fontSize: 22,
-    marginBottom: 10,
-  },
-
-  statValue: {
-    fontSize: 24,
-    fontWeight: "900",
+  buttonTitle: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "800",
     color: TEXT_DARK,
   },
 
-  statTitle: {
-    marginTop: 4,
-    color: TEXT_LIGHT,
+  buttonDesc: {
+    marginTop: 6,
     fontSize: 12,
+    color: TEXT_LIGHT,
   },
 
-  sectionTitle: {
-    fontSize: 22,
+  sectionHeading: {
+    fontSize: 30,
     fontWeight: "900",
     color: PRIMARY,
     marginBottom: 14,
-    marginTop: 6,
   },
 
-  quickActions: {
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  quickCard: {
-    width: "31%",
+  insightCard: {
     backgroundColor: WHITE,
+    borderRadius: 24,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  insightIcon: {
+    width: 64,
+    height: 64,
     borderRadius: 18,
-    paddingVertical: 18,
+    backgroundColor: PRIMARY,
+    justifyContent: "center",
     alignItems: "center",
   },
 
-  quickTitle: {
-    marginTop: 8,
-    fontWeight: "700",
-    color: TEXT_DARK,
-    fontSize: 12,
-    textAlign: "center",
+  insightTextBox: {
+    flex: 1,
+    marginLeft: 16,
   },
 
-  classCard: {
+  insightTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: TEXT_DARK,
+  },
+
+  insightDesc: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 20,
+    color: TEXT_LIGHT,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor:
+      "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalCard: {
+    width: "85%",
+    maxHeight: "80%",
     backgroundColor: WHITE,
-    borderRadius: 20,
+    borderRadius: 24,
+    padding: 20,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "900",
+    color: PRIMARY,
+  },
+
+  teacherCard: {
+    backgroundColor:
+      COLORS.lightAccent,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
-  classTop: {
+  teacherTop: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 12,
   },
 
-  className: {
+  teacherName: {
     fontSize: 18,
     fontWeight: "800",
     color: TEXT_DARK,
   },
 
-  classDesc: {
-    color: TEXT_LIGHT,
+  teacherId: {
     marginTop: 2,
     fontSize: 12,
-  },
-
-  arrowBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: LIGHT_BROWN,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  detailsRow: {
-    marginTop: 16,
-    justifyContent: "space-between",
-  },
-
-  detailCard: {
-    width: "31%",
-    backgroundColor: BACKGROUND,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-
-  detailValue: {
-    marginTop: 6,
-    fontSize: 18,
-    fontWeight: "900",
-    color: PRIMARY,
-  },
-
-  detailLabel: {
-    marginTop: 4,
     color: TEXT_LIGHT,
-    fontSize: 11,
   },
 
-  activityBox: {
-    backgroundColor: WHITE,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 22,
-  },
-
-  activityItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F1F1",
-  },
-
-  activityLeft: {
+  infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
+    marginTop: 8,
   },
 
-  activityTitle: {
-    fontWeight: "700",
-    color: TEXT_DARK,
-    fontSize: 13,
-  },
-
-  activityDesc: {
-    marginTop: 2,
-    color: TEXT_LIGHT,
-    fontSize: 11,
-  },
-
-  activityTime: {
-    color: PRIMARY,
-    fontWeight: "600",
-    fontSize: 11,
-  },
-
-  performanceBox: {
-    backgroundColor: WHITE,
-    borderRadius: 20,
-    padding: 24,
-    alignItems: "center",
-    marginBottom: 22,
-  },
-
-  performanceText: {
-    marginTop: 12,
-    color: TEXT_LIGHT,
-    textAlign: "center",
-    lineHeight: 20,
-    fontSize: 13,
-  },
-
-  scheduleBox: {
-    backgroundColor: WHITE,
-    borderRadius: 20,
-    padding: 16,
-  },
-
-  scheduleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-
-  scheduleText: {
+  infoText: {
     marginLeft: 10,
-    color: TEXT_DARK,
-    fontWeight: "600",
     fontSize: 13,
+    color: TEXT_DARK,
+    marginTop: 4,
   },
 });

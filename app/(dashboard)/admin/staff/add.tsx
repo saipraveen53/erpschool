@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+} from "react";
+
 import {
   View,
   Text,
@@ -7,70 +10,205 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
+  FlatList,
   Alert,
   Dimensions,
 } from "react-native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { StatusBar } from "expo-status-bar";
 
-const PRIMARY = "#A0522D";
+import {
+  Users,
+  Search,
+  X,
+  Mail,
+  Phone,
+  UserCircle2,
+  GraduationCap,
+  BriefcaseBusiness,
+  MapPin,
+} from "lucide-react-native";
+
+import { staffApi } from "@/app/utils/axiosInstance";
+
+/* ===================================== */
+/* COLORS */
+/* ===================================== */
+
+const COLORS = {
+  background: "#F4F8FB",
+  card: "#FFFFFF",
+
+  primary: "#1E293B",
+  accent: "#22C7E5",
+
+  textMain: "#1E293B",
+  textSub: "#64748B",
+
+  border: "#DCE7EF",
+
+  lightAccent: "#DDF8FD",
+
+  white: "#FFFFFF",
+};
+
+const PRIMARY = COLORS.primary;
+
 const { width } = Dimensions.get("window");
 
+/* ===================================== */
+/* COMPONENT */
+/* ===================================== */
+
 export default function AddStaff() {
-  const [modalVisible, setModalVisible] = useState(false);
+  /* ===================================== */
+  /* STAFF STATES */
+  /* ===================================== */
 
-  // INVITATION STATES
+  const [teachers, setTeachers] =
+    useState<any[]>([]);
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [teachersModal, setTeachersModal] =
+    useState(false);
 
-  // SEND INVITATION API
+  const [loadingTeachers, setLoadingTeachers] =
+    useState(false);
 
-  const sendInvitation = async () => {
-    if (!fullName || !email) {
+  /* ===================================== */
+  /* MODAL */
+  /* ===================================== */
+
+  const [modalVisible, setModalVisible] =
+    useState(false);
+
+  /* ===================================== */
+  /* REGISTRATION STATES */
+  /* ===================================== */
+
+  const [password, setPassword] =
+    useState("");
+
+  const [experience, setExperience] =
+    useState("");
+
+  const [address, setAddress] =
+    useState("");
+
+  const [phoneNo, setPhoneNo] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  /* ===================================== */
+  /* FETCH STAFF */
+  /* ===================================== */
+
+  const fetchTeachers =
+    async () => {
+      try {
+        setLoadingTeachers(true);
+
+        const response =
+          await staffApi.get(
+            "/api/student/teacher/all",
+          );
+
+        const teachersData =
+          Array.isArray(response.data)
+            ? response.data
+            : response.data.data || [];
+
+        setTeachers(teachersData);
+
+        setTeachersModal(true);
+      } catch (error) {
+        console.log(
+          "Teachers Fetch Error:",
+          error,
+        );
+      } finally {
+        setLoadingTeachers(false);
+      }
+    };
+
+  /* ===================================== */
+  /* REGISTER PRINCIPAL */
+  /* ===================================== */
+
+  const submitRegistration = async () => {
+    if (
+      !password ||
+      !experience ||
+      !address ||
+      !phoneNo
+    ) {
       Alert.alert(
         "Error",
-        "Please fill all required fields"
+        "Please fill all required fields",
       );
+
       return;
     }
 
     try {
+      setLoading(true);
+
+      const token =
+        await AsyncStorage.getItem(
+          "userToken",
+        );
+
+      if (!token) {
+        Alert.alert(
+          "Error",
+          "Token not found",
+        );
+
+        return;
+      }
+
       const response = await fetch(
-        "http://192.168.88.20:8081/api/principle/invite-driver",
+        `http://192.168.88.20:8081/api/principle/complete-onboarding?token=${token}`,
         {
           method: "POST",
 
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
 
           body: JSON.stringify({
-            email: email,
-            fullName: fullName,
+            password,
+            experience,
+            address,
+            phoneNo,
           }),
-        }
+        },
       );
 
-      const data = await response.text();
-
-      console.log("Invitation Response:", data);
+      const data =
+        await response.json();
 
       if (response.ok) {
         Alert.alert(
           "Success",
-          "Invitation email sent successfully"
+          "Principal Registration Completed Successfully",
         );
 
-        // RESET FORM
-
-        setFullName("");
-        setEmail("");
+        setPassword("");
+        setExperience("");
+        setAddress("");
+        setPhoneNo("");
 
         setModalVisible(false);
       } else {
         Alert.alert(
           "Error",
-          "Failed to send invitation"
+          data?.message ||
+            "Registration Failed",
         );
       }
     } catch (error) {
@@ -78,8 +216,10 @@ export default function AddStaff() {
 
       Alert.alert(
         "Error",
-        "Network request failed"
+        "Network Request Failed",
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,87 +228,172 @@ export default function AddStaff() {
       <StatusBar style="dark" />
 
       <ScrollView
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={
+          styles.contentContainer
+        }
+        showsVerticalScrollIndicator={
+          false
+        }
       >
         {/* HEADER */}
 
         <Text style={styles.heading}>
-          Add New Staff
+          Staff Management
         </Text>
 
         <Text style={styles.subHeading}>
-          Enter faculty and employee details
+          Manage faculty and staff
+          records
         </Text>
+
+        {/* SEARCH */}
+
+        <View style={styles.searchBox}>
+          <Search
+            size={20}
+            color={COLORS.textSub}
+          />
+
+          <TextInput
+            placeholder="Search staff..."
+            placeholderTextColor={
+              COLORS.textSub
+            }
+            style={styles.searchInput}
+          />
+        </View>
+
+        {/* STAFF CARD */}
+
+        <TouchableOpacity
+          style={styles.staffCard}
+          onPress={fetchTeachers}
+        >
+          <Users
+            size={42}
+            color={COLORS.accent}
+          />
+
+          <Text style={styles.staffTitle}>
+            Teachers
+          </Text>
+
+          <Text style={styles.staffDesc}>
+            {loadingTeachers
+              ? "Loading..."
+              : `${teachers.length} Staff Members`}
+          </Text>
+        </TouchableOpacity>
 
         {/* STAFF FORM */}
 
         <View style={styles.form}>
+          <Text style={styles.formTitle}>
+            Add New Staff
+          </Text>
+
           <TextInput
             placeholder="Full Name"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={
+              COLORS.textSub
+            }
             style={styles.input}
           />
 
           <TextInput
             placeholder="Email Address"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={
+              COLORS.textSub
+            }
             style={styles.input}
           />
 
           <TextInput
             placeholder="Phone Number"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={
+              COLORS.textSub
+            }
             style={styles.input}
           />
 
           <TextInput
             placeholder="Department"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={
+              COLORS.textSub
+            }
             style={styles.input}
           />
 
           <TextInput
             placeholder="Designation"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={
+              COLORS.textSub
+            }
             style={styles.input}
           />
 
           <TextInput
             placeholder="Employee ID"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={
+              COLORS.textSub
+            }
             style={styles.input}
           />
 
-          {/* SAVE STAFF BUTTON */}
+          {/* SAVE BUTTON */}
 
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity
+            style={styles.button}
+          >
             <Text style={styles.buttonText}>
               Save Staff Member
             </Text>
           </TouchableOpacity>
 
-          {/* INVITE BUTTON */}
+          {/* PRINCIPAL INVITATION */}
 
           <TouchableOpacity
             style={styles.registerButton}
-            activeOpacity={0.85}
-            onPress={() => setModalVisible(true)}
+            activeOpacity={0.9}
+            onPress={() =>
+              setModalVisible(true)
+            }
           >
-            <View style={styles.registerContent}>
-              <View style={styles.iconContainer}>
+            <View
+              style={
+                styles.registerContent
+              }
+            >
+              <View
+                style={
+                  styles.iconContainer
+                }
+              >
                 <Text style={styles.icon}>
                   👨‍🏫
                 </Text>
               </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.registerTitle}>
+              <View
+                style={
+                  styles.textContainer
+                }
+              >
+                <Text
+                  style={
+                    styles.registerTitle
+                  }
+                >
                   Principal Invitation
                 </Text>
 
-                <Text style={styles.registerSubtitle}>
-                  Send onboarding invitation email
+                <Text
+                  style={
+                    styles.registerSubtitle
+                  }
+                >
+                  Open principal
+                  registration form
                 </Text>
               </View>
 
@@ -180,7 +405,252 @@ export default function AddStaff() {
         </View>
       </ScrollView>
 
-      {/* INVITATION MODAL */}
+      {/* ===================================== */}
+      {/* STAFF MODAL */}
+      {/* ===================================== */}
+
+      <Modal
+        visible={teachersModal}
+        animationType="slide"
+        transparent
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={styles.staffModal}
+          >
+            {/* HEADER */}
+
+            <View
+              style={
+                styles.staffModalHeader
+              }
+            >
+              <Text
+                style={
+                  styles.staffModalTitle
+                }
+              >
+                Teachers List
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  setTeachersModal(
+                    false,
+                  )
+                }
+              >
+                <X
+                  size={24}
+                  color={
+                    COLORS.textMain
+                  }
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* LIST */}
+
+            <FlatList
+              data={teachers}
+              keyExtractor={(
+                item,
+                index,
+              ) =>
+                item.teacherId ||
+                index.toString()
+              }
+              renderItem={({ item }) => (
+                <View
+                  style={
+                    styles.teacherCard
+                  }
+                >
+                  <View
+                    style={
+                      styles.teacherTop
+                    }
+                  >
+                    <UserCircle2
+                      size={46}
+                      color={
+                        COLORS.accent
+                      }
+                    />
+
+                    <View
+                      style={{
+                        marginLeft: 12,
+                        flex: 1,
+                      }}
+                    >
+                      <Text
+                        style={
+                          styles.teacherName
+                        }
+                      >
+                        {
+                          item.teacherName
+                        }
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.teacherId
+                        }
+                      >
+                        {
+                          item.teacherId
+                        }
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* EMAIL */}
+
+                  <View
+                    style={
+                      styles.infoRow
+                    }
+                  >
+                    <Mail
+                      size={16}
+                      color={
+                        COLORS.accent
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.infoText
+                      }
+                    >
+                      {item.email}
+                    </Text>
+                  </View>
+
+                  {/* PHONE */}
+
+                  <View
+                    style={
+                      styles.infoRow
+                    }
+                  >
+                    <Phone
+                      size={16}
+                      color={
+                        COLORS.accent
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.infoText
+                      }
+                    >
+                      {item.phone}
+                    </Text>
+                  </View>
+
+                  {/* QUALIFICATION */}
+
+                  <View
+                    style={
+                      styles.infoRow
+                    }
+                  >
+                    <GraduationCap
+                      size={16}
+                      color={
+                        COLORS.accent
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.infoText
+                      }
+                    >
+                      Qualification:{" "}
+                      {
+                        item.qualification
+                      }
+                    </Text>
+                  </View>
+
+                  {/* EXPERIENCE */}
+
+                  <View
+                    style={
+                      styles.infoRow
+                    }
+                  >
+                    <BriefcaseBusiness
+                      size={16}
+                      color={
+                        COLORS.accent
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.infoText
+                      }
+                    >
+                      Experience:{" "}
+                      {item.experience}{" "}
+                      Years
+                    </Text>
+                  </View>
+
+                  {/* ADDRESS */}
+
+                  <View
+                    style={
+                      styles.infoRow
+                    }
+                  >
+                    <MapPin
+                      size={16}
+                      color={
+                        COLORS.accent
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.infoText
+                      }
+                    >
+                      {item.address}
+                    </Text>
+                  </View>
+
+                  {/* SUBJECTS */}
+
+                  <View
+                    style={
+                      styles.subjectBox
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.subjectText
+                      }
+                    >
+                      Subjects:{" "}
+                      {item.subjectIds
+                        ?.length || 0}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* PRINCIPAL MODAL */}
 
       <Modal
         visible={modalVisible}
@@ -188,79 +658,165 @@ export default function AddStaff() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+          <View
+            style={styles.modalContainer}
+          >
             <ScrollView
-              showsVerticalScrollIndicator={false}
+              showsVerticalScrollIndicator={
+                false
+              }
             >
-              {/* HEADER */}
-
-              <View style={styles.modalHeader}>
-                <View style={styles.modalIconBox}>
-                  <Text style={styles.modalIcon}>
-                    📧
+              <View
+                style={styles.modalHeader}
+              >
+                <View
+                  style={
+                    styles.modalIconBox
+                  }
+                >
+                  <Text
+                    style={
+                      styles.modalIcon
+                    }
+                  >
+                    👨‍🏫
                   </Text>
                 </View>
 
-                <Text style={styles.modalTitle}>
-                  Principal Invitation
+                <Text
+                  style={styles.modalTitle}
+                >
+                  Principal Registration
                 </Text>
 
-                <Text style={styles.modalSubtitle}>
-                  Send secure onboarding invitation
+                <Text
+                  style={
+                    styles.modalSubtitle
+                  }
+                >
+                  Complete onboarding
+                  registration
                 </Text>
               </View>
 
-              {/* FORM */}
-
-              <View style={styles.formSection}>
-                {/* FULL NAME */}
-
+              <View
+                style={styles.formSection}
+              >
                 <Text style={styles.label}>
-                  Full Name
+                  Password
                 </Text>
 
                 <TextInput
-                  placeholder="Enter full name"
-                  placeholderTextColor="#9CA3AF"
-                  style={styles.modalInput}
-                  value={fullName}
-                  onChangeText={setFullName}
+                  placeholder="Enter password"
+                  placeholderTextColor={
+                    COLORS.textSub
+                  }
+                  style={
+                    styles.modalInput
+                  }
+                  secureTextEntry
+                  value={password}
+                  onChangeText={
+                    setPassword
+                  }
                 />
 
-                {/* EMAIL */}
-
                 <Text style={styles.label}>
-                  Email Address
+                  Experience
                 </Text>
 
                 <TextInput
-                  placeholder="Enter email address"
-                  placeholderTextColor="#9CA3AF"
-                  style={styles.modalInput}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                  placeholder="Enter experience"
+                  placeholderTextColor={
+                    COLORS.textSub
+                  }
+                  style={
+                    styles.modalInput
+                  }
+                  value={experience}
+                  onChangeText={
+                    setExperience
+                  }
                 />
 
-                {/* SUBMIT BUTTON */}
+                <Text style={styles.label}>
+                  Address
+                </Text>
+
+                <TextInput
+                  placeholder="Enter address"
+                  placeholderTextColor={
+                    COLORS.textSub
+                  }
+                  style={[
+                    styles.modalInput,
+                    {
+                      height: 70,
+                      textAlignVertical:
+                        "top",
+                    },
+                  ]}
+                  multiline
+                  value={address}
+                  onChangeText={
+                    setAddress
+                  }
+                />
+
+                <Text style={styles.label}>
+                  Phone Number
+                </Text>
+
+                <TextInput
+                  placeholder="Enter phone number"
+                  placeholderTextColor={
+                    COLORS.textSub
+                  }
+                  style={
+                    styles.modalInput
+                  }
+                  keyboardType="phone-pad"
+                  value={phoneNo}
+                  onChangeText={
+                    setPhoneNo
+                  }
+                />
 
                 <TouchableOpacity
-                  style={styles.submitButton}
-                  onPress={sendInvitation}
+                  style={
+                    styles.submitButton
+                  }
+                  onPress={
+                    submitRegistration
+                  }
+                  disabled={loading}
                 >
-                  <Text style={styles.buttonText}>
-                    Send Invitation
+                  <Text
+                    style={
+                      styles.buttonText
+                    }
+                  >
+                    {loading
+                      ? "Submitting..."
+                      : "Submit Registration"}
                   </Text>
                 </TouchableOpacity>
 
-                {/* CANCEL BUTTON */}
-
                 <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => setModalVisible(false)}
+                  style={
+                    styles.cancelButton
+                  }
+                  onPress={() =>
+                    setModalVisible(
+                      false,
+                    )
+                  }
                 >
-                  <Text style={styles.cancelText}>
+                  <Text
+                    style={
+                      styles.cancelText
+                    }
+                  >
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -273,10 +829,15 @@ export default function AddStaff() {
   );
 }
 
+/* ===================================== */
+/* STYLES */
+/* ===================================== */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5DC",
+    backgroundColor:
+      COLORS.background,
   },
 
   contentContainer: {
@@ -286,39 +847,102 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "900",
-    color: PRIMARY,
+    color: COLORS.primary,
   },
 
   subHeading: {
     marginTop: 4,
     marginBottom: 18,
-    color: "#6B7280",
+    color: COLORS.textSub,
     fontSize: 13,
   },
 
+  /* SEARCH */
+
+  searchBox: {
+    backgroundColor: COLORS.card,
+    height: 56,
+    borderRadius: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 15,
+    color: COLORS.textMain,
+  },
+
+  /* STAFF CARD */
+
+  staffCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    paddingVertical: 28,
+    alignItems: "center",
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+
+  staffTitle: {
+    marginTop: 12,
+    fontSize: 22,
+    fontWeight: "800",
+    color: COLORS.textMain,
+  },
+
+  staffDesc: {
+    marginTop: 6,
+    fontSize: 13,
+    color: COLORS.textSub,
+  },
+
+  /* FORM */
+
   form: {
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.card,
     padding: 18,
     borderRadius: 24,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  formTitle: {
+    fontSize: 24,
+    fontWeight: "900",
+    color: COLORS.primary,
+    marginBottom: 20,
   },
 
   input: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: COLORS.border,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 14,
     marginBottom: 14,
     fontSize: 14,
-    color: "#111827",
-    backgroundColor: "#fff",
+    color: COLORS.textMain,
+    backgroundColor:
+      COLORS.white,
   },
 
   button: {
-    backgroundColor: PRIMARY,
+    backgroundColor:
+      COLORS.accent,
     paddingVertical: 15,
     borderRadius: 16,
     alignItems: "center",
@@ -326,160 +950,252 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
+    color: COLORS.white,
     fontWeight: "800",
-    fontSize: 15,
+    fontSize: 14,
   },
 
-  /* INVITE BUTTON */
-
   registerButton: {
-    marginTop: 18,
-    borderRadius: 22,
+    marginTop: 20,
+    borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "#8B4513",
-    elevation: 6,
+    backgroundColor:
+      COLORS.primary,
+    elevation: 5,
   },
 
   registerContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 18,
-    paddingHorizontal: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
 
   iconContainer: {
-    width: 55,
-    height: 55,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor:
+      "rgba(255,255,255,0.15)",
     justifyContent: "center",
     alignItems: "center",
   },
 
   icon: {
-    fontSize: 26,
+    fontSize: 24,
   },
 
   textContainer: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 14,
   },
 
   registerTitle: {
-    color: "#fff",
-    fontSize: 18,
+    color: COLORS.white,
+    fontSize: 20,
     fontWeight: "900",
   },
 
   registerSubtitle: {
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 4,
+    color:
+      "rgba(255,255,255,0.8)",
+    marginTop: 3,
     fontSize: 12,
   },
 
   arrow: {
-    color: "#fff",
-    fontSize: 26,
+    color: COLORS.white,
+    fontSize: 24,
     fontWeight: "900",
+  },
+
+  /* STAFF MODAL */
+
+  staffModal: {
+    width: "88%",
+    maxHeight: "82%",
+    backgroundColor:
+      COLORS.white,
+    borderRadius: 28,
+    padding: 20,
+  },
+
+  staffModalHeader: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  staffModalTitle: {
+    fontSize: 24,
+    fontWeight: "900",
+    color: COLORS.primary,
+  },
+
+  teacherCard: {
+    backgroundColor:
+      "#F8FBFD",
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  teacherTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+
+  teacherName: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.textMain,
+  },
+
+  teacherId: {
+    marginTop: 4,
+    fontSize: 12,
+    color: COLORS.textSub,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  infoText: {
+    marginLeft: 10,
+    fontSize: 13,
+    color: COLORS.textMain,
+    flex: 1,
+  },
+
+  subjectBox: {
+    marginTop: 16,
+    backgroundColor:
+      COLORS.lightAccent,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  subjectText: {
+    color: COLORS.primary,
+    fontWeight: "700",
+    fontSize: 13,
   },
 
   /* MODAL */
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor:
+      "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
 
   modalContainer: {
-    width: width > 900 ? "45%" : "92%",
-    backgroundColor: "#fff",
-    borderRadius: 30,
+    width:
+      width > 900
+        ? "34%"
+        : "88%",
+    backgroundColor:
+      COLORS.white,
+    borderRadius: 24,
     overflow: "hidden",
     elevation: 10,
   },
 
   modalHeader: {
-    backgroundColor: "#FFF7F2",
+    backgroundColor:
+      COLORS.lightAccent,
     alignItems: "center",
-    paddingTop: 28,
-    paddingBottom: 22,
-    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 18,
+    paddingHorizontal: 18,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F1F1",
+    borderBottomColor:
+      COLORS.border,
   },
 
   modalIconBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    backgroundColor: PRIMARY,
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    backgroundColor:
+      COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 10,
   },
 
   modalIcon: {
-    fontSize: 34,
+    fontSize: 28,
   },
 
   modalTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "900",
-    color: PRIMARY,
+    color: COLORS.primary,
   },
 
   modalSubtitle: {
-    marginTop: 6,
-    color: "#6B7280",
-    fontSize: 13,
+    marginTop: 4,
+    color: COLORS.textSub,
+    fontSize: 12,
     textAlign: "center",
   },
 
   formSection: {
-    padding: 22,
+    padding: 18,
   },
 
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#374151",
-    marginBottom: 8,
-    marginTop: 6,
+    marginBottom: 6,
+    marginTop: 4,
   },
 
   modalInput: {
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 18,
-    fontSize: 14,
-    backgroundColor: "#FAFAFA",
-    color: "#111827",
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    fontSize: 13,
+    backgroundColor:
+      "#FAFAFA",
+    color: COLORS.textMain,
   },
 
   submitButton: {
-    backgroundColor: PRIMARY,
-    paddingVertical: 16,
-    borderRadius: 18,
+    backgroundColor:
+      COLORS.accent,
+    paddingVertical: 14,
+    borderRadius: 16,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
 
   cancelButton: {
-    marginTop: 14,
+    marginTop: 10,
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
 
   cancelText: {
-    color: "#6B7280",
+    color: COLORS.textSub,
     fontWeight: "700",
-    fontSize: 15,
+    fontSize: 14,
   },
 });

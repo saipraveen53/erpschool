@@ -1,3 +1,8 @@
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
 import {
   View,
   Text,
@@ -6,7 +11,10 @@ import {
   TextInput,
   StyleSheet,
   Dimensions,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
+
 import { StatusBar } from "expo-status-bar";
 
 import {
@@ -21,45 +29,174 @@ import {
   Sparkles,
 } from "lucide-react-native";
 
-const PRIMARY = "#A0522D";
-const BG = "#F5F5DC";
-const CARD = "#FFFFFF";
+import { studentAttendanceApi } from "@/app/utils/axiosInstance";
+
+/* ======================================= */
+/* UPDATED COLORS */
+/* ======================================= */
+
+const COLORS = {
+  background: "#F4F8FB",
+  card: "#FFFFFF",
+
+  primary: "#1E293B",
+  accent: "#22C7E5",
+
+  textMain: "#1E293B",
+  textSub: "#64748B",
+
+  border: "#DCE7EF",
+
+  white: "#FFFFFF",
+
+  lightAccent: "#DDF8FD",
+};
+
+const PRIMARY = COLORS.primary;
+
+const BG = COLORS.background;
+
+const CARD = COLORS.card;
 
 const { width } = Dimensions.get("window");
 
 export default function StudentAttendance() {
-  const students = [
-    {
-      name: "Rahul Sharma",
-      class: "Grade 10 - A",
-      status: "Present",
-    },
+  /* ======================================= */
+  /* STATES */
+  /* ======================================= */
 
-    {
-      name: "Aarav Kumar",
-      class: "Grade 9 - B",
-      status: "Absent",
-    },
+  const [attendanceData, setAttendanceData] =
+    useState<any>(null);
 
-    {
-      name: "Sneha Patel",
-      class: "Grade 8 - C",
-      status: "Present",
-    },
+  const [dailyRecords, setDailyRecords] =
+    useState<any[]>([]);
 
-    {
-      name: "Ananya Reddy",
-      class: "Grade 7 - A",
-      status: "Late",
-    },
-  ];
+  const [loading, setLoading] =
+    useState(false);
+
+  const [studentId, setStudentId] =
+    useState("STU2026003");
+
+  const [year, setYear] =
+    useState("2026");
+
+  const [month, setMonth] =
+    useState("6");
+
+  /* ======================================= */
+  /* FETCH ATTENDANCE */
+  /* ======================================= */
+
+  const fetchAttendance =
+    async () => {
+      try {
+        setLoading(true);
+
+        const response =
+          await studentAttendanceApi.get(
+            `/api/student/attendance/${studentId}/${year}/${month}`,
+          );
+
+        console.log(
+          "Attendance Response:",
+          response.data,
+        );
+
+        setAttendanceData(response.data);
+
+        setDailyRecords(
+          response.data.dailyRecords || [],
+        );
+      } catch (error) {
+        console.log(
+          "Attendance Error:",
+          error,
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  useEffect(() => {
+    fetchAttendance();
+  }, []);
+
+  /* ======================================= */
+  /* STATUS COLORS */
+  /* ======================================= */
+
+  const getStatusColor = (
+    status: string,
+  ) => {
+    switch (status) {
+      case "PRESENT":
+        return "#DDF8FD";
+
+      case "ABSENT":
+        return "#FFE4E6";
+
+      case "HOLIDAY":
+        return "#E0F2FE";
+
+      default:
+        return "#CCFBF1";
+    }
+  };
+
+  /* ======================================= */
+  /* STATUS ICON */
+  /* ======================================= */
+
+  const renderStatusIcon = (
+    status: string,
+  ) => {
+    switch (status) {
+      case "PRESENT":
+        return (
+          <CircleCheck
+            size={14}
+            color="green"
+          />
+        );
+
+      case "ABSENT":
+        return (
+          <CircleX
+            size={14}
+            color="red"
+          />
+        );
+
+      case "HOLIDAY":
+        return (
+          <CalendarDays
+            size={14}
+            color="#0284C7"
+          />
+        );
+
+      default:
+        return (
+          <Clock3
+            size={14}
+            color="#0F766E"
+          />
+        );
+    }
+  };
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
+      contentContainerStyle={
+        styles.content
+      }
+      showsVerticalScrollIndicator={
+        false
+      }
     >
+      <StatusBar style="dark" />
+
       {/* HEADER */}
 
       <View style={styles.header}>
@@ -69,7 +206,8 @@ export default function StudentAttendance() {
           </Text>
 
           <Text style={styles.subheading}>
-            Smart attendance tracking and analytics
+            Smart attendance tracking
+            and analytics
           </Text>
         </View>
       </View>
@@ -77,42 +215,105 @@ export default function StudentAttendance() {
       {/* HERO */}
 
       <View style={styles.heroCard}>
-        <Sparkles size={36} color="#fff" />
+        <Sparkles
+          size={36}
+          color="#fff"
+        />
 
         <Text style={styles.heroTitle}>
           AI Attendance Insights
         </Text>
 
         <Text style={styles.heroText}>
-          Real-time student attendance tracking with smart reporting and
-          predictive analytics
+          Real-time student attendance
+          tracking with smart reporting
+          and predictive analytics
         </Text>
       </View>
 
-      {/* SEARCH */}
+      {/* SEARCH SECTION */}
 
       <View style={styles.searchContainer}>
-        <Search size={18} color="#6B7280" />
-
-        <TextInput
-          placeholder="Search student..."
-          placeholderTextColor="#9CA3AF"
-          style={styles.searchInput}
+        <Search
+          size={18}
+          color={COLORS.textSub}
         />
 
-        <TouchableOpacity style={styles.filterButton}>
-          <Filter size={16} color={PRIMARY} />
+        <TextInput
+          placeholder="Student ID"
+          placeholderTextColor={
+            COLORS.textSub
+          }
+          style={styles.searchInput}
+          value={studentId}
+          onChangeText={setStudentId}
+        />
+
+        <TextInput
+          placeholder="Year"
+          placeholderTextColor={
+            COLORS.textSub
+          }
+          style={styles.smallInput}
+          value={year}
+          onChangeText={setYear}
+          keyboardType="numeric"
+        />
+
+        <TextInput
+          placeholder="Month"
+          placeholderTextColor={
+            COLORS.textSub
+          }
+          style={styles.smallInput}
+          value={month}
+          onChangeText={setMonth}
+          keyboardType="numeric"
+        />
+
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={fetchAttendance}
+        >
+          <Filter
+            size={16}
+            color={PRIMARY}
+          />
         </TouchableOpacity>
       </View>
+
+      {/* LOADER */}
+
+      {loading && (
+        <ActivityIndicator
+          size="large"
+          color={PRIMARY}
+          style={{ marginBottom: 20 }}
+        />
+      )}
 
       {/* STATS */}
 
       <View style={styles.grid}>
-        <View style={[styles.card, { backgroundColor: "#dbeafe" }]}>
-          <UserCheck size={28} color={PRIMARY} />
+        {/* PRESENT */}
+
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor:
+                "#DDF8FD",
+            },
+          ]}
+        >
+          <UserCheck
+            size={28}
+            color={PRIMARY}
+          />
 
           <Text style={styles.number}>
-            2,340
+            {attendanceData?.present ||
+              0}
           </Text>
 
           <Text style={styles.label}>
@@ -120,11 +321,25 @@ export default function StudentAttendance() {
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: "#fee2e2" }]}>
-          <UserX size={28} color={PRIMARY} />
+        {/* ABSENT */}
+
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor:
+                "#FFE4E6",
+            },
+          ]}
+        >
+          <UserX
+            size={28}
+            color={PRIMARY}
+          />
 
           <Text style={styles.number}>
-            110
+            {attendanceData?.absent ||
+              0}
           </Text>
 
           <Text style={styles.label}>
@@ -132,23 +347,52 @@ export default function StudentAttendance() {
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: "#fde68a" }]}>
-          <Clock3 size={28} color={PRIMARY} />
+        {/* HOLIDAYS */}
+
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor:
+                "#E0F2FE",
+            },
+          ]}
+        >
+          <CalendarDays
+            size={28}
+            color={PRIMARY}
+          />
 
           <Text style={styles.number}>
-            42
+            {attendanceData?.holidays ||
+              0}
           </Text>
 
           <Text style={styles.label}>
-            Late
+            Holidays
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: "#ede9fe" }]}>
-          <CalendarDays size={28} color={PRIMARY} />
+        {/* PERCENTAGE */}
+
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor:
+                "#CCFBF1",
+            },
+          ]}
+        >
+          <Clock3
+            size={28}
+            color={PRIMARY}
+          />
 
           <Text style={styles.number}>
-            96%
+            {attendanceData?.percentage ||
+              0}
+            %
           </Text>
 
           <Text style={styles.label}>
@@ -157,52 +401,70 @@ export default function StudentAttendance() {
         </View>
       </View>
 
-      {/* ATTENDANCE LIST */}
+      {/* RECORDS */}
 
       <Text style={styles.sectionTitle}>
-        Today's Attendance
+        Daily Attendance Records
       </Text>
 
-      {students.map((student, index) => (
-        <View key={index} style={styles.studentCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.studentName}>
-              {student.name}
-            </Text>
-
-            <Text style={styles.studentInfo}>
-              {student.class}
-            </Text>
-          </View>
-
+      <FlatList
+        data={dailyRecords}
+        scrollEnabled={false}
+        keyExtractor={(item, index) =>
+          index.toString()
+        }
+        renderItem={({ item }) => (
           <View
-            style={[
-              styles.statusBadge,
-
-              {
-                backgroundColor:
-                  student.status === "Present"
-                    ? "#dcfce7"
-                    : student.status === "Absent"
-                    ? "#fee2e2"
-                    : "#fde68a",
-              },
-            ]}
+            style={styles.studentCard}
           >
-            {student.status === "Present" ? (
-              <CircleCheck size={14} color="green" />
-            ) : student.status === "Absent" ? (
-              <CircleX size={14} color="red" />
-            ) : (
-              <Clock3 size={14} color="#B45309" />
-            )}
+            {/* DATE */}
 
-            <Text style={styles.statusText}>
-              {student.status}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={
+                  styles.studentName
+                }
+              >
+                {item.date}
+              </Text>
+
+              <Text
+                style={
+                  styles.studentInfo
+                }
+              >
+                Attendance Record
+              </Text>
+            </View>
+
+            {/* STATUS */}
+
+            <View
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor:
+                    getStatusColor(
+                      item.status,
+                    ),
+                },
+              ]}
+            >
+              {renderStatusIcon(
+                item.status,
+              )}
+
+              <Text
+                style={
+                  styles.statusText
+                }
+              >
+                {item.status}
+              </Text>
+            </View>
           </View>
-        </View>
-      ))}
+        )}
+      />
 
       {/* PERFORMANCE */}
 
@@ -211,16 +473,28 @@ export default function StudentAttendance() {
       </Text>
 
       <View style={styles.performanceCard}>
-        <Text style={styles.performanceTitle}>
-          Best Attendance Class
+        <Text
+          style={
+            styles.performanceTitle
+          }
+        >
+          Student ID
         </Text>
 
-        <Text style={styles.performanceValue}>
-          Grade 10 - A
+        <Text
+          style={
+            styles.performanceValue
+          }
+        >
+          {attendanceData?.studentId ||
+            "N/A"}
         </Text>
 
-        <Text style={styles.performanceSub}>
-          99.2% attendance this month
+        <Text
+          style={styles.performanceSub}
+        >
+          Attendance analytics for{" "}
+          {month}/{year}
         </Text>
       </View>
     </ScrollView>
@@ -251,13 +525,13 @@ const styles = StyleSheet.create({
 
   subheading: {
     marginTop: 4,
-    color: "#6B7280",
+    color: COLORS.textSub,
     fontSize: 13,
     lineHeight: 18,
   },
 
   heroCard: {
-    backgroundColor: PRIMARY,
+    backgroundColor: COLORS.primary,
     borderRadius: 20,
     padding: 20,
     marginBottom: 18,
@@ -271,7 +545,7 @@ const styles = StyleSheet.create({
   },
 
   heroText: {
-    color: "#F5F5DC",
+    color: "#E2F8FC",
     marginTop: 8,
     lineHeight: 20,
     fontSize: 13,
@@ -284,27 +558,45 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   searchInput: {
     flex: 1,
     marginLeft: 10,
     fontSize: 14,
+    color: COLORS.textMain,
+  },
+
+  smallInput: {
+    width: 60,
+    marginLeft: 8,
+    backgroundColor:
+      COLORS.lightAccent,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    height: 38,
+    fontSize: 13,
+    color: COLORS.textMain,
   },
 
   filterButton: {
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "#F3E8E2",
+    backgroundColor:
+      COLORS.lightAccent,
     justifyContent: "center",
     alignItems: "center",
+    marginLeft: 8,
   },
 
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     marginBottom: 22,
   },
 
@@ -319,12 +611,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "900",
     marginTop: 10,
-    color: "#111827",
+    color: COLORS.textMain,
   },
 
   label: {
     marginTop: 4,
-    color: "#6B7280",
+    color: COLORS.textSub,
     fontSize: 12,
   },
 
@@ -341,19 +633,22 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   studentName: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#111827",
+    color: COLORS.textMain,
   },
 
   studentInfo: {
     marginTop: 3,
-    color: "#6B7280",
+    color: COLORS.textSub,
     fontSize: 12,
   },
 
@@ -369,12 +664,16 @@ const styles = StyleSheet.create({
   statusText: {
     fontWeight: "700",
     fontSize: 11,
+    color: COLORS.textMain,
   },
 
   performanceCard: {
     backgroundColor: CARD,
     borderRadius: 20,
     padding: 20,
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   performanceTitle: {
@@ -387,12 +686,12 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "900",
     marginTop: 10,
-    color: "#111827",
+    color: COLORS.textMain,
   },
 
   performanceSub: {
     marginTop: 6,
-    color: "#6B7280",
+    color: COLORS.textSub,
     fontSize: 13,
   },
 });

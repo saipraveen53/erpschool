@@ -1,732 +1,109 @@
-// app/admin/fees/index.tsx
+// app/admin/fees/collection.tsx
 
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   useWindowDimensions,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
+import { Plus, Wallet, CheckCircle2, AlertTriangle, ChevronRight } from "lucide-react-native";
 
-import {
-  IndianRupee,
-  Search,
-  Plus,
-  Wallet,
-  CreditCard,
-  CircleDollarSign,
-  TrendingUp,
-  Users,
-  Clock3,
-  Receipt,
-  FileText,
-  CheckCircle2,
-  AlertTriangle,
-  Download,
-  ArrowUpRight,
-  BarChart3,
-} from "lucide-react-native";
-
-export default function FeesDashboard() {
+export default function FeeCollectionPage() {
   const { width } = useWindowDimensions();
-
   const isMobile = width < 768;
 
+  const classData = [
+    { id: "1", name: "Class 1-b", due: "53,222", paid: "1,000", total: "54,222", status: "Due" },
+    { id: "2", name: "Class 4-A", due: "0", paid: "0", total: "0", status: "All Clear" },
+    { id: "3", name: "Class 4-b", due: "0", paid: "0", total: "0", status: "All Clear" },
+    { id: "4", name: "Class 5-a", due: "4,433", paid: "0", total: "4,433", status: "Due" },
+    { id: "5", name: "Class 6-A", due: "0", paid: "0", total: "0", status: "All Clear" },
+    { id: "6", name: "Class 7-b", due: "173,350", paid: "255,407", total: "428,757", status: "Due" },
+    { id: "7", name: "Class 8-A", due: "0", paid: "0", total: "0", status: "All Clear" },
+    { id: "8", name: "Class 9-B", due: "50,000", paid: "25,000", total: "75,000", status: "Due" },
+  ];
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        {
-          padding: isMobile ? 16 : 20,
-        },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { padding: isMobile ? 16 : 24 }]}>
       {/* HEADER */}
-
       <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.heading}>
-            Fees Management
-          </Text>
-
-          <Text style={styles.subheading}>
-            Manage fee collection, dues and payments
-          </Text>
-        </View>
-
-        {/* SHOW ONLY ON DESKTOP */}
-
-        {!isMobile && (
-          <TouchableOpacity style={styles.addButton}>
-            <Plus size={16} color="#fff" />
-
-            <Text style={styles.addButtonText}>
-              Add Payment
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* SEARCH */}
-
-      <View style={styles.searchContainer}>
-        <Search size={18} color="#6B7280" />
-
-        <TextInput
-          placeholder="Search student or receipt..."
-          placeholderTextColor="#9CA3AF"
-          style={styles.searchInput}
-        />
-      </View>
-
-      {/* HERO */}
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>
-            Monthly Collection Overview
-          </Text>
-
-          <Text style={styles.heroSubtitle}>
-            Total collection and pending fee analytics for June 2026
-          </Text>
-
-          <View style={styles.heroStats}>
-            <View style={styles.heroMiniCard}>
-              <Wallet size={16} color="#A0522D" />
-
-              <Text style={styles.heroMiniText}>
-                ₹24.5L Collected
-              </Text>
-            </View>
-
-            <View style={styles.heroMiniCard}>
-              <Clock3 size={16} color="#A0522D" />
-
-              <Text style={styles.heroMiniText}>
-                ₹3.2L Pending
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.heroButton}>
-          <BarChart3 size={16} color="#fff" />
-
-          <Text style={styles.heroButtonText}>
-            View Reports
-          </Text>
+        <Text style={styles.heading}>Accounts & Fee</Text>
+        <TouchableOpacity style={styles.addButton}>
+          <Plus size={18} color="#fff" />
+          <Text style={styles.addButtonText}>Assign Fee</Text>
         </TouchableOpacity>
       </View>
 
-      {/* STATS */}
-
-      <View style={styles.statsGrid}>
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#dbeafe" },
-          ]}
-        >
-          <IndianRupee size={28} color="#A0522D" />
-
-          <Text style={styles.statsNumber}>
-            ₹24.5L
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Collection
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#dcfce7" },
-          ]}
-        >
-          <CheckCircle2
-            size={28}
-            color="#A0522D"
-          />
-
-          <Text style={styles.statsNumber}>
-            1,120
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Fees Paid
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#fde68a" },
-          ]}
-        >
-          <AlertTriangle
-            size={28}
-            color="#A0522D"
-          />
-
-          <Text style={styles.statsNumber}>
-            120
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Pending
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#ede9fe" },
-          ]}
-        >
-          <TrendingUp
-            size={28}
-            color="#A0522D"
-          />
-
-          <Text style={styles.statsNumber}>
-            +18%
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Growth
-          </Text>
-        </View>
+      {/* SUMMARY CARDS - Stack vertically on mobile */}
+      <View style={[styles.summaryGrid, { flexDirection: isMobile ? 'column' : 'row' }]}>
+        <SummaryCard title="Total Expected" value="₹537,412" color="#27B3C7" icon={Wallet} />
+        <SummaryCard title="Collected" value="₹256,407" color="#15803D" icon={CheckCircle2} />
+        <SummaryCard title="Pending" value="₹281,005" color="#DC2626" icon={AlertTriangle} />
       </View>
 
-      {/* QUICK ACTIONS */}
-
-      <Text style={styles.sectionTitle}>
-        Quick Actions
-      </Text>
-
-      <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionCard}>
-          <CreditCard
-            size={26}
-            color="#A0522D"
-          />
-
-          <Text style={styles.actionTitle}>
-            Collect Fees
-          </Text>
-
-          <Text style={styles.actionDesc}>
-            Add fee payment
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionCard}>
-          <Receipt size={26} color="#A0522D" />
-
-          <Text style={styles.actionTitle}>
-            Receipts
-          </Text>
-
-          <Text style={styles.actionDesc}>
-            Generate receipt
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionCard}>
-          <Download size={26} color="#A0522D" />
-
-          <Text style={styles.actionTitle}>
-            Reports
-          </Text>
-
-          <Text style={styles.actionDesc}>
-            Download reports
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* TRANSACTIONS */}
-
-      <Text style={styles.sectionTitle}>
-        Recent Transactions
-      </Text>
-
-      <View style={styles.transactionList}>
-        {/* CARD */}
-
-        <View style={styles.transactionCard}>
-          <View style={styles.transactionLeft}>
-            <View style={styles.iconBox}>
-              <CircleDollarSign
-                size={20}
-                color="#A0522D"
-              />
+      {/* CLASS PERFORMANCE */}
+      <Text style={styles.sectionTitle}>Class Performance</Text>
+      <View style={[styles.grid, { gap: isMobile ? 12 : 16 }]}>
+        {classData.map((item) => (
+          <View key={item.id} style={[styles.classCard, { width: isMobile ? "100%" : "31%" }]}>
+            <View style={styles.cardHeader}>
+              <View style={styles.classBadge}><Text style={styles.classBadgeText}>{item.id}</Text></View>
+              <Text style={styles.className}>{item.name}</Text>
+              <ChevronRight size={20} color="#6B7280" />
             </View>
-
-            <View>
-              <Text style={styles.studentName}>
-                Rahul Sharma
-              </Text>
-
-              <Text style={styles.paymentInfo}>
-                Tuition Fee • Class 10-A
+            <View style={[styles.statusTag, { backgroundColor: item.status === "All Clear" ? "#DCFCE7" : "#FFFBEB" }]}>
+              <Text style={{ color: item.status === "All Clear" ? "#15803D" : "#B45309", fontSize: 11, fontWeight: '700' }}>
+                {item.status === "All Clear" ? "All Clear" : `Due: ₹${item.due}`}
               </Text>
             </View>
-          </View>
-
-          <View style={styles.rightSection}>
-            <Text style={styles.amount}>
-              ₹18,500
-            </Text>
-
-            <View style={styles.paidBadge}>
-              <Text style={styles.paidText}>
-                Paid
-              </Text>
+            <View style={styles.progressBar}><View style={[styles.progressFill, { width: item.status === "All Clear" ? '100%' : '40%' }]} /></View>
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>₹{item.paid} Paid</Text>
+              <Text style={styles.footerText}>Total: ₹{item.total}</Text>
             </View>
           </View>
-        </View>
-
-        <View style={styles.transactionCard}>
-          <View style={styles.transactionLeft}>
-            <View style={styles.iconBox}>
-              <Users size={20} color="#A0522D" />
-            </View>
-
-            <View>
-              <Text style={styles.studentName}>
-                Priya Patel
-              </Text>
-
-              <Text style={styles.paymentInfo}>
-                Transport Fee • Class 9-B
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.rightSection}>
-            <Text style={styles.amount}>
-              ₹8,200
-            </Text>
-
-            <View style={styles.pendingBadge}>
-              <Text style={styles.pendingText}>
-                Pending
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* ANALYTICS */}
-
-      <Text style={styles.sectionTitle}>
-        Fee Analytics
-      </Text>
-
-      <View style={styles.analyticsContainer}>
-        <View style={styles.analyticsCard}>
-          <Text style={styles.analyticsValue}>
-            ₹3.2L
-          </Text>
-
-          <Text style={styles.analyticsLabel}>
-            Pending
-          </Text>
-        </View>
-
-        <View style={styles.analyticsCard}>
-          <Text style={styles.analyticsValue}>
-            92%
-          </Text>
-
-          <Text style={styles.analyticsLabel}>
-            Collection
-          </Text>
-        </View>
-
-        <View style={styles.analyticsCard}>
-          <Text style={styles.analyticsValue}>
-            +18%
-          </Text>
-
-          <Text style={styles.analyticsLabel}>
-            Growth
-          </Text>
-        </View>
-      </View>
-
-      {/* ACTIVITY */}
-
-      <Text style={styles.sectionTitle}>
-        Recent Activity
-      </Text>
-
-      <View style={styles.activityContainer}>
-        <View style={styles.activityCard}>
-          <ArrowUpRight
-            size={20}
-            color="#15803D"
-          />
-
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>
-              Payment received from Class 10
-            </Text>
-
-            <Text style={styles.activityTime}>
-              2 hours ago
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.activityCard}>
-          <Receipt size={20} color="#A0522D" />
-
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>
-              240 receipts generated today
-            </Text>
-
-            <Text style={styles.activityTime}>
-              Today
-            </Text>
-          </View>
-        </View>
+        ))}
       </View>
     </ScrollView>
   );
 }
 
+function SummaryCard({ title, value, color, icon: Icon }: any) {
+  return (
+    <View style={styles.summaryCard}>
+      <Icon size={24} color={color} />
+      <View>
+        <Text style={styles.summaryTitle}>{title}</Text>
+        <Text style={[styles.summaryValue, { color }]}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5DC",
-  },
-
-  content: {
-    paddingBottom: 80,
-  },
-
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 22,
-  },
-
-  heading: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#A0522D",
-  },
-
-  subheading: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 13,
-  },
-
-  addButton: {
-    backgroundColor: "#A0522D",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  addButtonText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
-  searchContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 22,
-  },
-
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 14,
-  },
-
-  heroCard: {
-    backgroundColor: "#A0522D",
-    borderRadius: 22,
-    padding: 20,
-    marginBottom: 24,
-  },
-
-  heroContent: {
-    marginBottom: 16,
-  },
-
-  heroTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "900",
-  },
-
-  heroSubtitle: {
-    marginTop: 8,
-    color: "#F5F5DC",
-    fontSize: 13,
-    lineHeight: 20,
-  },
-
-  heroStats: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 16,
-    flexWrap: "wrap",
-  },
-
-  heroMiniCard: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  heroMiniText: {
-    fontWeight: "700",
-    fontSize: 12,
-    color: "#111827",
-  },
-
-  heroButton: {
-    backgroundColor: "#7C2D12",
-    paddingVertical: 12,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-
-  heroButtonText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 13,
-  },
-
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-
-  statsCard: {
-    width: "48%",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  statsNumber: {
-    fontSize: 22,
-    fontWeight: "900",
-    marginTop: 10,
-    color: "#111827",
-  },
-
-  statsLabel: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 12,
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: "#A0522D",
-    marginBottom: 14,
-  },
-
-  quickActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-
-  actionCard: {
-    width: "31%",
-    backgroundColor: "#fff",
-    paddingVertical: 18,
-    paddingHorizontal: 10,
-    borderRadius: 18,
-    alignItems: "center",
-  },
-
-  actionTitle: {
-    marginTop: 10,
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#111827",
-    textAlign: "center",
-  },
-
-  actionDesc: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
-    textAlign: "center",
-  },
-
-  transactionList: {
-    marginBottom: 24,
-  },
-
-  transactionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  transactionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "#F5F5DC",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  studentName: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  paymentInfo: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
-  },
-
-  rightSection: {
-    alignItems: "flex-end",
-  },
-
-  amount: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: "#A0522D",
-  },
-
-  paidBadge: {
-    backgroundColor: "#DCFCE7",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginTop: 6,
-  },
-
-  paidText: {
-    color: "#15803D",
-    fontWeight: "700",
-    fontSize: 11,
-  },
-
-  pendingBadge: {
-    backgroundColor: "#FEF3C7",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginTop: 6,
-  },
-
-  pendingText: {
-    color: "#B45309",
-    fontWeight: "700",
-    fontSize: 11,
-  },
-
-  analyticsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-
-  analyticsCard: {
-    width: "31%",
-    backgroundColor: "#fff",
-    paddingVertical: 20,
-    borderRadius: 18,
-    alignItems: "center",
-  },
-
-  analyticsValue: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: "#A0522D",
-  },
-
-  analyticsLabel: {
-    marginTop: 6,
-    color: "#6B7280",
-    textAlign: "center",
-    fontSize: 11,
-  },
-
-  activityContainer: {
-    marginBottom: 50,
-  },
-
-  activityCard: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  activityContent: {
-    flex: 1,
-  },
-
-  activityTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  activityTime: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
-  },
+  container: { flex: 1, backgroundColor: "#F0F9FA" },
+  content: { paddingBottom: 40 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
+  heading: { fontSize: 28, fontWeight: "900", color: "#24343D" },
+  addButton: { backgroundColor: "#27B3C7", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14, flexDirection: "row", alignItems: "center", gap: 8 },
+  addButtonText: { color: "#fff", fontWeight: "800" },
+  summaryGrid: { gap: 16, marginBottom: 32 },
+  summaryCard: { flex: 1, backgroundColor: "#fff", padding: 20, borderRadius: 16, flexDirection: "row", alignItems: "center", gap: 16, borderWidth: 1, borderColor: "#E5E7EB" },
+  summaryTitle: { fontSize: 12, color: "#6B7280" },
+  summaryValue: { fontSize: 20, fontWeight: "900" },
+  sectionTitle: { fontSize: 20, fontWeight: "900", color: "#24343D", marginBottom: 16 },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  classCard: { backgroundColor: "#fff", padding: 20, borderRadius: 16, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 12 },
+  cardHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
+  classBadge: { width: 32, height: 32, borderRadius: 8, backgroundColor: "#F0F9FA", alignItems: 'center', justifyContent: 'center' },
+  classBadgeText: { fontWeight: '900', color: '#27B3C7' },
+  className: { flex: 1, fontSize: 16, fontWeight: '800', color: '#24343D' },
+  statusTag: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginBottom: 16 },
+  progressBar: { height: 8, backgroundColor: '#F0F9FA', borderRadius: 4, marginBottom: 12 },
+  progressFill: { height: 8, backgroundColor: '#27B3C7', borderRadius: 4 },
+  footerRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  footerText: { fontSize: 11, color: '#6B7280' },
 });

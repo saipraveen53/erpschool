@@ -1,854 +1,322 @@
-// app/admin/holidays/index.tsx
-
+import React, { useState } from "react";
+import { CalendarPlus, Calendar, Search } from "lucide-react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  useWindowDimensions,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
+  holidayApi,
+  getHolidaysApi,
+} from "@/app/utils/axiosInstance";
 
-import {
-  Search,
-  Plus,
-  CalendarDays,
-  Bell,
-  Download,
-  Upload,
-  Sparkles,
-  ChevronRight,
-  Filter,
-  Users,
-  CheckCircle2,
-  AlertTriangle,
-  Clock3,
-  Activity,
-  PartyPopper,
-  School,
-  CalendarCheck,
-  Briefcase,
-} from "lucide-react-native";
+const HolidayManagement = () => {
+  const [holidayData, setHolidayData] = useState({
+    date: "",
+    title: "",
+    description: "",
+    fullDay: true,
+  });
 
-const PRIMARY = "#A0522D";
-const BACKGROUND = "#F5F5DC";
-const CARD = "#FFFFFF";
-const LIGHT = "#E7D7C9";
+  const [year, setYear] = useState(
+    new Date().getFullYear()
+  );
 
-export default function HolidaysPage() {
-  const { width } = useWindowDimensions();
+  const [month, setMonth] = useState(
+    String(new Date().getMonth() + 1).padStart(2, "0")
+  );
 
-  const isMobile = width < 768;
+  const [holidays, setHolidays] = useState([]);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setHolidayData((prev) => ({
+      ...prev,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
+    }));
+  };
+
+  const handleCreateHoliday = async () => {
+    try {
+      setCreateLoading(true);
+
+      const response = await holidayApi.post(
+        "/api/student/calender/holiday",
+        {
+          date: holidayData.date,
+          title: holidayData.title,
+          description: holidayData.description,
+          fullDay: holidayData.fullDay,
+        }
+      );
+
+      console.log(response.data);
+
+      alert("Holiday Created Successfully");
+
+      setHolidayData({
+        date: "",
+        title: "",
+        description: "",
+        fullDay: true,
+      });
+
+      fetchHolidays();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to Create Holiday");
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const fetchHolidays = async () => {
+    try {
+      setFetchLoading(true);
+
+      const response = await getHolidaysApi.get(
+        `/api/student/calender/${year}/${month}`
+      );
+
+      setHolidays(response.data || []);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to Fetch Holidays");
+    } finally {
+      setFetchLoading(false);
+    }
+  };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        {
-          padding: isMobile ? 14 : 18,
-        },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* HEADER */}
+    <div className="w-full min-h-screen bg-slate-50 overflow-y-auto">
+      <div className="max-w-7xl mx-auto p-6 md:p-8">
 
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.heading}>
-            Holiday Management
-          </Text>
+        {/* Header */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="bg-cyan-50 p-4 rounded-2xl">
+              <Calendar
+                className="text-[#00BCD4]"
+                size={30}
+              />
+            </div>
 
-          <Text style={styles.subheading}>
-            Manage school holidays and academic calendar updates
-          </Text>
-        </View>
+            <div>
+              <h1 className="text-4xl font-bold text-[#2C3E50]">
+                Holiday Management
+              </h1>
 
-        {/* DESKTOP ONLY */}
+              <p className="text-slate-500 mt-1">
+                Create and manage school holidays
+              </p>
+            </div>
+          </div>
+        </div>
 
-        {!isMobile && (
-          <TouchableOpacity style={styles.addButton}>
-            <Plus size={15} color="#fff" />
-
-            <Text style={styles.addButtonText}>
-              Add Holiday
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* HERO */}
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroLeft}>
-          <Sparkles
-            size={isMobile ? 26 : 30}
-            color="#fff"
-          />
-
-          <Text style={styles.heroTitle}>
-            Smart Holiday Planner
-          </Text>
-
-          <Text style={styles.heroSubtitle}>
-            Organize academic holidays and events with smart scheduling
-          </Text>
-
-          <TouchableOpacity style={styles.heroButton}>
-            <Text style={styles.heroButtonText}>
-              View Calendar
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroBadge}>
-          <CalendarDays
-            size={24}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.heroBadgeText}>
-            28 Holidays
-          </Text>
-        </View>
-      </View>
-
-      {/* SEARCH */}
-
-      <View style={styles.searchContainer}>
-        <Search size={16} color="#6B7280" />
-
-        <TextInput
-          placeholder="Search holidays..."
-          placeholderTextColor="#9CA3AF"
-          style={styles.searchInput}
-        />
-
-        <TouchableOpacity style={styles.filterButton}>
-          <Filter size={14} color={PRIMARY} />
-        </TouchableOpacity>
-      </View>
-
-      {/* STATS */}
-
-      <View style={styles.statsGrid}>
-        <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#dbeafe" },
-          ]}
-        >
-          <CalendarCheck
-            size={24}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.statValue}>
-            28
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Total Holidays
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#dcfce7" },
-          ]}
-        >
-          <CheckCircle2
-            size={24}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.statValue}>
-            18
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Approved Holidays
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#fde68a" },
-          ]}
-        >
-          <Clock3 size={24} color={PRIMARY} />
-
-          <Text style={styles.statValue}>
-            4
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Upcoming Events
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statCard,
-            { backgroundColor: "#ede9fe" },
-          ]}
-        >
-          <Users size={24} color={PRIMARY} />
-
-          <Text style={styles.statValue}>
-            1.2K
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Students Impacted
-          </Text>
-        </View>
-      </View>
-
-      {/* HOLIDAY MODULES */}
-
-      <Text style={styles.sectionTitle}>
-        Holiday Categories
-      </Text>
-
-      <View style={styles.moduleGrid}>
-        <TouchableOpacity style={styles.moduleCard}>
-          <View style={styles.moduleIcon}>
-            <PartyPopper
-              size={22}
-              color="#fff"
+        {/* Create Holiday */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <CalendarPlus
+              className="text-[#00BCD4]"
+              size={24}
             />
-          </View>
 
-          <Text style={styles.moduleTitle}>
-            Festival Holidays
-          </Text>
+            <h2 className="text-2xl font-bold text-[#2C3E50]">
+              Create Holiday
+            </h2>
+          </div>
 
-          <Text style={styles.moduleDesc}>
-            National and cultural events
-          </Text>
-        </TouchableOpacity>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block mb-2 font-medium text-slate-600">
+                Holiday Date
+              </label>
 
-        <TouchableOpacity style={styles.moduleCard}>
-          <View
-            style={[
-              styles.moduleIcon,
-              { backgroundColor: "#7C2D12" },
-            ]}
+              <input
+                type="date"
+                name="date"
+                value={holidayData.date}
+                onChange={handleInputChange}
+                className="w-full border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-slate-600">
+                Holiday Title
+              </label>
+
+              <input
+                type="text"
+                name="title"
+                value={holidayData.title}
+                onChange={handleInputChange}
+                placeholder="Enter Holiday Title"
+                className="w-full border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              />
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <label className="block mb-2 font-medium text-slate-600">
+              Description
+            </label>
+
+            <textarea
+              rows={4}
+              name="description"
+              value={holidayData.description}
+              onChange={handleInputChange}
+              placeholder="Enter Holiday Description"
+              className="w-full border border-slate-300 rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-cyan-400"
+            />
+          </div>
+
+          <div className="mt-5 flex items-center gap-3">
+            <input
+              type="checkbox"
+              name="fullDay"
+              checked={holidayData.fullDay}
+              onChange={handleInputChange}
+              className="h-5 w-5 accent-cyan-500"
+            />
+
+            <label className="font-medium text-slate-700">
+              Full Day Holiday
+            </label>
+          </div>
+
+          <button
+            onClick={handleCreateHoliday}
+            disabled={createLoading}
+            className="mt-6 bg-[#00BCD4] hover:bg-cyan-600 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50"
           >
-            <School
-              size={22}
-              color="#fff"
+            {createLoading
+              ? "Creating Holiday..."
+              : "Create Holiday"}
+          </button>
+        </div>
+
+        {/* Get Holidays */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <Search
+              className="text-[#00BCD4]"
+              size={24}
             />
-          </View>
 
-          <Text style={styles.moduleTitle}>
-            Academic Breaks
-          </Text>
+            <h2 className="text-2xl font-bold text-[#2C3E50]">
+              View Holidays
+            </h2>
+          </div>
 
-          <Text style={styles.moduleDesc}>
-            Semester and exam vacations
-          </Text>
-        </TouchableOpacity>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+            <div>
+              <label className="block mb-2 font-medium text-slate-600">
+                Year
+              </label>
 
-        <TouchableOpacity style={styles.moduleCard}>
-          <View
-            style={[
-              styles.moduleIcon,
-              { backgroundColor: "#92400E" },
-            ]}
-          >
-            <Briefcase
-              size={22}
-              color="#fff"
-            />
-          </View>
-
-          <Text style={styles.moduleTitle}>
-            Staff Holidays
-          </Text>
-
-          <Text style={styles.moduleDesc}>
-            Faculty leave schedules
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* UPCOMING HOLIDAYS */}
-
-      <Text style={styles.sectionTitle}>
-        Upcoming Holidays
-      </Text>
-
-      <View style={styles.listContainer}>
-        <TouchableOpacity style={styles.holidayCard}>
-          <View style={styles.holidayLeft}>
-            <View style={styles.iconBox}>
-              <CalendarDays
-                size={18}
-                color={PRIMARY}
+              <input
+                type="number"
+                value={year}
+                onChange={(e) =>
+                  setYear(e.target.value)
+                }
+                className="w-full border border-slate-300 rounded-xl p-3"
               />
-            </View>
+            </div>
 
-            <View>
-              <Text style={styles.holidayName}>
-                Independence Day
-              </Text>
+            <div>
+              <label className="block mb-2 font-medium text-slate-600">
+                Month
+              </label>
 
-              <Text style={styles.holidayInfo}>
-                15 August 2026
-              </Text>
-            </View>
-          </View>
+              <select
+                value={month}
+                onChange={(e) =>
+                  setMonth(e.target.value)
+                }
+                className="w-full border border-slate-300 rounded-xl p-3"
+              >
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
+            </div>
 
-          <ChevronRight
-            size={16}
-            color="#6B7280"
-          />
-        </TouchableOpacity>
+            <div className="flex items-end">
+              <button
+                onClick={fetchHolidays}
+                disabled={fetchLoading}
+                className="w-full bg-[#00BCD4] hover:bg-cyan-600 text-white px-6 py-3 rounded-xl font-semibold"
+              >
+                {fetchLoading
+                  ? "Loading..."
+                  : "Get Holidays"}
+              </button>
+            </div>
+          </div>
 
-        <TouchableOpacity style={styles.holidayCard}>
-          <View style={styles.holidayLeft}>
-            <View style={styles.iconBox}>
-              <PartyPopper
-                size={18}
-                color={PRIMARY}
-              />
-            </View>
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="w-full min-w-[900px]">
+              <thead className="bg-slate-100">
+                <tr>
+                  <th className="p-4 text-left">ID</th>
+                  <th className="p-4 text-left">Date</th>
+                  <th className="p-4 text-left">Title</th>
+                  <th className="p-4 text-left">Description</th>
+                  <th className="p-4 text-left">Full Day</th>
+                </tr>
+              </thead>
 
-            <View>
-              <Text style={styles.holidayName}>
-                Diwali Vacation
-              </Text>
+              <tbody>
+                {holidays.length > 0 ? (
+                  holidays.map((holiday) => (
+                    <tr
+                      key={holiday.id}
+                      className="border-t border-slate-200 hover:bg-slate-50"
+                    >
+                      <td className="p-4">{holiday.id}</td>
+                      <td className="p-4">{holiday.date}</td>
+                      <td className="p-4">{holiday.title}</td>
+                      <td className="p-4">
+                        {holiday.description}
+                      </td>
+                      <td className="p-4">
+                        {holiday.fullDay
+                          ? "Yes"
+                          : "No"}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="text-center p-8 text-slate-500"
+                    >
+                      No Holidays Found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-              <Text style={styles.holidayInfo}>
-                8 November 2026
-              </Text>
-            </View>
-          </View>
-
-          <ChevronRight
-            size={16}
-            color="#6B7280"
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.holidayCard}>
-          <View style={styles.holidayLeft}>
-            <View style={styles.iconBox}>
-              <School
-                size={18}
-                color={PRIMARY}
-              />
-            </View>
-
-            <View>
-              <Text style={styles.holidayName}>
-                Winter Break
-              </Text>
-
-              <Text style={styles.holidayInfo}>
-                24 December 2026
-              </Text>
-            </View>
-          </View>
-
-          <ChevronRight
-            size={16}
-            color="#6B7280"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* QUICK ACTIONS */}
-
-      <Text style={styles.sectionTitle}>
-        Quick Actions
-      </Text>
-
-      <View style={styles.quickGrid}>
-        <TouchableOpacity style={styles.quickCard}>
-          <Download
-            size={24}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.quickTitle}>
-            Export Calendar
-          </Text>
-
-          <Text style={styles.quickDesc}>
-            Download holiday schedules
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.quickCard}>
-          <Upload
-            size={24}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.quickTitle}>
-            Upload Events
-          </Text>
-
-          <Text style={styles.quickDesc}>
-            Import holiday calendar
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.quickCard}>
-          <Bell
-            size={24}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.quickTitle}>
-            Notify Students
-          </Text>
-
-          <Text style={styles.quickDesc}>
-            Send holiday reminders
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* INSIGHTS */}
-
-      <Text style={styles.sectionTitle}>
-        Holiday Insights
-      </Text>
-
-      <View style={styles.analyticsContainer}>
-        <View style={styles.analyticsCard}>
-          <Activity
-            size={20}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.analyticsValue}>
-            28
-          </Text>
-
-          <Text style={styles.analyticsLabel}>
-            Events Planned
-          </Text>
-        </View>
-
-        <View style={styles.analyticsCard}>
-          <CalendarDays
-            size={20}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.analyticsValue}>
-            180
-          </Text>
-
-          <Text style={styles.analyticsLabel}>
-            Academic Days
-          </Text>
-        </View>
-
-        <View style={styles.analyticsCard}>
-          <AlertTriangle
-            size={20}
-            color={PRIMARY}
-          />
-
-          <Text style={styles.analyticsValue}>
-            2
-          </Text>
-
-          <Text style={styles.analyticsLabel}>
-            Conflicts Found
-          </Text>
-        </View>
-      </View>
-
-      {/* RECENT ACTIVITY */}
-
-      <Text style={styles.sectionTitle}>
-        Recent Activity
-      </Text>
-
-      <View style={styles.activityContainer}>
-        <View style={styles.activityCard}>
-          <View style={styles.activityDot} />
-
-          <View>
-            <Text style={styles.activityTitle}>
-              Holiday calendar updated
-            </Text>
-
-            <Text style={styles.activityTime}>
-              2 hours ago
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.activityCard}>
-          <View style={styles.activityDot} />
-
-          <View>
-            <Text style={styles.activityTitle}>
-              Festival notice published
-            </Text>
-
-            <Text style={styles.activityTime}>
-              Today
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.activityCard}>
-          <View style={styles.activityDot} />
-
-          <View>
-            <Text style={styles.activityTitle}>
-              Winter vacation updated
-            </Text>
-
-            <Text style={styles.activityTime}>
-              Yesterday
-            </Text>
-          </View>
-        </View>
-      </View>
-    </ScrollView>
+        </div>
+      </div>
+    </div>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND,
-  },
-
-  content: {
-    paddingBottom: 70,
-  },
-
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    marginBottom: 20,
-  },
-
-  heading: {
-    fontSize: 26,
-    fontWeight: "900",
-    color: PRIMARY,
-  },
-
-  subheading: {
-    marginTop: 5,
-    color: "#6B7280",
-    fontSize: 12,
-    maxWidth: 480,
-  },
-
-  addButton: {
-    backgroundColor: PRIMARY,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-
-  heroCard: {
-    backgroundColor: PRIMARY,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  heroLeft: {
-    flex: 1,
-    paddingRight: 8,
-  },
-
-  heroTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "900",
-    marginTop: 10,
-  },
-
-  heroSubtitle: {
-    color: "#F5F5DC",
-    marginTop: 6,
-    lineHeight: 18,
-    fontSize: 11,
-  },
-
-  heroButton: {
-    marginTop: 14,
-    backgroundColor: "#7A3B1A",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignSelf: "flex-start",
-  },
-
-  heroButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 11,
-  },
-
-  heroBadge: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 18,
-    alignItems: "center",
-  },
-
-  heroBadgeText: {
-    marginTop: 6,
-    fontWeight: "800",
-    color: PRIMARY,
-    fontSize: 11,
-  },
-
-  searchContainer: {
-    backgroundColor: CARD,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 12,
-  },
-
-  filterButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: LIGHT,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  statCard: {
-    width: "48%",
-    borderRadius: 20,
-    padding: 14,
-    marginBottom: 12,
-  },
-
-  statValue: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: "#111827",
-    marginTop: 10,
-  },
-
-  statLabel: {
-    marginTop: 5,
-    fontSize: 10,
-    color: "#6B7280",
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: PRIMARY,
-    marginBottom: 14,
-  },
-
-  moduleGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  moduleCard: {
-    width: "31%",
-    backgroundColor: CARD,
-    borderRadius: 18,
-    padding: 12,
-  },
-
-  moduleIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: PRIMARY,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  moduleTitle: {
-    marginTop: 10,
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  moduleDesc: {
-    marginTop: 5,
-    color: "#6B7280",
-    fontSize: 10,
-    lineHeight: 15,
-  },
-
-  listContainer: {
-    marginBottom: 22,
-  },
-
-  holidayCard: {
-    backgroundColor: CARD,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  holidayLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  iconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: LIGHT,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-
-  holidayName: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  holidayInfo: {
-    marginTop: 3,
-    color: "#6B7280",
-    fontSize: 10,
-  },
-
-  quickGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  quickCard: {
-    width: "31%",
-    backgroundColor: CARD,
-    borderRadius: 18,
-    padding: 12,
-  },
-
-  quickTitle: {
-    marginTop: 10,
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  quickDesc: {
-    marginTop: 5,
-    color: "#6B7280",
-    lineHeight: 15,
-    fontSize: 10,
-  },
-
-  analyticsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 22,
-  },
-
-  analyticsCard: {
-    width: "31%",
-    backgroundColor: CARD,
-    borderRadius: 18,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-
-  analyticsValue: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: "900",
-    color: PRIMARY,
-  },
-
-  analyticsLabel: {
-    marginTop: 5,
-    color: "#6B7280",
-    textAlign: "center",
-    fontSize: 10,
-  },
-
-  activityContainer: {
-    marginBottom: 70,
-  },
-
-  activityCard: {
-    backgroundColor: CARD,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  activityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 20,
-    backgroundColor: PRIMARY,
-    marginRight: 12,
-  },
-
-  activityTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#111827",
-  },
-
-  activityTime: {
-    marginTop: 3,
-    color: "#6B7280",
-    fontSize: 10,
-  },
-});
+export default HolidayManagement;

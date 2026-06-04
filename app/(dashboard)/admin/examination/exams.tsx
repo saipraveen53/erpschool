@@ -1,698 +1,118 @@
 // app/admin/examination/exams.tsx
 
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  useWindowDimensions,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from "react-native";
+import { useRouter } from "expo-router";
+import { Plus, Save, BookOpen, Users, Clock3, ClipboardList, FileCheck, BarChart3, Award, PenTool } from "lucide-react-native";
 
-import {
-  Search,
-  Plus,
-  CalendarDays,
-  FileText,
-  Clock3,
-  GraduationCap,
-  CheckCircle2,
-  BarChart3,
-  BookOpen,
-  ClipboardCheck,
-  Users,
-  ArrowRight,
-} from "lucide-react-native";
+// Import your axios instance
+import { createExamApi } from '@/app/utils/axiosInstance'; 
 
-export default function ExamsPage() {
-  const { width } = useWindowDimensions();
+export default function CreateExamPage() {
+  const router = useRouter();
+  
+  const [examData, setExamData] = useState({ 
+    examName: "", 
+    academicYear: "2026", 
+    startDate: "", 
+    endDate: "" 
+  });
+  const [loading, setLoading] = useState(false);
 
-  const isMobile = width < 768;
+  const handleCreateExam = async () => {
+    setLoading(true);
+    try {
+      // Mapping the state to the exact payload structure required by your API
+      const payload = {
+        examId: "Annuka", 
+        examName: examData.examName,
+        academicYear: examData.academicYear,
+        startDate: examData.startDate,
+        endDate: examData.endDate,
+        status: "CREATED",
+        createdBy: "ADMIN",
+        createdAt: new Date().toISOString(),
+        updatedBy: "ADMIN",
+        updatedAt: new Date().toISOString()
+      };
+      
+      console.log("Sending Payload:", payload); // Debugging
+      const response = await createExamApi.post('/api/exams', payload);
+      
+      Alert.alert("Success", `Exam Created! ID: ${response.data.examId}`);
+    } catch (error: any) {
+      console.error("API Error Details:", error.response?.data || error.message);
+      Alert.alert("Error", "Failed to create exam. Please verify field names.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        {
-          padding: isMobile ? 16 : 20,
-        },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* HEADER */}
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.heading}>Create New Examination</Text>
 
-      <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.heading}>
-            Examination Hub
-          </Text>
-
-          <Text style={styles.subheading}>
-            Manage exams, schedules and results
-          </Text>
-        </View>
-
-        {/* DESKTOP ONLY */}
-
-        {!isMobile && (
-          <TouchableOpacity style={styles.createButton}>
-            <Plus size={16} color="#fff" />
-
-            <Text style={styles.createButtonText}>
-              Create Exam
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* SEARCH */}
-
-      <View style={styles.searchBox}>
-        <Search size={18} color="#6B7280" />
-
-        <TextInput
-          placeholder="Search exams..."
-          placeholderTextColor="#9CA3AF"
-          style={styles.searchInput}
+      <View style={styles.formCard}>
+        <Text style={styles.label}>Exam Name</Text>
+        <TextInput 
+          style={styles.input} 
+          placeholder="e.g. Annual Exam" 
+          value={examData.examName}
+          onChangeText={(t) => setExamData({...examData, examName: t})} 
         />
-      </View>
-
-      {/* HERO */}
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroLeft}>
-          <Text style={styles.heroTitle}>
-            Final Semester Exams
-          </Text>
-
-          <Text style={styles.heroSubtitle}>
-            Starts from 12 June 2026
-          </Text>
-
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroMiniCard}>
-              <CalendarDays
-                size={16}
-                color="#A0522D"
-              />
-
-              <Text style={styles.heroMiniText}>
-                18 Exams
-              </Text>
-            </View>
-
-            <View style={styles.heroMiniCard}>
-              <Users
-                size={16}
-                color="#A0522D"
-              />
-
-              <Text style={styles.heroMiniText}>
-                1,240 Students
-              </Text>
-            </View>
+        
+        <View style={styles.row}>
+          <View style={{flex: 1}}>
+            <Text style={styles.label}>Start Date</Text>
+            <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={examData.startDate} onChangeText={(t) => setExamData({...examData, startDate: t})} />
+          </View>
+          <View style={{flex: 1, marginLeft: 12}}>
+            <Text style={styles.label}>End Date</Text>
+            <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={examData.endDate} onChangeText={(t) => setExamData({...examData, endDate: t})} />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.heroButton}>
-          <Text style={styles.heroButtonText}>
-            View Schedule
-          </Text>
-
-          <ArrowRight
-            size={16}
-            color="#fff"
-          />
+        <TouchableOpacity style={styles.saveButton} onPress={handleCreateExam} disabled={loading}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Save size={18} color="#fff" />}
+          <Text style={styles.saveButtonText}>{loading ? "Saving..." : "Create Exam"}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* STATS */}
-
-      <View style={styles.statsGrid}>
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#dbeafe" },
-          ]}
-        >
-          <BookOpen
-            size={28}
-            color="#A0522D"
-          />
-
-          <Text style={styles.statsNumber}>
-            24
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Total Exams
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#dcfce7" },
-          ]}
-        >
-          <CheckCircle2
-            size={28}
-            color="#A0522D"
-          />
-
-          <Text style={styles.statsNumber}>
-            18
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Completed
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#fde68a" },
-          ]}
-        >
-          <Clock3
-            size={28}
-            color="#A0522D"
-          />
-
-          <Text style={styles.statsNumber}>
-            6
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Upcoming
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.statsCard,
-            { backgroundColor: "#ede9fe" },
-          ]}
-        >
-          <GraduationCap
-            size={28}
-            color="#A0522D"
-          />
-
-          <Text style={styles.statsNumber}>
-            92%
-          </Text>
-
-          <Text style={styles.statsLabel}>
-            Pass Rate
-          </Text>
-        </View>
-      </View>
-
-      {/* QUICK ACTIONS */}
-
-      <Text style={styles.sectionTitle}>
-        Quick Actions
-      </Text>
-
-      <View style={styles.actionsGrid}>
-        <TouchableOpacity style={styles.actionCard}>
-          <ClipboardCheck
-            size={26}
-            color="#A0522D"
-          />
-
-          <Text style={styles.actionTitle}>
-            Marks Entry
-          </Text>
-
-          <Text style={styles.actionDesc}>
-            Enter marks
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionCard}>
-          <FileText
-            size={26}
-            color="#A0522D"
-          />
-
-          <Text style={styles.actionTitle}>
-            Hall Tickets
-          </Text>
-
-          <Text style={styles.actionDesc}>
-            Generate tickets
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionCard}>
-          <BarChart3
-            size={26}
-            color="#A0522D"
-          />
-
-          <Text style={styles.actionTitle}>
-            Results
-          </Text>
-
-          <Text style={styles.actionDesc}>
-            Publish results
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* EXAMS */}
-
-      <Text style={styles.sectionTitle}>
-        Upcoming Exams
-      </Text>
-
-      <View style={styles.examList}>
-        <View style={styles.examCard}>
-          <View style={styles.examLeft}>
-            <View style={styles.examIconBox}>
-              <BookOpen
-                size={20}
-                color="#A0522D"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.examName}>
-                Mathematics Final Exam
-              </Text>
-
-              <Text style={styles.examDate}>
-                12 June 2026 • 10:00 AM
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>
-              Upcoming
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.examCard}>
-          <View style={styles.examLeft}>
-            <View style={styles.examIconBox}>
-              <BookOpen
-                size={20}
-                color="#A0522D"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.examName}>
-                Science Practical
-              </Text>
-
-              <Text style={styles.examDate}>
-                15 June 2026 • 09:30 AM
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: "#DCFCE7" },
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                { color: "#15803D" },
-              ]}
-            >
-              Active
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.examCard}>
-          <View style={styles.examLeft}>
-            <View style={styles.examIconBox}>
-              <BookOpen
-                size={20}
-                color="#A0522D"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.examName}>
-                English Assessment
-              </Text>
-
-              <Text style={styles.examDate}>
-                20 June 2026 • 11:00 AM
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: "#FEF3C7" },
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                { color: "#B45309" },
-              ]}
-            >
-              Scheduled
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* PERFORMANCE */}
-
-      <Text style={styles.sectionTitle}>
-        Performance Overview
-      </Text>
-
-      <View style={styles.performanceCard}>
-        <View style={styles.performanceItem}>
-          <Text style={styles.performanceValue}>
-            92%
-          </Text>
-
-          <Text style={styles.performanceLabel}>
-            Pass Rate
-          </Text>
-        </View>
-
-        <View style={styles.performanceDivider} />
-
-        <View style={styles.performanceItem}>
-          <Text style={styles.performanceValue}>
-            86%
-          </Text>
-
-          <Text style={styles.performanceLabel}>
-            Avg Score
-          </Text>
-        </View>
-
-        <View style={styles.performanceDivider} />
-
-        <View style={styles.performanceItem}>
-          <Text style={styles.performanceValue}>
-            1,240
-          </Text>
-
-          <Text style={styles.performanceLabel}>
-            Students
-          </Text>
-        </View>
+      <View style={styles.stepsContainer}>
+        <StepCard title="Add Subjects" icon={BookOpen} description="Add subjects to the created exam" />
+        <StepCard title="Assign Classes" icon={Users} description="Link class sections to this exam" />
+        <StepCard title="Schedule Timetable" icon={Clock3} description="Define exam slots" />
       </View>
     </ScrollView>
   );
 }
 
+function StepCard({ title, icon: Icon, description }: any) {
+  return (
+    <TouchableOpacity style={styles.stepCard}>
+      <View style={styles.iconBox}><Icon size={24} color="#27B3C7" /></View>
+      <View style={{flex: 1}}>
+        <Text style={styles.stepTitle}>{title}</Text>
+        <Text style={styles.stepDesc}>{description}</Text>
+      </View>
+      <Plus size={20} color="#27B3C7" />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5DC",
-  },
-
-  content: {
-    paddingBottom: 80,
-  },
-
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 22,
-  },
-
-  heading: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#A0522D",
-  },
-
-  subheading: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 13,
-  },
-
-  createButton: {
-    backgroundColor: "#A0522D",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  createButtonText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 13,
-  },
-
-  searchBox: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 22,
-  },
-
-  searchInput: {
-    marginLeft: 10,
-    flex: 1,
-    fontSize: 14,
-  },
-
-  heroCard: {
-    backgroundColor: "#A0522D",
-    borderRadius: 22,
-    padding: 20,
-    marginBottom: 24,
-  },
-
-  heroLeft: {
-    marginBottom: 16,
-  },
-
-  heroTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "900",
-  },
-
-  heroSubtitle: {
-    color: "#F5F5DC",
-    marginTop: 8,
-    fontSize: 13,
-  },
-
-  heroStatsRow: {
-    flexDirection: "row",
-    marginTop: 16,
-    gap: 10,
-    flexWrap: "wrap",
-  },
-
-  heroMiniCard: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  heroMiniText: {
-    fontWeight: "700",
-    fontSize: 12,
-    color: "#111827",
-  },
-
-  heroButton: {
-    backgroundColor: "#7C2D12",
-    paddingVertical: 12,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-
-  heroButtonText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 13,
-  },
-
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-
-  statsCard: {
-    width: "48%",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  statsNumber: {
-    fontSize: 22,
-    fontWeight: "900",
-    marginTop: 10,
-    color: "#0F172A",
-  },
-
-  statsLabel: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 12,
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: "#A0522D",
-    marginBottom: 14,
-  },
-
-  actionsGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-
-  actionCard: {
-    width: "31%",
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 10,
-    alignItems: "center",
-  },
-
-  actionTitle: {
-    marginTop: 10,
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#111827",
-    textAlign: "center",
-  },
-
-  actionDesc: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
-    textAlign: "center",
-  },
-
-  examList: {
-    marginBottom: 24,
-  },
-
-  examCard: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
-  examLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-
-  examIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "#F5F5DC",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  examName: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#111827",
-  },
-
-  examDate: {
-    marginTop: 4,
-    color: "#6B7280",
-    fontSize: 11,
-  },
-
-  statusBadge: {
-    backgroundColor: "#FEE2E2",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-
-  statusText: {
-    color: "#DC2626",
-    fontWeight: "700",
-    fontSize: 11,
-  },
-
-  performanceCard: {
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    paddingVertical: 24,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    marginBottom: 50,
-  },
-
-  performanceItem: {
-    alignItems: "center",
-    flex: 1,
-  },
-
-  performanceValue: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: "#A0522D",
-  },
-
-  performanceLabel: {
-    marginTop: 6,
-    color: "#6B7280",
-    textAlign: "center",
-    fontSize: 11,
-  },
-
-  performanceDivider: {
-    width: 1,
-    height: 50,
-    backgroundColor: "#E5E7EB",
-  },
+  container: { flex: 1, backgroundColor: "#F0F9FA" },
+  content: { padding: 32 },
+  heading: { fontSize: 28, fontWeight: "900", color: "#24343D", marginBottom: 24 },
+  formCard: { backgroundColor: "#fff", padding: 24, borderRadius: 20, borderWidth: 1, borderColor: "#E5E7EB", marginBottom: 24 },
+  label: { fontSize: 13, fontWeight: "800", color: "#6B7280", marginBottom: 8 },
+  input: { backgroundColor: "#F0F9FA", borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#E5E7EB" },
+  row: { flexDirection: 'row' },
+  saveButton: { backgroundColor: "#27B3C7", padding: 16, borderRadius: 14, flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  saveButtonText: { color: "#fff", fontWeight: "800" },
+  stepsContainer: { gap: 16 },
+  stepCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#fff", padding: 20, borderRadius: 16, borderWidth: 1, borderColor: "#E5E7EB" },
+  iconBox: { width: 50, height: 50, borderRadius: 14, backgroundColor: "#F0F9FA", justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  stepTitle: { fontSize: 15, fontWeight: "800", color: "#24343D" },
+  stepDesc: { fontSize: 12, color: "#6B7280" },
 });
