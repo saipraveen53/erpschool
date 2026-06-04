@@ -105,7 +105,6 @@ export default function AssignedRoutesList() {
     return (
       <>
         <StatusBar style="dark" />
-        {/* Main scrollable container */}
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 overflow-y-auto">
           {/* Sticky Header with Glassmorphism */}
           <div className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-20 shadow-sm">
@@ -126,10 +125,9 @@ export default function AssignedRoutesList() {
             </div>
           </div>
 
-          {/* Scrollable Content */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
             
-            {/* Enhanced Stats Dashboard */}
+            {/* Stats Dashboard */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="group bg-white rounded-xl p-5 shadow-sm border-l-4 border-blue-500 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-between">
@@ -202,7 +200,7 @@ export default function AssignedRoutesList() {
               <p className="text-xs text-gray-400 mt-2">{activeRoutes} out of {totalRoutes} routes currently active</p>
             </div>
 
-            {/* Timeline Header with Stats */}
+            {/* Timeline Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-1 h-8 bg-gradient-to-b from-[#0065ea] to-[#0099ff] rounded-full"></div>
@@ -217,24 +215,24 @@ export default function AssignedRoutesList() {
               </div>
             </div>
 
-            {/* Enhanced Timeline Grid */}
+            {/* Timeline Grid */}
             <div className="relative pb-8">
-              {/* Vertical Timeline Line - Animated */}
               <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#0065ea] via-purple-400 to-orange-400 hidden md:block"></div>
               
               {sortedRoutes.map((route, index) => (
                 <div 
                   key={route.routeId} 
-                  className="relative flex flex-col md:flex-row gap-5 mb-8 group"
+                  className="relative flex flex-col md:flex-row gap-5 mb-8 group cursor-pointer"
+                  onClick={() => router.push(`/(dashboard)/driver/students/pickup-list?routeId=${route.routeId}`)}
                   onMouseEnter={() => setHoveredCard(route.routeId)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
-                  {/* Enhanced Timeline Dot with Animation */}
+                  {/* Timeline Dot */}
                   <div className="hidden md:flex absolute left-6 w-5 h-5 bg-white border-2 border-[#0065ea] rounded-full z-10 group-hover:scale-125 transition-transform duration-300">
                     <div className="absolute inset-0 rounded-full bg-[#0065ea]/30 animate-ping"></div>
                   </div>
                   
-                  {/* Time Card - Enhanced */}
+                  {/* Time Card */}
                   <div className="md:w-48 flex-shrink-0">
                     <div className="bg-gradient-to-br from-[#0065ea] to-[#0099ff] rounded-xl p-4 text-white text-center shadow-md transform transition-all duration-300 group-hover:scale-105">
                       <div className="flex items-center justify-center gap-1 mb-2">
@@ -252,7 +250,7 @@ export default function AssignedRoutesList() {
                     </div>
                   </div>
                   
-                  {/* Content Card - Enhanced with Hover Effects */}
+                  {/* Content Card */}
                   <div 
                     className={`flex-1 bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 ${
                       hoveredCard === route.routeId ? 'shadow-xl -translate-y-1' : ''
@@ -322,10 +320,10 @@ export default function AssignedRoutesList() {
                           <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                           <p className="text-xs text-gray-400 font-mono">Route ID: {route.routeId}</p>
                         </div>
-                        <button className="text-xs text-[#0065ea] hover:text-[#0054c4] font-medium hover:underline transition flex items-center gap-1">
-                          View Details 
+                        <span className="text-xs text-[#0065ea] font-medium hover:underline transition flex items-center gap-1">
+                          View Students 
                           <span className="text-lg">&rarr;</span>
-                        </button>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -333,7 +331,7 @@ export default function AssignedRoutesList() {
               ))}
             </div>
 
-            {/* Action Buttons - Enhanced */}
+            {/* Action Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row gap-4 sticky bottom-4 bg-white/95 backdrop-blur-sm p-4 rounded-xl shadow-lg">
               <button 
                 onClick={() => router.push("/(dashboard)/driver/tracking/gps")} 
@@ -354,7 +352,6 @@ export default function AssignedRoutesList() {
               </button>
             </div>
 
-            {/* Footer */}
             <div className="mt-8 text-center pb-6">
               <p className="text-xs text-gray-400">© 2026 Transport Management System | Routes Timeline</p>
               <p className="text-xs text-gray-300 mt-1">Last updated: {new Date().toLocaleTimeString()}</p>
@@ -411,7 +408,11 @@ export default function AssignedRoutesList() {
   }
 
   const renderRouteCard = ({ item: route }: { item: TransportRoute }) => (
-    <RNView className="bg-white mx-4 mb-4 rounded-2xl shadow-md overflow-hidden">
+    <RNTouchableOpacity 
+      activeOpacity={0.8}
+      onPress={() => router.push(`/(dashboard)/driver/students/pickup-list?routeId=${route.routeId}`)}
+      className="bg-white mx-4 mb-4 rounded-2xl shadow-md overflow-hidden"
+    >
       <LinearGradient colors={["#0065ea", "#0099ff"]} className="p-4">
         <RNView className="flex-row items-center">
           <Bus size={24} color="#fff" />
@@ -436,7 +437,7 @@ export default function AssignedRoutesList() {
           <RNText className="text-gray-900 font-semibold">{route.routeId}</RNText>
         </RNView>
       </RNView>
-    </RNView>
+    </RNTouchableOpacity>
   );
 
   return (

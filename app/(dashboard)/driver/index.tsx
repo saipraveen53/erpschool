@@ -227,7 +227,14 @@ export default function DriverDashboard() {
   };
 
   const handleLogout = () => {
-    logout();
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Logout", onPress: () => logout() }
+      ]
+    );
   };
 
   const formatTime = () => {
@@ -283,7 +290,7 @@ export default function DriverDashboard() {
   }
 
   // -------------------------------
-  // WEB VERSION - UNCHANGED
+  // WEB VERSION - WITH NOTIFICATION AND LOGOUT ICONS
   // -------------------------------
   if (isWeb) {
     return (
@@ -299,6 +306,31 @@ export default function DriverDashboard() {
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40"></div>
+            
+            {/* Notification and Logout Icons for Web - Top Right */}
+            <div className="absolute top-5 right-5 flex items-center gap-3 z-10">
+              {/* Notification Button */}
+              <button
+                onClick={() => router.push("/(dashboard)/common/notifications")}
+                className="relative bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all duration-200 rounded-full p-2.5 border border-white/30 shadow-lg"
+              >
+                <Bell size={22} color="white" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Logout Button */}
+              <button
+                onClick={logout}
+                className="bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all duration-200 rounded-full p-2.5 border border-white/30 shadow-lg"
+              >
+                <LogOut size={22} color="white" />
+              </button>
+            </div>
+
             <div className="relative h-full flex flex-col justify-center px-6 md:px-12 lg:px-20">
               <div className="max-w-4xl">
                 <p className="text-white text-sm font-medium mb-2 tracking-wide">
@@ -649,7 +681,6 @@ export default function DriverDashboard() {
           transform: [{ translateY: headerOpacity.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }],
           backgroundColor: headerOpacity.interpolate({ inputRange: [0, 1], outputRange: ["rgba(255,255,255,0)", "rgba(255,255,255,0.97)"] }),
           paddingTop: 44, paddingBottom: 12, paddingHorizontal: 20,
-           
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -721,66 +752,63 @@ export default function DriverDashboard() {
             </Text>
           </View>
 
-          {/* Notification pill top-right */}
-          {/* Notification pill top-right - Glossy/Glass Finish with Pressable */}
-{/* Notification pill top-right - Fixed with View wrapper */}
-<View style={{ position: "absolute", top: 50, right: 20, flexDirection: "row", gap: 14 }}>
-  
-  {/* Notification Button - Pressable with android_ripple */}
-  <Pressable
-    onPress={() => router.push("/(dashboard)/common/notifications")}
-    android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: false, radius: 40 }}
-    style={{
-      borderWidth: 1.5,
-      borderColor: "rgba(255,255,255,0.4)",
-      borderRadius: 22,
-      overflow: "hidden",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 10,
-      elevation: 6,
-      paddingHorizontal: 16, 
-      paddingVertical: 9,
-      flexDirection: "row", 
-      alignItems: "center", 
-      gap: 8,
-      backgroundColor: "rgba(255,255,255,0.25)",
-    }}
-  >
-    <Bell size={24} color="#fff" />
-    {unreadCount > 0 && (
-      <View style={{
-        backgroundColor: "#ff4b00", borderRadius: 8,
-        minWidth: 16, height: 16, justifyContent: "center", alignItems: "center", paddingHorizontal: 3,
-      }}>
-        <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
-      </View>
-    )}
-  </Pressable>
+          {/* Notification and Logout Icons - Top Right for Mobile */}
+          <View style={{ position: "absolute", top: 50, right: 20, flexDirection: "row", gap: 14 }}>
+            {/* Notification Button */}
+            <Pressable
+              onPress={() => router.push("/(dashboard)/common/notifications")}
+              android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: false, radius: 40 }}
+              style={{
+                borderWidth: 1.5,
+                borderColor: "rgba(255,255,255,0.4)",
+                borderRadius: 22,
+                overflow: "hidden",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 10,
+                elevation: 6,
+                paddingHorizontal: 16, 
+                paddingVertical: 9,
+                flexDirection: "row", 
+                alignItems: "center", 
+                gap: 8,
+                backgroundColor: "rgba(255,255,255,0.25)",
+              }}
+            >
+              <Bell size={24} color="#fff" />
+              {unreadCount > 0 && (
+                <View style={{
+                  backgroundColor: "#ff4b00", borderRadius: 8,
+                  minWidth: 16, height: 16, justifyContent: "center", alignItems: "center", paddingHorizontal: 3,
+                }}>
+                  <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+                </View>
+              )}
+            </Pressable>
 
-  {/* Logout Button - Pressable with android_ripple */}
-  <Pressable
-    onPress={() => handleLogout()}
-    android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: false, radius: 40 }}
-    style={{
-      borderWidth: 1.5,
-      borderColor: "rgba(255,255,255,0.4)",
-      borderRadius: 22,
-      overflow: "hidden",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 10,
-      elevation: 6,
-      paddingHorizontal: 16, 
-      paddingVertical: 9,
-      backgroundColor: "rgba(255,255,255,0.25)",
-    }}
-  >
-    <LogOut size={24} color="#fff" />
-  </Pressable>
-</View>
+            {/* Logout Button */}
+            <Pressable
+              onPress={handleLogout}
+              android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: false, radius: 40 }}
+              style={{
+                borderWidth: 1.5,
+                borderColor: "rgba(255,255,255,0.4)",
+                borderRadius: 22,
+                overflow: "hidden",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 10,
+                elevation: 6,
+                paddingHorizontal: 16, 
+                paddingVertical: 9,
+                backgroundColor: "rgba(255,255,255,0.25)",
+              }}
+            >
+              <LogOut size={24} color="#fff" />
+            </Pressable>
+          </View>
         </View>
 
         {/* ─── BENTO GRID SECTION ─── */}
@@ -1104,20 +1132,19 @@ export default function DriverDashboard() {
                       marginBottom: 2,
                     }}
                   >
-                                        <View style={{
+                    <View style={{
                       width: 48, height: 48, borderRadius: 14,
-                      backgroundColor: `${item.bg[0]}20`, // Slightly more opacity
+                      backgroundColor: `${item.bg[0]}90`,
                       justifyContent: "center", alignItems: "center",
                       marginBottom: 8,
-                      borderWidth: 2, // Thicker border
-                      borderColor: `${item.bg[0]}40`, // More visible border
+                      borderWidth: 2.5,
+                      borderColor: `${item.bg[0]}50`,
                       shadowColor: item.bg[0],
                       shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.15,
-                      shadowRadius: 4,
-                      elevation: 3,
+                      shadowOpacity: 0.25,
+                      shadowRadius: 6,
+                      elevation: 4,
                     }}>
-                      {/* Increase icon size and make it bolder */}
                       {item.icon}
                     </View>
                     <Text style={{ color: "#4b5563", fontSize: 10.5, fontWeight: "600", textAlign: "center" }} numberOfLines={1}>
