@@ -1,5 +1,8 @@
 // app/_layout.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack, usePathname, useRootNavigationState, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
@@ -10,9 +13,24 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import "./globals.css";
 
+// Create a QueryClient instance with cache time (e.g., 24 hours)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours (prev. cacheTime)
+      staleTime: 1000 * 60 * 5,     // 5 minutes
+    },
+  },
+});
+
+// Create an AsyncStorage persister
+const persister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+});
+
 export default function RootLayout() {
   const router = useRouter();
-  const pathname = usePathname(); // 👈 get current route
+  const pathname = usePathname();
   const rootNavigationState = useRootNavigationState();
   const [hasNavigated, setHasNavigated] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -27,7 +45,6 @@ export default function RootLayout() {
         const role = await AsyncStorage.getItem("userRole");
 
         if (authenticated === "true" && role) {
-          // 👇 Allow modal and other public routes without redirect
           const allowedPublicRoutes = ['/modal'];
           if (allowedPublicRoutes.includes(pathname)) {
             console.log("🔍 Skipping redirect – on allowed route:", pathname);
@@ -88,7 +105,7 @@ export default function RootLayout() {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [rootNavigationState?.key, hasNavigated, pathname]); // 👈 add pathname as dependency
+  }, [rootNavigationState?.key, hasNavigated, pathname]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
@@ -102,29 +119,30 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <StatusBar 
-              style="light" 
-              backgroundColor="#2563eb"
-              translucent={false}
-            />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'slide_from_right',
-              }}
-            >
-              <Stack.Screen name="(public)" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
-              {/* ✅ Modal route – accessible from anywhere */}
-              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-            </Stack>
-          </NotificationProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+        <ThemeProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <StatusBar 
+                style="light" 
+                backgroundColor="#2563eb"
+                translucent={false}
+              />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                }}
+              >
+                <Stack.Screen name="(public)" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+              </Stack>
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </PersistQueryClientProvider>
     </SafeAreaProvider>
   );
 }
