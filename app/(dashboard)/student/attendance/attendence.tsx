@@ -1,40 +1,25 @@
 import { useAuth } from "@/app/contexts/AuthContext";
 import { rootApi as studentdashboardApi } from "@/app/utils/axiosInstance";
-import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-  AlertTriangle,
-  Award,
-  Calendar as CalendarIcon,
   ChevronLeft,
-  ChevronRight,
-  Clock,
-  FileText,
-  Filter,
-  Info,
-  Sparkles,
-  X,
+  ChevronRight
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  Easing,
-  FlatList,
-  Image,
-  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Circle, G, Path } from "react-native-svg";
+import Svg, { Circle, Path } from "react-native-svg";
 
 const THEME = {
   primary: "#E35336",       // Burnt Sienna Main

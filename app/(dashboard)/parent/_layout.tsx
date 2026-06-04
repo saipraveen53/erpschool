@@ -8,6 +8,7 @@ import {
   ChevronUp,
   CreditCard,
   Home,
+  LogOut,
   MessageSquare,
   School,
   User,
@@ -25,8 +26,8 @@ import {
   UIManager,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Enable LayoutAnimation for smooth toggle effects on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -46,10 +47,13 @@ const THEME = {
 export default function ParentLayout() {
   const router = useRouter();
   const currentPath = usePathname();
+  const insets = useSafeAreaInsets(); // Dynamic system insets tracker to completely eliminate navigation overlaps
   const [dimensions, setDimensions] = useState(Dimensions.get("window"));
-  
-  // Track open state for sub-menu items dropdown accordion
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+ // const { logout } = useAuth();
+//const handleLogout = async () => {
+//await logout();
+//};
 
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
@@ -61,37 +65,20 @@ export default function ParentLayout() {
   const isDesktop = dimensions.width > 768;
 
   const menuConfig = [
+    { name: "Dashboard", id: "dashboard", icon: <Home size={18} />, hasSub: false, path: "/parent" },
     { 
-      name: "Dashboard", 
-      id: "dashboard",
-      icon: <Home size={18} />, 
-      hasSub: false, 
-      path: "/parent" 
-    },
-    { 
-      name: "Attendance", 
-      id: "attendance",
-      icon: <Calendar size={18} />, 
-      hasSub: true,
+      name: "Attendance", id: "attendance", icon: <Calendar size={18} />, hasSub: true,
       subItems: [
         { name: "Attendance Logs", path: "/parent/attendance" },
         { name: "Leave Requests", path: "/parent/attendance/leave-request" }
       ]
     },
     { 
-      name: "Children", 
-      id: "children",
-      icon: <Users size={18} />, 
-      hasSub: true,
-      subItems: [
-        { name: "Children Overview", path: "/parent/children" }
-      ]
+      name: "Children", id: "children", icon: <Users size={18} />, hasSub: true,
+      subItems: [{ name: "Children Overview", path: "/parent/children" }]
     },
     { 
-      name: "Communication", 
-      id: "communication",
-      icon: <MessageSquare size={18} />, 
-      hasSub: true,
+      name: "Communication", id: "communication", icon: <MessageSquare size={18} />, hasSub: true,
       subItems: [
         { name: "Broadcast Notices", path: "/parent/communication/notices" },
         { name: "Emergency Alerts", path: "/parent/communication/alerts" },
@@ -99,20 +86,14 @@ export default function ParentLayout() {
       ]
     },
     { 
-      name: "Examination", 
-      id: "examination",
-      icon: <Award size={18} />, 
-      hasSub: true,
+      name: "Examination", id: "examination", icon: <Award size={18} />, hasSub: true,
       subItems: [
         { name: "Term Report Cards", path: "/parent/examination/report-card" },
         { name: "Academic Results", path: "/parent/examination/results" }
       ]
     },
     { 
-      name: "Fees & Dues", 
-      id: "fees",
-      icon: <CreditCard size={18} />, 
-      hasSub: true,
+      name: "Fees & Dues", id: "fees", icon: <CreditCard size={18} />, hasSub: true,
       subItems: [
         { name: "Dues Overview", path: "/parent/fees" },
         { name: "Payment Gateway", path: "/parent/fees/payment" },
@@ -120,32 +101,19 @@ export default function ParentLayout() {
       ]
     },
     { 
-      name: "Homework Diary", 
-      id: "homework",
-      icon: <BookOpen size={18} />, 
-      hasSub: true,
-      subItems: [
-        { name: "Daily Assignments", path: "/parent/homework" }
-      ]
+      name: "Homework Diary", id: "homework", icon: <BookOpen size={18} />, hasSub: true,
+      subItems: [{ name: "Daily Assignments", path: "/parent/homework" }]
     },
     { 
-      name: "Transport Live", 
-      id: "transport",
-      icon: <Bus size={18} />, 
-      hasSub: true,
+      name: "Transport Live", id: "transport", icon: <Bus size={18} />, hasSub: true,
       subItems: [
         { name: "Live Bus Tracking", path: "/parent/transport/bus-tracking" },
         { name: "Route Alerts", path: "/parent/transport/alerts" }
       ]
     },
     { 
-      name: "My Profile", 
-      id: "profile",
-      icon: <User size={18} />, 
-      hasSub: true,
-      subItems: [
-        { name: "Account Details", path: "/parent/profile" }
-      ]
+      name: "My Profile", id: "profile", icon: <User size={18} />, hasSub: true,
+      subItems: [{ name: "Account Details", path: "/parent/profile" }]
     },
   ];
 
@@ -153,24 +121,24 @@ export default function ParentLayout() {
     { name: "Home", icon: <Home size={20} />, path: "/parent" },
     { name: "Communication", icon: <MessageSquare size={20} />, path: "/parent/communication/chat" },
     { name: "Fees", icon: <CreditCard size={20} />, path: "/parent/fees" },
-    { name: "Examination", icon: <Award size={20} />, path: "/parent/examination/results" },
+    { name: "Examination", icon: <Award size={20} />, path: "/parent/examination/report-card" },
     { name: "Transport", icon: <Bus size={20} />, path: "/parent/transport/bus-tracking" },
   ];
 
   const toggleDropdown = (menuId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (openDropdown === menuId) {
-      setOpenDropdown(null);
-    } else {
-      setOpenDropdown(menuId);
-    }
+    setOpenDropdown(openDropdown === menuId ? null : menuId);
   };
 
   const handleNavigation = (path: string) => {
     router.push(path as any);
   };
 
-  // Check custom route matching profiles safely across deep configurations
+  // Secure user routing mechanism linking out clean state structures back down root public path profiles
+  const handleLogoutActionExecution = () => {
+    router.replace("/(public)/home" as any);
+  };
+
   const isTabRouteActive = (tabPath: string) => {
     if (tabPath === "/parent") {
       return currentPath === "/parent" || currentPath === "/parent/";
@@ -253,17 +221,32 @@ export default function ParentLayout() {
         })}
       </ScrollView>
 
+      {/* Styled Interactive Logout Trigger Action Panel Replacing Static Text Footer */}
       <View style={styles.sidebarFooter}>
-        <Text style={styles.footerText}>v1.0.4 Campus Safe</Text>
+        <TouchableOpacity 
+          style={styles.sidebarLogoutButtonAnchor} 
+          onPress={handleLogoutActionExecution}
+          activeOpacity={0.8}
+        >
+          <LogOut size={16} color="#F44460" />
+          <Text style={styles.logoutButtonTextLabel}>Portal Log Out</Text>
+        </TouchableOpacity>
+        <Text style={styles.footerVersionTrackingLabelText}>v1.0.4 Campus Safe</Text>
       </View>
     </View>
   );
 
-  // ==========================================
-  // MOBILE QUICK TAB NAV BAR COMPONENT OVERLAY
-  // ==========================================
   const renderMobileBottomTabBar = () => (
-    <View style={styles.mobileTabBarContainer}>
+    <View 
+      style={[
+        styles.mobileTabBarContainer, 
+        { 
+          // Inject dynamic programmatic padding calculations balancing phone systems navigation indicators natively
+          height: 62 + Math.max(insets.bottom, 12),
+          paddingBottom: Math.max(insets.bottom, 10)
+        }
+      ]}
+    >
       {mobileTabsConfig.map((tab, idx) => {
         const isActive = isTabRouteActive(tab.path);
         return (
@@ -292,7 +275,7 @@ export default function ParentLayout() {
     <View style={styles.rootContainer}>
       {isDesktop && renderSidebar()}
 
-      <View style={styles.contentContainer}>
+      <View style={[styles.contentContainer]}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="attendance/index" />
@@ -315,7 +298,6 @@ export default function ParentLayout() {
         </Stack>
       </View>
 
-      {/* Render only when screens compile inside standard mobile size constraints */}
       {!isDesktop && renderMobileBottomTabBar()}
     </View>
   );
@@ -374,9 +356,6 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingHorizontal: 12,
   },
-  menuGroupWrapper: {
-    marginBottom: 4,
-  },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -400,7 +379,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   activeIconWrapper: {
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
+    backgroundColor: "rgba(227, 83, 54, 0.15)",
   },
   activeMenuItem: {
     backgroundColor: THEME.activeBg,
@@ -470,11 +449,28 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   sidebarFooter: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     borderTopWidth: 1,
     borderTopColor: THEME.border,
+    gap: 10
   },
-  footerText: {
+  sidebarLogoutButtonAnchor: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(244, 68, 96, 0.08)",
+    paddingVertical: 11,
+    borderRadius: 12,
+    gap: 10,
+    width: "100%"
+  },
+  logoutButtonTextLabel: {
+    color: "#F44460",
+    fontSize: 13,
+    fontWeight: "700"
+  },
+  footerVersionTrackingLabelText: {
     color: THEME.textMuted,
     fontSize: 11,
     textAlign: "center",
@@ -483,51 +479,47 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
   },
-  // ==========================================
-  // MOBILE PREMIUM TAB-BAR VIEWPORT RULES
-  // ==========================================
   mobileTabBarContainer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: 68,
     backgroundColor: THEME.tabBarBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
     borderTopWidth: 1,
     borderTopColor: "rgba(44, 26, 20, 0.08)",
-    paddingBottom: Platform.OS === "ios" ? 14 : 4,
     shadowColor: "#2C1A14",
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 10,
+    zIndex: 999
   },
   mobileTabElementButton: {
     alignItems: "center",
     justifyContent: "center",
     flex: 1,
-    paddingTop: 8,
   },
   mobileTabIconWrapper: {
-    padding: 4,
-    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   mobileActiveIconActiveState: {
-    backgroundColor: "rgba(227, 83, 54, 0.06)", // Soft glow highlight behind active SVG icon tabs
+    backgroundColor: "rgba(227, 83, 54, 0.08)",
   },
   mobileTabTextTypography: {
     fontSize: 10,
     fontWeight: "600",
     color: "#7A6862",
-    marginTop: 2,
+    marginTop: 3,
   },
   mobileActiveTabTextActiveState: {
     color: THEME.primary,
-    fontWeight: "700",
+    fontWeight: "800",
   },
 });

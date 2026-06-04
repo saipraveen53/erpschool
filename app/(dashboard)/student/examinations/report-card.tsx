@@ -1,3 +1,4 @@
+  
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -36,13 +37,19 @@ const THEME = {
   glassBg: "rgba(255, 255, 255, 0.76)",
 };
 
-const assessmentTermsPool = ["Term 1 Finals", "Mid-Term Assessment", "Term 2 Progress"];
+const examTermsTabs = ["Term 1 Finals", "Mid-Term Assessment", "Term 2 Progress"];
 
-const scholasticResultsData = [
+const scholasticMarksPool = [
   { subject: "Mathematics & Analytics", marks: 96, max: 100, grade: "O", remarks: "Brilliant problem solving capability.", color: "#E35336" },
   { subject: "General Science & Labs", marks: 91, max: 100, grade: "A+", remarks: "Very active in experimental logic.", color: "#A0522D" },
   { subject: "English Language Arts", marks: 88, max: 100, grade: "A", remarks: "Excellent essay structure writing.", color: "#D97706" },
   { subject: "Social & Environmental Studies", marks: 93, max: 100, grade: "O", remarks: "Great analytical historical grasp.", color: "#16A34A" },
+];
+
+const coScholasticMetrics = [
+  { activity: "Arts & Creative Design", grade: "Excellent (A+)" },
+  { activity: "Sports & Physical Stamina", grade: "Outstanding (O)" },
+  { activity: "Civic Discipline & Team Spirit", grade: "Excellent (A+)" },
 ];
 
 const academicSummaryMetrics = {
@@ -55,19 +62,14 @@ const academicSummaryMetrics = {
   classTeacherRemarks: "Aarav has displayed exceptional velocity in analytical conceptual frameworks this entire term. Highly regular, curious, and disciplined companion.",
 };
 
-export default function ExaminationResultsDashboard() {
+export default function ExaminationReportCardDashboard() {
   const router = useRouter();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState("Term 1 Finals");
-  
+
   const [windowWidth, setWindowWidth] = useState(Dimensions.get("window").width);
   const isDesktop = windowWidth > 768;
-
-  const scrollYAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(45)).current;
-  const fluidMoveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
@@ -90,6 +92,11 @@ export default function ExaminationResultsDashboard() {
 
     return () => subscription.remove();
   }, []);
+
+  const scrollYAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(45)).current;
+  const fluidMoveAnim = useRef(new Animated.Value(0)).current;
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -117,7 +124,7 @@ export default function ExaminationResultsDashboard() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar style="dark" />
 
-      {/* SVG Background Layer */}
+      {/* SVG Background Canvas */}
       <View style={styles.fluidBackgroundContainer} pointerEvents="none">
         <Animated.View style={{ transform: [{ translateX: fluidHorizontalX }] }}>
           <Svg height="350" width={windowWidth + 100} viewBox={`0 0 ${windowWidth + 100} 350`}>
@@ -133,6 +140,7 @@ export default function ExaminationResultsDashboard() {
         </Animated.View>
       </View>
 
+      {/* Parallax Layer Glassmorphism Orbs */}
       <Animated.View style={[styles.orb3DOne, { transform: [{ translateY: layer1TranslateY }] }]} />
       <Animated.View style={[styles.orb3DTwo, { transform: [{ translateY: layer2TranslateY }] }]} />
 
@@ -148,60 +156,60 @@ export default function ExaminationResultsDashboard() {
       >
         <View style={[styles.mainWrapper, isDesktop && styles.desktopWidth]}>
           
-          {/* Header Card Element */}
+          {/* Top Main Header Card - Restructured layout mechanics to auto wrap seamlessly */}
           <Animated.View style={[styles.pageHeaderBlockCard, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <View style={styles.headerLeftCluster}>
               <View style={styles.titleBadgeInlineRow}>
-                <Text style={styles.pageTitleHeading}>Examination Results Transcript</Text>
+                <Text style={styles.pageTitleHeading}>Progressive Report Ledger</Text>
                 <View style={styles.liveBroadcastBadge}>
                   <Sparkles size={11} color={THEME.white} style={{ marginRight: 4 }} />
-                  <Text style={styles.liveBroadcastBadgeText}>Academic Sync</Text>
+                  <Text style={styles.liveBroadcastBadgeText}>Official Sync</Text>
                 </View>
               </View>
-              <Text style={styles.pageSubtitleMuted}>Advance Administration real-time automated assessment evaluation ledger logs</Text>
+              <Text style={styles.pageSubtitleMuted}>Comprehensive academic grading system and student performance indices terminal tracker</Text>
             </View>
 
             <TouchableOpacity style={styles.premiumDownloadReportCardBtn} activeOpacity={0.8}>
               <Download size={15} color={THEME.white} style={{ marginRight: 6 }} />
-              <Text style={styles.downloadBtnLabelTextContent}>Export Official Transcript</Text>
+              <Text style={styles.downloadBtnLabelTextContent}>Download Report PDF</Text>
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Academic Overview Status Blocks */}
+          {/* Academic Summary Performance Score Modules Layout Wrapper */}
           <Text style={styles.sectionHeadingTitle}>Cumulative Scholastic Indices</Text>
           <View style={[styles.overviewMetricsWrapperGridRow, isDesktop && styles.rowDirectionLayoutGrid]}>
             <View style={[styles.metricCardUnitItem, isDesktop && styles.desktopMetricFourth]}>
-              <Text style={styles.metricItemLabelText} numberOfLines={1}>Aggregated Score Weight</Text>
+              <Text style={styles.metricItemLabelText}>Aggregated Score Weight</Text>
               <Text style={styles.metricItemBigNumber}>{academicSummaryMetrics.totalMarks} / {academicSummaryMetrics.maxAggregate}</Text>
               <Text style={styles.metricItemFooterSubtext}>Calculated evaluation pools</Text>
             </View>
 
             <View style={[styles.metricCardUnitItem, isDesktop && styles.desktopMetricFourth, { backgroundColor: "#E7F9EE" }]}>
-              <Text style={[styles.metricItemLabelText, { color: "#16A34A" }]} numberOfLines={1}>Percentage Velocity</Text>
+              <Text style={[styles.metricItemLabelText, { color: "#16A34A" }]}>Percentage Velocity</Text>
               <Text style={[styles.metricItemBigNumber, { color: "#16A34A" }]}>{academicSummaryMetrics.percentage}% Index</Text>
               <Text style={styles.metricItemFooterSubtext}>Nominal target tier standing</Text>
             </View>
 
             <View style={[styles.metricCardUnitItem, isDesktop && styles.desktopMetricFourth, { backgroundColor: "#FEF7EE" }]}>
-              <Text style={[styles.metricItemLabelText, { color: "#D97706" }]} numberOfLines={1}>Campus Cohort Rank</Text>
+              <Text style={[styles.metricItemLabelText, { color: "#D97706" }]}>Campus Cohort Rank</Text>
               <Text style={[styles.metricItemBigNumber, { color: "#D97706" }]}>Rank {academicSummaryMetrics.classRank}</Text>
               <Text style={styles.metricItemFooterSubtext}>Position across grade level</Text>
             </View>
 
             <View style={[styles.metricCardUnitItem, isDesktop && styles.desktopMetricFourth]}>
-              <Text style={styles.metricItemLabelText} numberOfLines={1}>Institutional Status Metric</Text>
+              <Text style={styles.metricItemLabelText}>Institutional Status Metric</Text>
               <Text style={[styles.metricItemBigNumber, { color: THEME.primary }]}>{academicSummaryMetrics.finalGradeIndex}</Text>
               <Text style={styles.metricItemFooterSubtext}>Excellent academic standard</Text>
             </View>
           </View>
 
-          {/* Term Switcher Menu Tab Bar */}
+          {/* Examination Term Switcher Tab Bar */}
           <View style={styles.categoryFilterBarSectionContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScrollViewInnerLayout}>
               <View style={styles.filterIconBackdropContainerBox}>
                 <Filter size={14} color={THEME.darkAccent} />
               </View>
-              {assessmentTermsPool.map((termTab, idx) => (
+              {examTermsTabs.map((termTab, idx) => (
                 <TouchableOpacity
                   key={idx}
                   style={[styles.filterChipTabUnitCell, selectedTerm === termTab && styles.activeFilterChipTabUnitCell]}
@@ -216,22 +224,22 @@ export default function ExaminationResultsDashboard() {
             </ScrollView>
           </View>
 
-          {/* Grid Splitting Component Core Mappings Layout */}
+          {/* Cross Platform Flexible Screen Grid Wrapper Split */}
           <View style={[styles.responsiveSplitMainLayoutFlexContainer, isDesktop && styles.rowDirectionLayoutGrid]}>
             
-            {/* Left Module Panel Frame Layout */}
+            {/* Left Box Panel Module: Subject Breakup Cards Stack Layout */}
             <View style={[styles.listFeedBlockSectionCard, isDesktop && styles.desktopFlexProportionWidth]}>
-              <Text style={styles.blockTitleLabelHeading}>Subject Score Validation Metrics</Text>
+              <Text style={styles.blockTitleLabelHeading}>Subject Assessment Breakup Ledger</Text>
               
-              {scholasticResultsData.map((subLog, index) => (
+              {scholasticMarksPool.map((subLog, index) => (
                 <View key={index} style={styles.subjectScoreRowCardItemUnit}>
                   <View style={styles.subjectRowHeaderInlineRow}>
                     <View style={styles.subjectLeftGroupCluster}>
                       <View style={[styles.subjectIconBackdrop, { backgroundColor: subLog.color + "15" }]}>
                         <BookOpen size={16} color={subLog.color} />
                       </View>
-                      <View style={styles.subjectMetaTextFrame}>
-                        <Text style={styles.subjectNameMainTitleHeadingTextText} numberOfLines={1} lg-size-text="true">{subLog.subject}</Text>
+                      <View style={styles.subjectTextMetaDetailsFrame}>
+                        <Text style={styles.subjectNameMainTitleHeadingTextText} numberOfLines={1} elipsizeMode="tail">{subLog.subject}</Text>
                         <Text style={styles.subjectRemarksNoteText} numberOfLines={2}>{subLog.remarks}</Text>
                       </View>
                     </View>
@@ -247,6 +255,7 @@ export default function ExaminationResultsDashboard() {
                     </View>
                   </View>
 
+                  {/* Horizontal Gauge Fill */}
                   <View style={styles.subjectProgressBarBackdropTrack}>
                     <View style={[styles.subjectProgressBarFillGauge, { width: `${subLog.marks}%`, backgroundColor: subLog.color }]} />
                   </View>
@@ -254,30 +263,30 @@ export default function ExaminationResultsDashboard() {
               ))}
             </View>
 
-            {/* Right Module Stack Panel Cards */}
+            {/* Right Box Stack Panel Modules */}
             <View style={[styles.responsiveRightBlockStack, isDesktop && styles.desktopFlexProportionWidthRightSide]}>
               
+              {/* Co-Scholastic Evaluations Grading Table Panel Card */}
               <View style={styles.rightSideInternalCardWrapperPanelBox}>
                 <View style={styles.cardHeaderWithIconTitleFlexRow}>
                   <Medal size={18} color={THEME.darkAccent} />
-                  <Text style={styles.blockTitleLabelHeading}>Institutional Standards Check</Text>
+                  <Text style={styles.blockTitleLabelHeading}>Co-Scholastic Domain Evaluations</Text>
                 </View>
                 <View style={styles.coScholasticFieldsStackContainerGroup}>
-                  <View style={styles.coScholasticLineItemRow}>
-                    <Text style={styles.coScholasticFieldLabelText} numberOfLines={1}>Attendance Verification Pool</Text>
-                    <Text style={styles.coScholasticFieldValueHeadingText}>{academicSummaryMetrics.attendanceSync}</Text>
-                  </View>
-                  <View style={styles.coScholasticLineItemRow}>
-                    <Text style={styles.coScholasticFieldLabelText} numberOfLines={1}>Minimum Passing Scale Compliance</Text>
-                    <Text style={[styles.coScholasticFieldValueHeadingText, { color: "#16A34A" }]}>98.4% Passed</Text>
-                  </View>
+                  {coScholasticMetrics.map((coMetric, idx) => (
+                    <View key={idx} style={styles.coScholasticLineItemRow}>
+                      <Text style={styles.coScholasticFieldLabelText} numberOfLines={1}>{coMetric.activity}</Text>
+                      <Text style={styles.coScholasticFieldValueHeadingText}>{coMetric.grade}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
 
+              {/* Class Teacher Remarks Feedback Card Panel */}
               <View style={[styles.rightSideInternalCardWrapperPanelBox, { marginBottom: isDesktop ? 0 : 40 }]}>
                 <View style={styles.cardHeaderWithIconTitleFlexRow}>
                   <FileSpreadsheet size={18} color={THEME.primary} />
-                  <Text style={styles.blockTitleLabelHeading}>Tutor Statement Evaluations</Text>
+                  <Text style={styles.blockTitleLabelHeading}>Class Teacher Summative Remarks</Text>
                 </View>
                 <View style={styles.remarksParagraphHolderGlassBox}>
                   <Text style={styles.remarksParagraphBodyTextContentText}>
@@ -287,7 +296,7 @@ export default function ExaminationResultsDashboard() {
                 <View style={styles.auditVerificationNoticeSafetyFooterCardStrip}>
                   <Info size={14} color={THEME.darkAccent} style={{ marginTop: 1 }} />
                   <Text style={styles.auditVerificationNoticeSafetyFooterCardTextText}>
-                    Electronically verified documentation trail log issued by Advance Administration framework portal registry authority.
+                    Electronically verified documentation trail log issued by Edvance Administration framework portal registry authority.
                   </Text>
                 </View>
               </View>
@@ -403,7 +412,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    width: "100%",
+    width: "100%", // Adapts nicely across flexible phone viewports
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 5,
@@ -555,7 +564,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 2
   },
-  subjectMetaTextFrame: {
+  subjectTextMetaDetailsFrame: {
     flex: 1,
     gap: 2
   },

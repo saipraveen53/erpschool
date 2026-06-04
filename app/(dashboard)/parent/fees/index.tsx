@@ -233,7 +233,7 @@ export default function FeesOverviewDashboard() {
           </View>
 
           {/* Split Screen Grid Architecture Panels (Desktop Double Containers / Mobile In-line Stacks) */}
-          <View style={[styles.responsiveSplitMainLayoutFlexContainer, isDesktop && styles.rowDirectionLayoutGrid, {marginBottom: isDesktop ? 0 : 32}]}>
+          <View style={[styles.responsiveSplitMainLayoutFlexContainer, isDesktop && styles.rowDirectionLayoutGrid, {marginBottom: isDesktop ? 0 : 48}]}>
             
             {/* Left Column Box Window: Interactive Active Transactions Statements Feed */}
             <View style={[styles.listFeedBlockSectionCard, isDesktop && styles.desktopFlexProportionWidth]}>

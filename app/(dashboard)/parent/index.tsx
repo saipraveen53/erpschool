@@ -12,6 +12,7 @@ import {
   Clock,
   CreditCard,
   Info,
+  LogOut,
   MapPin,
   MessageSquare,
   ShieldAlert,
@@ -19,7 +20,7 @@ import {
   Star,
   TrendingUp,
   User,
-  X,
+  X
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -91,11 +92,11 @@ const urgentAlertsQueue = [
 
 export default function ParentDashboard() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
-
+  const [userMenuVisible, setUserMenuVisible] = useState(false);
   // In-App System Alerts Overlay Engine States
   const [currentTopAlert, setCurrentTopAlert] = useState<any>(null);
   const topAlertAnim = useRef(new Animated.Value(-120)).current;
@@ -176,7 +177,8 @@ export default function ParentDashboard() {
     // Pure Linear Soft Scroll Matrix for Feedback Loop Cards
     const frameRateInterval = 30; 
     const pixelsPerFrame = 0.65; 
-    
+
+  
     const scrollerTimer = setInterval(() => {
       if (reviewsRef.current) {
         reviewScrollX.current += pixelsPerFrame;
@@ -228,7 +230,10 @@ export default function ParentDashboard() {
       item.onPress();
     }
   };
-
+  const handleLogout = async () => {
+    // Call your logout service
+    router.replace("/(public)/home");
+  };
   const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
@@ -312,9 +317,12 @@ export default function ParentDashboard() {
               <Text style={styles.greeting}>Welcome, {user?.name || "Parent"}</Text>
               <Text style={styles.subGreeting}>Analytical updates framework monitoring</Text>
             </View>
-            <View style={styles.avatarCircle}>
+            <TouchableOpacity 
+              onPress={() => setUserMenuVisible(true)}
+              style={styles.avatarCircle}
+            >
               <User size={24} color={THEME.white} />
-            </View>
+            </TouchableOpacity>
           </Animated.View>
 
           {/* Core Telemetry Metrics Row Structure */}
@@ -550,336 +558,129 @@ export default function ParentDashboard() {
           </View>
         </Modal>
       )}
+      {userMenuVisible && (
+         <Modal
+           animationType="fade"
+           transparent={true}
+           visible={userMenuVisible}
+           onRequestClose={() => setUserMenuVisible(false)}
+         >
+           <TouchableOpacity 
+             style={styles.userMenuOverlay}
+             onPress={() => setUserMenuVisible(false)}
+             activeOpacity={1}
+           >
+             <View style={styles.userMenuContainer}>
+               <Text style={styles.userMenuLabel}>Signed in as</Text>
+               <Text style={styles.userName}>{user?.name}</Text>
+               
+               <TouchableOpacity 
+                 style={styles.menuItemRow}
+                 onPress={() => {
+                   router.push("/(dashboard)/parent/profile/profile");
+                   setUserMenuVisible(false);
+                 }}
+               >
+                 <User size={18} color={THEME.textDark} />
+                 <Text style={styles.menuItemText}>Profile Settings</Text>
+               </TouchableOpacity>
+       
+               {/*<TouchableOpacity 
+                 style={styles.menuItemRow}
+                 onPress={() => {
+                   router.push("/(auth)/parent/change-password");
+                   setUserMenuVisible(false);
+                 }}
+               >
+                 <Lock size={18} color={THEME.textDark} />
+                 <Text style={styles.menuItemText}>Change Password</Text>
+               </TouchableOpacity>*/}
+       
+               <TouchableOpacity 
+                 style={[styles.menuItemRow, styles.logoutItem]}
+                 onPress={handleLogout}
+               >
+                 <LogOut size={18} color={THEME.secondary} />
+                 <Text style={[styles.menuItemText, styles.logoutText]}>Logout</Text>
+               </TouchableOpacity>
+             </View>
+           </TouchableOpacity>
+         </Modal>
+       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: THEME.background,
-    position: "relative",
-  },
-  topFloatingAlertContainer: {
-    position: "absolute",
-    top: 25,
-    left: 16,
-    right: 16,
-    zIndex: 999,
-  },
-  topAlertCardBody: {
-    backgroundColor: THEME.white,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    borderLeftWidth: 5,
-    shadowColor: THEME.textDark,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  topAlertTextContent: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: "600",
-    color: THEME.textDark,
-    lineHeight: 18,
-  },
-  alertCloseMiniBtn: {
-    padding: 4,
-    marginLeft: 8,
-  },
-  fluidBackgroundContainer: {
-    position: "absolute",
-    top: 0,
-    left: -20,
-    right: 0,
-    zIndex: -2,
-    opacity: 0.85,
-  },
-  orb3DOne: {
-    position: "absolute",
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: "rgba(227, 83, 54, 0.07)",
-    top: -50,
-    right: -40,
-    zIndex: -1,
-  },
-  orb3DTwo: {
-    position: "absolute",
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    backgroundColor: "rgba(160, 82, 45, 0.05)",
-    bottom: 80,
-    left: -100,
-    zIndex: -1,
-  },
-  desktopCenter: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mainWrapper: {
-    width: "100%",
-    paddingBottom: 40,
-  },
-  desktopWidth: {
-    maxWidth: 1140,
-    paddingHorizontal: 20,
-  },
-  header: { 
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 22, 
-    paddingTop: 24, 
-    paddingBottom: 20, 
-    backgroundColor: THEME.white, 
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    shadowColor: THEME.darkAccent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3
-  },
+  container: {   flex: 1,   backgroundColor: THEME.background,  position: "relative",},
+  topFloatingAlertContainer: {  position: "absolute",  top: 25,  left: 16,  right: 16,  zIndex: 999,},
+  topAlertCardBody: {  backgroundColor: THEME.white,  paddingVertical: 14,  paddingHorizontal: 16,  borderRadius: 16,  flexDirection: "row",  alignItems: "center",  borderLeftWidth: 5,  shadowColor: THEME.textDark,  shadowOffset: { width: 0, height: 8 },  shadowOpacity: 0.12,  shadowRadius: 16,  elevation: 8,},
+  topAlertTextContent: {  flex: 1,  fontSize: 13,  fontWeight: "600",  color: THEME.textDark,  lineHeight: 18,},
+  alertCloseMiniBtn: {  padding: 4,  marginLeft: 8,},
+  fluidBackgroundContainer: {  position: "absolute",  top: 0,  left: -20,  right: 0,  zIndex: -2,  opacity: 0.85,},
+  orb3DOne: {  position: "absolute",  width: 320,  height: 320,  borderRadius: 160,  backgroundColor: "rgba(227, 83, 54, 0.07)",  top: -50,  right: -40,  zIndex: -1,},
+  orb3DTwo: {  position: "absolute",  width: 380,  height: 380,  borderRadius: 190,  backgroundColor: "rgba(160, 82, 45, 0.05)",  bottom: 80,  left: -100,  zIndex: -1,},
+  desktopCenter: {  alignItems: "center",  justifyContent: "center",},
+  mainWrapper: {  width: "100%",  paddingBottom: 40,},
+  desktopWidth: {  maxWidth: 1140,  paddingHorizontal: 20,},
+  header: {   flexDirection: "row",  justifyContent: "space-between",  alignItems: "center",  paddingHorizontal: 22,   paddingTop: 24,   paddingBottom: 20,   backgroundColor: THEME.white,   borderBottomLeftRadius: 28,  borderBottomRightRadius: 28,  shadowColor: THEME.darkAccent,  shadowOffset: { width: 0, height: 4 },  shadowOpacity: 0.05,  shadowRadius: 12,  elevation: 3},
   headerLeft: { flex: 1 },
   greeting: { fontSize: 24, fontWeight: "bold", color: THEME.textDark },
   subGreeting: { fontSize: 13, color: THEME.textMuted, marginTop: 4 },
-  avatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: THEME.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statsFlexContainer: {
-    paddingHorizontal: 16,
-    marginTop: 20,
-    gap: 14,
-  },
-  rowDirection: {
-    flexDirection: "row",
-  },
-  flexThird: {
-    flex: 1,
-  },
-  trackingCard: { 
-    backgroundColor: THEME.primary, 
-    padding: 20, 
-    borderRadius: 22,
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 4,
-  },
+  avatarCircle: {  width: 48,  height: 48,  borderRadius: 24,  backgroundColor: THEME.primary,  justifyContent: "center",  alignItems: "center",},
+  statsFlexContainer: {  paddingHorizontal: 16,  marginTop: 20,  gap: 14,},
+  rowDirection: {  flexDirection: "row",},
+  flexThird: {  flex: 1,},
+  trackingCard: {   backgroundColor: THEME.primary,   padding: 20,   borderRadius: 22,  shadowColor: THEME.primary,  shadowOffset: { width: 0, height: 6 },  shadowOpacity: 0.16,  shadowRadius: 14,  elevation: 4,},
   cardHeaderRow: { flexDirection: "row", alignItems: "center" },
-  iconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.22)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  iconContainer: {  width: 42,  height: 42,  borderRadius: 14,  backgroundColor: "rgba(255,255,255,0.22)",  justifyContent: "center",  alignItems: "center",},
   studentName: { fontSize: 19, fontWeight: "bold", color: THEME.white },
   studentClass: { fontSize: 12, color: "#FEECE9", marginTop: 2 },
   statusDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.18)", marginVertical: 14 },
   statusInfoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   statusLabel: { fontSize: 11, color: "#FEECE9", textTransform: "uppercase", letterSpacing: 0.5 },
   statusValue: { fontSize: 15, fontWeight: "600", color: THEME.white, marginTop: 2 },
-  etaBadge: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    backgroundColor: THEME.white, 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: 14 
-  },
+  etaBadge: {   flexDirection: "row",   alignItems: "center",   backgroundColor: THEME.white,   paddingHorizontal: 12,   paddingVertical: 6,   borderRadius: 14 },
   etaText: { color: THEME.darkAccent, fontSize: 12, fontWeight: "700" },
-  metricCard: {
-    backgroundColor: THEME.white,
-    borderRadius: 22,
-    padding: 18,
-    justifyContent: "center",
-    shadowColor: THEME.darkAccent,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
+  metricCard: {  backgroundColor: THEME.white,  borderRadius: 22,  padding: 18,  justifyContent: "center",  shadowColor: THEME.darkAccent,  shadowOffset: { width: 0, height: 3 },  shadowOpacity: 0.04,  shadowRadius: 6,  elevation: 2,},
   metricHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   metricTitle: { fontSize: 13, fontWeight: "600", color: THEME.textMuted, marginLeft: 8 },
   metricBigText: { fontSize: 30, fontWeight: "800", color: THEME.textDark },
   metricSubtext: { fontSize: 12, color: "#16A34A", marginTop: 3, fontWeight: "500" },
-  dualChartRowContainer: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    marginTop: 24,
-    gap: 16,
-  },
-  chartBoxWrapper: {
-    backgroundColor: THEME.white,
-    padding: 20,
-    borderRadius: 24,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  chartTitleHeading: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: THEME.textDark,
-    marginBottom: 4,
-  },
-  barChartWrapper: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-end",
-    height: 140,
-    paddingTop: 10,
-  },
-  barColumn: {
-    alignItems: "center",
-    flex: 1,
-  },
-  barContainerStyle: {
-    height: 95,
-    width: 28,
-    backgroundColor: "#F3ECE7",
-    borderRadius: 6,
-    justifyContent: "flex-end",
-    overflow: "hidden",
-  },
-  barFillMetric: {
-    width: "100%",
-    backgroundColor: THEME.primary,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    paddingTop: 4,
-  },
-  barPercentLabel: {
-    fontSize: 8,
-    color: THEME.white,
-    fontWeight: "bold",
-  },
-  barMonthText: {
-    marginTop: 8,
-    fontSize: 11,
-    fontWeight: "600",
-    color: THEME.textDark,
-  },
-  pieCanvasHolder: {
-    position: "relative",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-    height: 120,
-    width: 120,
-  },
-  pieAbsoluteCenterLabels: {
-    position: "absolute",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  pieCenterBigText: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: THEME.textDark,
-  },
-  pieCenterSubText: {
-    fontSize: 10,
-    color: THEME.textMuted,
-    fontWeight: "500",
-  },
-  radialFooterIndicatorText: {
-    fontSize: 11,
-    color: THEME.textMuted,
-    textAlign: "center",
-    marginTop: 12,
-    lineHeight: 15,
-  },
+  dualChartRowContainer: {  flexDirection: "row",  marginHorizontal: 16,  marginTop: 24,  gap: 16,},
+  chartBoxWrapper: {  backgroundColor: THEME.white,  padding: 20,  borderRadius: 24,  shadowColor: "#000",  shadowOpacity: 0.03,  shadowRadius: 6,  elevation: 2,},
+  chartTitleHeading: {  fontSize: 14,  fontWeight: "700",  color: THEME.textDark,  marginBottom: 4,},
+  barChartWrapper: {  flexDirection: "row",  justifyContent: "space-around",  alignItems: "flex-end",  height: 140,  paddingTop: 10,},
+  barColumn: {  alignItems: "center",  flex: 1,},
+  barContainerStyle: {  height: 95,  width: 28,  backgroundColor: "#F3ECE7",  borderRadius: 6,  justifyContent: "flex-end",  overflow: "hidden",},
+  barFillMetric: {  width: "100%",  backgroundColor: THEME.primary,  borderRadius: 6,  alignItems: "center",  justifyContent: "flex-start",  paddingTop: 4,},
+  barPercentLabel: {  fontSize: 8,  color: THEME.white,  fontWeight: "bold",},
+  barMonthText: {  marginTop: 8,  fontSize: 11,  fontWeight: "600",  color: THEME.textDark,},
+  pieCanvasHolder: {  position: "relative",  justifyContent: "center",  alignItems: "center",  marginTop: 10,  height: 120,  width: 120,},
+  pieAbsoluteCenterLabels: {  position: "absolute",  justifyContent: "center",  alignItems: "center",},
+  pieCenterBigText: {  fontSize: 20,  fontWeight: "800",  color: THEME.textDark,},
+  pieCenterSubText: {  fontSize: 10,  color: THEME.textMuted,  fontWeight: "500",},
+  radialFooterIndicatorText: {  fontSize: 11,  color: THEME.textMuted,  textAlign: "center",  marginTop: 12,  lineHeight: 15,},
   sectionTitle: { fontSize: 18, fontWeight: "700", color: THEME.textDark, marginHorizontal: 20, marginTop: 28, marginBottom: 14 },
   titleWithBadgeRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginRight: 20 },
-  liveBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: THEME.darkAccent,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginTop: 14,
-  },
+  liveBadge: {  flexDirection: "row",  alignItems: "center",  backgroundColor: THEME.darkAccent,  paddingHorizontal: 10,  paddingVertical: 4,  borderRadius: 10,  marginTop: 14,},
   liveBadgeText: { color: THEME.white, fontSize: 11, fontWeight: "650" },
   gridContainer: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 14 },
   menuCardWrapperMobile: { width: "50%", padding: 6 },
   menuCardWrapperDesktop: { width: "33.33%", padding: 8 },
-  menuCard: { 
-    backgroundColor: THEME.white, 
-    padding: 18, 
-    borderRadius: 22,
-    minHeight: 140,
-    justifyContent: "space-between",
-    shadowColor: THEME.darkAccent,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  desktopGlassActionCard: {
-    backgroundColor: THEME.glassBg,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-  },
+  menuCard: {   backgroundColor: THEME.white,   padding: 18,   borderRadius: 22,  minHeight: 140,  justifyContent: "space-between",  shadowColor: THEME.darkAccent,  shadowOffset: { width: 0, height: 3 },  shadowOpacity: 0.04,  shadowRadius: 6,  elevation: 2,},
+  desktopGlassActionCard: {  backgroundColor: THEME.glassBg,  borderWidth: 1,  borderColor: "rgba(255, 255, 255, 0.4)",},
   menuIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   menuTitle: { fontSize: 15, fontWeight: "700", color: THEME.textDark },
   menuDescription: { fontSize: 11, color: THEME.textMuted, marginTop: 4, lineHeight: 16 },
-  carouselContainer: {
-    paddingLeft: 16,
-    marginBottom: 10,
-    height: 145,
-  },
-  flatListScroller: {
-    flexDirection: "row",
-  },
-  reviewCardItem: {
-    backgroundColor: THEME.white,
-    width: 270,
-    padding: 16,
-    borderRadius: 20,
-    marginRight: 15,
-    shadowColor: THEME.darkAccent,
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.darkAccent,
-  },
+  carouselContainer: {  paddingLeft: 16,  marginBottom: 10,  height: 145,},
+  flatListScroller: {  flexDirection: "row",},
+  reviewCardItem: {  backgroundColor: THEME.white,  width: 270,  padding: 16,  borderRadius: 20,  marginRight: 15,  shadowColor: THEME.darkAccent,  shadowOpacity: 0.04,  shadowRadius: 6,  elevation: 3,  borderLeftWidth: 4,  borderLeftColor: THEME.darkAccent,},
   reviewHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
   reviewAuthor: { fontSize: 13, fontWeight: "700", color: THEME.textDark, flex: 1 },
   reviewTextBody: { fontSize: 12, color: THEME.textMuted, fontStyle: "italic", lineHeight: 18 },
   ratingStarsRow: { flexDirection: "row", marginTop: 10 },
-  alertsSection: { 
-    backgroundColor: THEME.white, 
-    marginHorizontal: 20, 
-    marginTop: 24, 
-    padding: 20, 
-    borderRadius: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 5,
-    elevation: 2,
-  },
+  alertsSection: {   backgroundColor: THEME.white,   marginHorizontal: 20,   marginTop: 24,   padding: 20,   borderRadius: 24,  shadowColor: "#000",  shadowOffset: { width: 0, height: 2 },  shadowOpacity: 0.03,  shadowRadius: 5,  elevation: 2,},
   alertsHeader: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
   alertsTitle: { fontSize: 16, fontWeight: "700", color: THEME.textDark, marginLeft: 8 },
   alertCard: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#F5F5F5" },
@@ -888,33 +689,9 @@ const styles = StyleSheet.create({
   alertMessage: { fontSize: 13, color: THEME.textDark, lineHeight: 18 },
   criticalText: { color: THEME.secondary, fontWeight: "600" },
   alertTime: { fontSize: 11, color: THEME.textMuted, marginTop: 4 },
-  modalBlurOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(44, 26, 20, 0.48)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalGlassContainer: {
-    width: "100%",
-    maxWidth: 500,
-    backgroundColor: THEME.white,
-    borderRadius: 28,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  modalHeaderTopBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F5F5F5",
-    paddingBottom: 16,
-  },
+  modalBlurOverlay: { flex: 1, backgroundColor: "rgba(44, 26, 20, 0.48)", justifyContent: "center", alignItems: "center", padding: 24, },
+  modalGlassContainer: { width: "100%", maxWidth: 500, backgroundColor: THEME.white, borderRadius: 28, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.16, shadowRadius: 24, elevation: 10, },
+  modalHeaderTopBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#F5F5F5", paddingBottom: 16, },
   modalTitleCluster: { flexDirection: "row", alignItems: "center", gap: 12 },
   modalIconBackdrop: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#FCEFEA", justifyContent: "center", alignItems: "center" },
   modalMainHeading: { fontSize: 18, fontWeight: "700", color: THEME.textDark },
@@ -930,4 +707,61 @@ const styles = StyleSheet.create({
   cancelBtnText: { color: THEME.textMuted, fontWeight: "600", fontSize: 14 },
   modalSubmitBtn: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12, backgroundColor: THEME.primary },
   submitBtnText: { color: THEME.white, fontWeight: "600", fontSize: 14 },
+  userMenuOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "flex-start",
+    paddingTop: 80,
+  },
+  userMenuContainer: {
+    backgroundColor: THEME.white,
+    borderRadius: 16,
+    padding: 16,
+    width: 280,
+    maxWidth: 320,
+    alignSelf: "flex-end",
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  userMenuLabel: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    textTransform: "uppercase",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: THEME.textDark,
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F5F5F5",
+  },
+  menuItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    gap: 12,
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: THEME.textDark,
+  },
+  logoutItem: {
+    borderTopWidth: 1,
+    borderTopColor: "#F5F5F5",
+    marginTop: 4,
+    paddingTop: 12,
+  },
+  logoutText: {
+    color: THEME.secondary,
+    fontWeight: "600",
+  },
 });
