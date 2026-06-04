@@ -1,8 +1,9 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function DashboardLayout() {
+  const pathname = usePathname();
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -33,7 +34,12 @@ export default function DashboardLayout() {
     LIBRARIAN: "librarian",
   };
 
-  const tabName = roleTabs[role];
+  let tabName = roleTabs[role];
+
+  // Bypass auth check for onboarding
+  if (pathname === "/super-admin/onboarding") {
+    tabName = "super-admin";
+  }
 
   // If role is not recognized, show nothing (or fallback to login)
   if (!tabName) {
