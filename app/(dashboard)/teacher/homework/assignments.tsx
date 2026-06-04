@@ -1,727 +1,518 @@
-import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   ArrowLeft,
-  BookOpen,
+  Calendar,
   CheckCircle,
   Clock,
-  Download,
-  Filter,
-  GraduationCap,
-  Search,
-  Users,
+  FileText,
+  User,
+  XCircle,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Image,
+  Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from "react-native";
+import { teacherClient } from "../Axios/teacherClient";
 
 const COLORS = {
-  bgWhite: "#FFFFFF",
-  lightGray: "#F5F5F5",
   primary: "#E35336",
-  textPrimary: "#5C2E14",
-  textSecondary: "#A0522D",
-  success: "#2E7D32",
-  warning: "#F57C00",
-  accent: "#F4A460",
-  border: "#EAEAEE",
-  error: "#D32F2F",
+  primaryLight: "#FEE2DB",
+  primaryDark: "#C73E21",
+  secondary: "#F4A460",
+  secondaryLight: "#FEF0E8",
+  bgWarm: "#FFF8F2",
+  bgWhite: "#FFFFFF",
+  textPrimary: "#3B2A1F",
+  textSecondary: "#8B5E3C",
+  textTertiary: "#B8956E",
+  success: "#10B981",
+  error: "#EF4444",
+  warning: "#F59E0B",
+  border: "#F0E4D8",
+  white: "#FFFFFF",
+  lightGray: "#F8F9FA",
 };
 
-const DUMMY_ASSIGNMENTS = [
-  {
-    id: "1",
-    title: "Algebraic Equations Worksheet",
-    classStr: "10-A",
-    subject: "Mathematics",
-    due: "2024-06-05",
-    dueText: "Tomorrow",
-    total: 40,
-    submitted: 32,
-    status: "active",
-    description: "Complete all problems from Chapter 5: Linear Equations",
-  },
-  {
-    id: "2",
-    title: "Newton's Laws Essay",
-    classStr: "11-Science",
-    subject: "Physics",
-    due: "2024-06-07",
-    dueText: "June 5",
-    total: 35,
-    submitted: 10,
-    status: "active",
-    description: "500-word essay on applications of Newton's Laws",
-  },
-  {
-    id: "3",
-    title: "Trigonometry Basics",
-    classStr: "10-B",
-    subject: "Mathematics",
-    due: "2024-05-30",
-    dueText: "Past Due",
-    total: 38,
-    submitted: 38,
-    status: "completed",
-    description: "Practice problems from sections 7.1 to 7.4",
-  },
-  {
-    id: "4",
-    title: "Periodic Table Quiz",
-    classStr: "9-C",
-    subject: "Chemistry",
-    due: "2024-06-08",
-    dueText: "Next Week",
-    total: 32,
-    submitted: 15,
-    status: "active",
-    description: "Memorize first 20 elements and their properties",
-  },
-  {
-    id: "5",
-    title: "French Revolution Timeline",
-    classStr: "9-A",
-    subject: "History",
-    due: "2024-06-04",
-    dueText: "Due Today",
-    total: 30,
-    submitted: 28,
-    status: "active",
-    description: "Create a detailed timeline of key events",
-  },
-];
+const getImageUrl = (path: string) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const baseURL = teacherClient.defaults.baseURL || "";
+  return `${baseURL}${path}`;
+};
 
-type FilterType = "all" | "active" | "completed";
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
-export default function AssignmentsListScreen() {
+const getStatusColor = (status: string) => {
+  switch (status?.toUpperCase()) {
+    case "APPROVED":
+      return COLORS.success;
+    case "REJECTED":
+      return COLORS.error;
+    default:
+      return COLORS.warning;
+  }
+};
+
+const getStatusIcon = (status: string) => {
+  switch (status?.toUpperCase()) {
+    case "APPROVED":
+      return <CheckCircle size={16} color={COLORS.white} />;
+    case "REJECTED":
+      return <XCircle size={16} color={COLORS.white} />;
+    default:
+      return <Clock size={16} color={COLORS.white} />;
+  }
+};
+
+export default function AssignmentDetailsScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-
-  const filteredAssignments = DUMMY_ASSIGNMENTS.filter((hw) => {
-    const matchesSearch =
-      hw.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      hw.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      hw.classStr.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = activeFilter === "all" || hw.status === activeFilter;
-    return matchesSearch && matchesFilter;
-  });
-
-  const stats = {
-    total: DUMMY_ASSIGNMENTS.length,
-    active: DUMMY_ASSIGNMENTS.filter((h) => h.status === "active").length,
-    completed: DUMMY_ASSIGNMENTS.filter((h) => h.status === "completed").length,
-    totalSubmissions: DUMMY_ASSIGNMENTS.reduce(
-      (sum, h) => sum + h.submitted,
-      0,
-    ),
-    totalStudents: DUMMY_ASSIGNMENTS.reduce((sum, h) => sum + h.total, 0),
+  const params = useLocalSearchParams();
+  const { assignmentId, subjectId } = params as {
+    assignmentId: string;
+    subjectId: string;
   };
 
-  const getDueStatusColor = (dueText: string) => {
-    if (dueText === "Past Due") return COLORS.error;
-    if (dueText === "Due Today") return COLORS.warning;
-    if (dueText === "Tomorrow") return COLORS.accent;
-    return COLORS.textSecondary;
-  };
+  const [teacherId, setTeacherId] = useState("");
+  const [teacherName, setTeacherName] = useState("Loading...");
+  const [assignedClass, setAssignedClass] = useState("Loading...");
+  const [isLoading, setIsLoading] = useState(true);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const getProgressColor = (status: string, percent: number) => {
-    if (status === "completed") return COLORS.success;
-    if (percent >= 70) return COLORS.success;
-    if (percent >= 40) return COLORS.warning;
-    return COLORS.primary;
-  };
+  // Image preview modal
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
+
+  // Fetch teacher info (reuse same logic as other screens)
+  useEffect(() => {
+    const fetchTeacherInfo = async () => {
+      try {
+        const currentTeacherId =
+          Platform.OS === "web"
+            ? localStorage.getItem("userUsername")
+            : await AsyncStorage.getItem("userUsername");
+        if (currentTeacherId) setTeacherId(currentTeacherId);
+        const classSectionsRes = await teacherClient.get(
+          "/api/student/class-sections",
+        );
+        const fetchedClasses = classSectionsRes.data;
+        const assigned = fetchedClasses.find(
+          (c: any) => c.classTeacherId === currentTeacherId,
+        );
+        if (assigned) {
+          setTeacherName(assigned.classTeacherName.trim());
+          setAssignedClass(
+            `${assigned.className}-${assigned.section.toUpperCase()}`,
+          );
+        } else {
+          setTeacherName("Not Found");
+          setAssignedClass("None");
+        }
+      } catch (err) {
+        console.error("Failed to load teacher info:", err);
+      }
+    };
+    fetchTeacherInfo();
+  }, []);
+
+  // Fetch submissions
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      if (!assignmentId || !subjectId) {
+        setErrorMsg("Missing assignment or subject ID.");
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      setErrorMsg(null);
+      try {
+        const res = await teacherClient.get(
+          `/api/student/assignment-submissions/${assignmentId}/${subjectId}/all`,
+        );
+        const data = res.data;
+        if (Array.isArray(data)) {
+          setSubmissions(data);
+        } else {
+          setSubmissions([]);
+        }
+      } catch (err: any) {
+        console.error("Error fetching submissions:", err);
+        setErrorMsg(
+          err.response?.data?.message || "Failed to load submissions.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSubmissions();
+  }, [assignmentId, subjectId]);
 
   return (
-    <View style={styles.mainContainer}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
       <StatusBar
         style="dark"
         backgroundColor={COLORS.bgWhite}
         translucent={false}
       />
 
-      <View style={styles.header}>
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between px-5 pb-4 border-b"
+        style={{
+          paddingTop: 40,
+          backgroundColor: COLORS.bgWhite,
+          borderBottomColor: COLORS.border,
+        }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="p-2 -ml-2 rounded-xl"
+          activeOpacity={0.7}
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>All Assignments</Text>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setIsFilterVisible(!isFilterVisible)}
+        <Text
+          className="text-xl font-bold tracking-tight"
+          style={{ color: COLORS.textPrimary }}
         >
-          <Filter size={20} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+          Submissions
+        </Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      {/* Stats Overview */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContainer,
-          { maxWidth: isDesktop ? 1000 : "100%" },
-        ]}
+      {/* Teacher Info Bar */}
+      <View
+        className="flex-row justify-between px-5 py-3 border-b"
+        style={{
+          backgroundColor: COLORS.primaryLight,
+          borderBottomColor: COLORS.border,
+        }}
       >
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: "rgba(227, 83, 54, 0.1)" },
-              ]}
-            >
-              <BookOpen size={20} color={COLORS.primary} />
-            </View>
-            <View>
-              <Text style={styles.statValue}>{stats.total}</Text>
-              <Text style={styles.statLabel}>Total</Text>
-            </View>
-          </View>
+        <Text
+          className="text-xs font-bold"
+          style={{ color: COLORS.primaryDark, flex: 1 }}
+          numberOfLines={1}
+        >
+          Teacher: {teacherName} ({teacherId})
+        </Text>
+        <Text
+          className="text-xs font-bold"
+          style={{ color: COLORS.primaryDark }}
+          numberOfLines={1}
+        >
+          Class: {assignedClass}
+        </Text>
+      </View>
 
-          <View style={styles.statDivider} />
+      {/* Assignment ID & Subject ID (optional info) */}
+      <View
+        className="px-5 py-3 bg-white border-b"
+        style={{ borderBottomColor: COLORS.border }}
+      >
+        <Text
+          className="text-xs font-semibold"
+          style={{ color: COLORS.textSecondary }}
+        >
+          Assignment ID: {assignmentId} • Subject ID: {subjectId}
+        </Text>
+      </View>
 
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: "rgba(244, 164, 96, 0.1)" },
-              ]}
-            >
-              <Clock size={20} color={COLORS.accent} />
-            </View>
-            <View>
-              <Text style={styles.statValue}>{stats.active}</Text>
-              <Text style={styles.statLabel}>Active</Text>
-            </View>
-          </View>
-
-          <View style={styles.statDivider} />
-
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: "rgba(46, 125, 50, 0.1)" },
-              ]}
-            >
-              <CheckCircle size={20} color={COLORS.success} />
-            </View>
-            <View>
-              <Text style={styles.statValue}>{stats.completed}</Text>
-              <Text style={styles.statLabel}>Completed</Text>
-            </View>
-          </View>
-
-          <View style={styles.statDivider} />
-
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: "rgba(160, 82, 45, 0.1)" },
-              ]}
-            >
-              <Users size={20} color={COLORS.textSecondary} />
-            </View>
-            <View>
-              <Text style={styles.statValue}>
-                {Math.round(
-                  (stats.totalSubmissions / stats.totalStudents) * 100,
-                )}
-                %
-              </Text>
-              <Text style={styles.statLabel}>Rate</Text>
-            </View>
-          </View>
+      {isLoading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text
+            className="mt-4 text-sm"
+            style={{ color: COLORS.textSecondary }}
+          >
+            Loading submissions...
+          </Text>
         </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Search
-            size={20}
-            color={COLORS.textSecondary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by title, subject, or class..."
-            placeholderTextColor={COLORS.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery !== "" && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Filter Chips */}
-        {isFilterVisible && (
-          <View style={styles.filterChips}>
-            <TouchableOpacity
-              style={[styles.chip, activeFilter === "all" && styles.chipActive]}
-              onPress={() => setActiveFilter("all")}
+      ) : errorMsg ? (
+        <View className="flex-1 justify-center items-center px-6">
+          <View
+            className="bg-red-50 rounded-2xl p-6 items-center border"
+            style={{ borderColor: COLORS.error, backgroundColor: "#FEF2F2" }}
+          >
+            <Text
+              className="text-lg font-bold mb-2"
+              style={{ color: COLORS.error }}
             >
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === "all" && styles.chipTextActive,
-                ]}
-              >
-                All
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.chip,
-                activeFilter === "active" && styles.chipActive,
-              ]}
-              onPress={() => setActiveFilter("active")}
+              Error
+            </Text>
+            <Text
+              className="text-sm text-center mb-4"
+              style={{ color: COLORS.textSecondary }}
             >
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === "active" && styles.chipTextActive,
-                ]}
-              >
-                Active
-              </Text>
-            </TouchableOpacity>
-
+              {errorMsg}
+            </Text>
             <TouchableOpacity
-              style={[
-                styles.chip,
-                activeFilter === "completed" && styles.chipActive,
-              ]}
-              onPress={() => setActiveFilter("completed")}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === "completed" && styles.chipTextActive,
-                ]}
-              >
-                Completed
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Assignments List */}
-        <View style={styles.assignmentsList}>
-          {filteredAssignments.length === 0 ? (
-            <View style={styles.emptyState}>
-              <BookOpen size={48} color={COLORS.textSecondary} />
-              <Text style={styles.emptyStateTitle}>No assignments found</Text>
-              <Text style={styles.emptyStateText}>
-                Try adjusting your search or filter criteria
-              </Text>
-            </View>
-          ) : (
-            filteredAssignments.map((hw) => {
-              const isCompleted = hw.status === "completed";
-              const progressPercent = (hw.submitted / hw.total) * 100;
-              const progressColor = getProgressColor(
-                hw.status,
-                progressPercent,
-              );
-              const dueColor = getDueStatusColor(hw.dueText);
-
-              return (
-                <TouchableOpacity
-                  key={hw.id}
-                  style={styles.hwCard}
-                  activeOpacity={0.8}
-                  onPress={() =>
-                    router.push(`/teacher/homework/assignments/${hw.id}`)
+              className="px-6 py-3 rounded-full"
+              style={{ backgroundColor: COLORS.primary }}
+              onPress={() => {
+                setIsLoading(true);
+                setErrorMsg(null);
+                const refetch = async () => {
+                  try {
+                    const res = await teacherClient.get(
+                      `/api/student/assignment-submissions/${assignmentId}/${subjectId}/all`,
+                    );
+                    setSubmissions(Array.isArray(res.data) ? res.data : []);
+                  } catch (err: any) {
+                    setErrorMsg(
+                      err.response?.data?.message || "Failed to reload.",
+                    );
+                  } finally {
+                    setIsLoading(false);
                   }
-                >
-                  <View style={styles.cardHeader}>
-                    <View style={styles.classBadge}>
-                      <GraduationCap size={12} color={COLORS.primary} />
-                      <Text style={styles.classText}>
-                        {hw.classStr} • {hw.subject}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.dueBadge,
-                        isCompleted && styles.completedBadge,
-                        { backgroundColor: `${dueColor}15` },
-                      ]}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle size={12} color={COLORS.success} />
-                      ) : (
-                        <Clock size={12} color={dueColor} />
-                      )}
-                      <Text
-                        style={[
-                          styles.dueText,
-                          { color: dueColor },
-                          isCompleted && { color: COLORS.success },
-                        ]}
-                      >
-                        {hw.dueText}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.hwTitle}>{hw.title}</Text>
-                  <Text style={styles.hwDescription} numberOfLines={2}>
-                    {hw.description}
-                  </Text>
-
-                  <View style={styles.progressContainer}>
-                    <View style={styles.progressHeader}>
-                      <Text style={styles.progressLabel}>Submissions</Text>
-                      <Text style={styles.progressText}>
-                        {hw.submitted} / {hw.total} students
-                      </Text>
-                    </View>
-                    <View style={styles.progressBarBg}>
-                      <View
-                        style={[
-                          styles.progressBarFill,
-                          {
-                            width: `${progressPercent}%`,
-                            backgroundColor: progressColor,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-
-                  {!isCompleted && progressPercent >= 70 && (
-                    <View style={styles.goodProgressBadge}>
-                      <CheckCircle size={12} color={COLORS.success} />
-                      <Text style={styles.goodProgressText}>Good progress</Text>
-                    </View>
-                  )}
-
-                  {!isCompleted && hw.dueText === "Due Today" && (
-                    <TouchableOpacity style={styles.remindButton}>
-                      <Text style={styles.remindButtonText}>
-                        Remind Students
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </TouchableOpacity>
-              );
-            })
-          )}
+                };
+                refetch();
+              }}
+            >
+              <Text className="text-white font-semibold">Retry</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+      ) : submissions.length === 0 ? (
+        <View className="flex-1 justify-center items-center">
+          <FileText size={48} color={COLORS.textTertiary} />
+          <Text
+            className="text-lg font-bold mt-4"
+            style={{ color: COLORS.textPrimary }}
+          >
+            No submissions yet
+          </Text>
+          <Text
+            className="text-sm mt-2 text-center"
+            style={{ color: COLORS.textSecondary }}
+          >
+            Students haven't submitted this assignment.
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingVertical: 24,
+            maxWidth: isDesktop ? 1000 : "100%",
+            alignSelf: "center",
+            width: "100%",
+            gap: 16,
+          }}
+        >
+          {submissions.map((sub, idx) => {
+            const statusColor = getStatusColor(sub.status);
+            const isImage = (url: string) =>
+              /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+            return (
+              <View
+                key={idx}
+                className="bg-white rounded-2xl p-5 border"
+                style={{
+                  backgroundColor: COLORS.bgWhite,
+                  borderColor: COLORS.border,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 6,
+                  elevation: 2,
+                }}
+              >
+                {/* Header: Student name and status */}
+                <View className="flex-row justify-between items-center mb-3">
+                  <View className="flex-row items-center gap-2">
+                    <View
+                      className="w-8 h-8 rounded-full justify-center items-center"
+                      style={{ backgroundColor: COLORS.primaryLight }}
+                    >
+                      <User size={14} color={COLORS.primary} />
+                    </View>
+                    <Text
+                      className="text-base font-bold"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      Student: {sub.studentId}
+                    </Text>
+                  </View>
+                  <View
+                    className="flex-row items-center gap-1 px-2 py-1 rounded-full"
+                    style={{ backgroundColor: statusColor + "20" }}
+                  >
+                    {getStatusIcon(sub.status)}
+                    <Text
+                      className="text-xs font-bold"
+                      style={{ color: statusColor }}
+                    >
+                      {sub.status}
+                    </Text>
+                  </View>
+                </View>
 
-        {/* Export Button */}
-        {filteredAssignments.length > 0 && (
-          <TouchableOpacity style={styles.exportButton}>
-            <Download size={18} color={COLORS.white} />
-            <Text style={styles.exportButtonText}>Export Report</Text>
+                {/* Submitted date */}
+                <View className="flex-row items-center gap-2 mb-3">
+                  <Calendar size={14} color={COLORS.textTertiary} />
+                  <Text
+                    className="text-xs"
+                    style={{ color: COLORS.textTertiary }}
+                  >
+                    Submitted: {formatDate(sub.submittedDate)}
+                  </Text>
+                </View>
+
+                {/* Note from student */}
+                {sub.note ? (
+                  <View
+                    className="mb-3 p-3 rounded-xl"
+                    style={{ backgroundColor: COLORS.secondaryLight }}
+                  >
+                    <Text
+                      className="text-xs font-semibold mb-1"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Student's Note
+                    </Text>
+                    <Text
+                      className="text-sm"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      {sub.note}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {/* Remark & reviewer */}
+                {sub.remark && (
+                  <View className="mb-3">
+                    <Text
+                      className="text-xs font-semibold"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Remark
+                    </Text>
+                    <Text
+                      className="text-sm mt-1"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      {sub.remark}
+                    </Text>
+                    {sub.reviewedBy && (
+                      <Text
+                        className="text-xs mt-1"
+                        style={{ color: COLORS.textTertiary }}
+                      >
+                        Reviewed by: {sub.reviewedBy}
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Attached files */}
+                {sub.relatedLinks && sub.relatedLinks.length > 0 && (
+                  <View className="mt-2">
+                    <Text
+                      className="text-xs font-semibold mb-2"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Attachments
+                    </Text>
+                    <View className="flex-row flex-wrap gap-2">
+                      {sub.relatedLinks.map((link: string, linkIdx: number) => {
+                        const fullUrl = getImageUrl(link);
+                        const isImg = isImage(link);
+                        return isImg ? (
+                          <TouchableOpacity
+                            key={linkIdx}
+                            onPress={() => {
+                              setPreviewImageUrl(fullUrl);
+                              setImageModalVisible(true);
+                            }}
+                          >
+                            <Image
+                              source={{ uri: fullUrl }}
+                              style={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: 8,
+                                borderWidth: 1,
+                                borderColor: COLORS.border,
+                              }}
+                              resizeMode="cover"
+                            />
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            key={linkIdx}
+                            className="flex-row items-center gap-1 p-2 rounded-lg border"
+                            style={{ borderColor: COLORS.border }}
+                            onPress={() => {
+                              // Optionally open link in browser or show a message
+                              alert(`File: ${link}`);
+                            }}
+                          >
+                            <FileText size={16} color={COLORS.primary} />
+                            <Text
+                              className="text-xs"
+                              style={{ color: COLORS.primary }}
+                            >
+                              File
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* Image Preview Modal (same as in assignments list) */}
+      <Modal
+        visible={imageModalVisible}
+        transparent={true}
+        onRequestClose={() => setImageModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          className="flex-1 bg-black/90 justify-center items-center"
+          onPress={() => setImageModalVisible(false)}
+        >
+          <TouchableOpacity
+            className="absolute top-10 right-5 z-10 p-2"
+            onPress={() => setImageModalVisible(false)}
+          >
+            <ArrowLeft size={30} color={COLORS.white} />
           </TouchableOpacity>
-        )}
-      </ScrollView>
+          <Image
+            source={{ uri: previewImageUrl }}
+            style={{ width: "90%", height: "70%" }}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: COLORS.lightGray },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...Platform.select({
-      web: { userSelect: "none" },
-    }),
-  },
-  backButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-  filterButton: { padding: 8, marginRight: -8 },
-  listContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    alignSelf: "center",
-    width: "100%",
-  },
-  statsContainer: {
-    flexDirection: "row",
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    justifyContent: "space-around",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.05)",
-      },
-    }),
-  },
-  statItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: COLORS.border,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  searchIcon: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: COLORS.textPrimary,
-  },
-  clearText: {
-    color: COLORS.primary,
-    fontWeight: "600",
-    fontSize: 14,
-    paddingVertical: 12,
-  },
-  filterChips: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 24,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.bgWhite,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  chipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
-  },
-  chipTextActive: {
-    color: COLORS.white,
-  },
-  assignmentsList: {
-    gap: 16,
-    marginBottom: 24,
-  },
-  hwCard: {
-    backgroundColor: COLORS.bgWhite,
-    padding: 20,
-    borderRadius: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.05)",
-        cursor: "pointer",
-        transition: "transform 0.2s",
-      },
-    }),
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  classBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 6,
-  },
-  classText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
-  dueBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
-  },
-  completedBadge: {
-    backgroundColor: "rgba(46, 125, 50, 0.1)",
-  },
-  dueText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  hwTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  hwDescription: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  progressContainer: {
-    marginTop: 4,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  progressLabel: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: "600",
-  },
-  progressText: {
-    fontSize: 13,
-    color: COLORS.textPrimary,
-    fontWeight: "800",
-  },
-  progressBarBg: {
-    height: 6,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: 3,
-  },
-  goodProgressBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  goodProgressText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.success,
-  },
-  remindButton: {
-    marginTop: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  remindButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.primary,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 48,
-    gap: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginTop: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-  },
-  exportButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  exportButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.white,
-  },
-});

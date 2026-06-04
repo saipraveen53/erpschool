@@ -1,3 +1,5 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -8,316 +10,748 @@ import {
   Clock,
   XCircle,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from "react-native";
+import { teacherClient } from "../Axios/teacherClient";
 
 const COLORS = {
+  primary: "#E35336",
+  accent: "#F5F50C",
+  secondary: "#F4A460",
+  primaryLight: "#FEE2DB",
+  primaryDark: "#C73E21",
+  secondaryLight: "#FEF0E8",
+  bgWarm: "#FFF8F2",
   bgWhite: "#FFFFFF",
-  lightGray: "#F5F5F5",
-  primary: "#E35336", // Terracotta
-  textPrimary: "#5C2E14", // Dark Brown
-  textSecondary: "#A0522D", // Sienna
+  textPrimary: "#3B2A1F",
+  textSecondary: "#8B5E3C",
+  textTertiary: "#B8956E",
+  success: "#10B981",
+  warning: "#F59E0B",
+  error: "#EF4444",
+  border: "#F0E4D8",
   white: "#FFFFFF",
-  border: "#EAEAEE",
-  success: "#2E7D32",
-  warning: "#F57C00",
-  danger: "#C62828",
+  lightGray: "#F8F9FA",
 };
 
+// Dedicated axios instance for leave management endpoints
+const leaveClient = axios.create({
+  baseURL: "http://192.168.88.20:8081",
+  timeout: 10000,
+});
+
+// Interceptor to attach JWT token from storage
+leaveClient.interceptors.request.use(
+  async (config) => {
+    let token = null;
+    const possibleKeys = [
+      "authToken",
+      "token",
+      "jwt",
+      "accessToken",
+      "userToken",
+    ];
+    if (Platform.OS === "web") {
+      for (const key of possibleKeys) {
+        token = localStorage.getItem(key);
+        if (token) break;
+      }
+    } else {
+      for (const key of possibleKeys) {
+        token = await AsyncStorage.getItem(key);
+        if (token) break;
+      }
+    }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
 const LEAVE_TYPES = [
-  "Casual Leave (CL)",
-  "Sick Leave (SL)",
-  "Earned Leave (EL)",
-  "Other",
+  { label: "Casual Leave (CL)", value: "CASUAL" },
+  { label: "Sick Leave (SL)", value: "SICK" },
+  { label: "Maternity Leave", value: "MATERNITY" },
+  { label: "Other", value: "OTHER" },
 ];
 
-const LEAVE_BALANCES = [
-  { type: "Casual", available: 4, total: 10 },
-  { type: "Sick", available: 5, total: 8 },
-  { type: "Earned", available: 12, total: 15 },
-];
+const getLeaveTypeLabel = (value: string) => {
+  const found = LEAVE_TYPES.find((t) => t.value === value);
+  return found ? found.label : value;
+};
 
-const LEAVE_HISTORY = [
-  {
-    id: "1",
-    type: "Sick Leave (SL)",
-    duration: "June 12, 2026 - June 13, 2026",
-    days: 2,
-    status: "Pending",
-    reason: "Viral fever and weakness.",
-  },
-  {
-    id: "2",
-    type: "Casual Leave (CL)",
-    duration: "May 20, 2026",
-    days: 1,
-    status: "Approved",
-    reason: "Attending a family function.",
-  },
-  {
-    id: "3",
-    type: "Other",
-    duration: "April 10, 2026 - April 14, 2026",
-    days: 5,
-    status: "Rejected",
-    reason: "Personal travel.",
-  },
-];
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getStatusDisplay = (status: string) => {
+  switch (status?.toUpperCase()) {
+    case "APPROVED":
+      return {
+        color: COLORS.success,
+        bg: `${COLORS.success}1A`,
+        icon: CheckCircle,
+      };
+    case "REJECTED":
+      return { color: COLORS.error, bg: `${COLORS.error}1A`, icon: XCircle };
+    default:
+      return {
+        color: COLORS.warning,
+        bg: `${COLORS.warning}1A`,
+        icon: Clock,
+      };
+  }
+};
 
 export default function LeaveManagementScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
+  // Teacher info (from original server)
+  const [teacherId, setTeacherId] = useState("");
+  const [teacherName, setTeacherName] = useState("Loading...");
+  const [assignedClass, setAssignedClass] = useState("Loading...");
+
+  // Leave stats
+  const [totalPendingRequests, setTotalPendingRequests] = useState(0);
+  const [totalRejectedLeaves, setTotalRejectedLeaves] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Apply leave modal
   const [isApplyModalVisible, setApplyModalVisible] = useState(false);
   const [isTypeDropdownVisible, setTypeDropdownVisible] = useState(false);
-  const [selectedType, setSelectedType] = useState("Select Leave Type");
+  const [selectedTypeValue, setSelectedTypeValue] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleApplyLeave = () => {
-    if (selectedType === "Select Leave Type" || !startDate || !reason) {
+  // Fetch teacher info (original server)
+  useEffect(() => {
+    const fetchTeacherInfo = async () => {
+      try {
+        const currentTeacherId =
+          Platform.OS === "web"
+            ? localStorage.getItem("userUsername")
+            : await AsyncStorage.getItem("userUsername");
+        if (!currentTeacherId) return;
+        setTeacherId(currentTeacherId);
+
+        const classSectionsRes = await teacherClient.get(
+          "/api/student/class-sections",
+        );
+        const fetchedClasses = classSectionsRes.data;
+        const assigned = fetchedClasses.find(
+          (c: any) => c.classTeacherId === currentTeacherId,
+        );
+        if (assigned) {
+          setTeacherName(assigned.classTeacherName.trim());
+          setAssignedClass(
+            `${assigned.className}-${assigned.section.toUpperCase()}`,
+          );
+        } else {
+          setTeacherName("Not Found");
+          setAssignedClass("None");
+        }
+      } catch (err) {
+        console.error("Failed to load teacher info:", err);
+      }
+    };
+    fetchTeacherInfo();
+  }, []);
+
+  // Fetch leave stats and history from the new server
+  useEffect(() => {
+    const fetchLeaveData = async () => {
+      setStatsLoading(true);
+      setHistoryLoading(true);
+      setErrorMsg(null);
+      try {
+        // Fetch stats
+        const statsRes = await leaveClient.get("/api/teacher/leave/getStats");
+        setTotalPendingRequests(statsRes.data.totalPendingRequests || 0);
+        setTotalRejectedLeaves(statsRes.data.totalRejectedLeaves || 0);
+
+        // Fetch history
+        const historyRes = await leaveClient.get("/api/teacher/leave/history");
+        setLeaveHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
+      } catch (err: any) {
+        console.error("Failed to load leave data:", err);
+        setErrorMsg(err.response?.data?.message || "Failed to load data.");
+      } finally {
+        setStatsLoading(false);
+        setHistoryLoading(false);
+      }
+    };
+    fetchLeaveData();
+  }, []);
+
+  const handleApplyLeave = async () => {
+    if (!selectedTypeValue || !startDate || !reason) {
       alert("Please fill in all required fields.");
       return;
     }
-    alert("Leave application submitted successfully!");
-    setApplyModalVisible(false);
-    // Reset form
-    setSelectedType("Select Leave Type");
-    setStartDate("");
-    setEndDate("");
-    setReason("");
-  };
+    setSubmitting(true);
+    try {
+      const payload = {
+        reason,
+        leaveType: selectedTypeValue,
+        startDate,
+        endDate: endDate || startDate,
+      };
+      await leaveClient.post("/api/teacher/leave/applyLeave", payload);
+      alert("Leave application submitted successfully!");
+      setApplyModalVisible(false);
+      setSelectedTypeValue("");
+      setStartDate("");
+      setEndDate("");
+      setReason("");
 
-  const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case "Approved":
-        return {
-          color: COLORS.success,
-          bg: "rgba(46, 125, 50, 0.1)",
-          icon: CheckCircle,
-        };
-      case "Rejected":
-        return {
-          color: COLORS.danger,
-          bg: "rgba(198, 40, 40, 0.1)",
-          icon: XCircle,
-        };
-      default:
-        return {
-          color: COLORS.warning,
-          bg: "rgba(245, 124, 0, 0.1)",
-          icon: Clock,
-        };
+      // Refresh stats and history
+      const statsRes = await leaveClient.get("/api/teacher/leave/getStats");
+      setTotalPendingRequests(statsRes.data.totalPendingRequests || 0);
+      setTotalRejectedLeaves(statsRes.data.totalRejectedLeaves || 0);
+
+      const historyRes = await leaveClient.get("/api/teacher/leave/history");
+      setLeaveHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
+    } catch (err: any) {
+      console.error("Failed to apply leave:", err);
+      alert(err.response?.data?.message || "Failed to submit application.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const selectedTypeLabel = selectedTypeValue
+    ? getLeaveTypeLabel(selectedTypeValue)
+    : "Select Leave Type";
+
   return (
-    <View style={styles.mainContainer}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
       <StatusBar
         style="dark"
         backgroundColor={COLORS.bgWhite}
         translucent={false}
       />
 
-      {/* --- HEADER --- */}
-      <View style={styles.header}>
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between px-5 pb-4 border-b"
+        style={{
+          paddingTop: 40,
+          backgroundColor: COLORS.bgWhite,
+          borderBottomColor: COLORS.border,
+        }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="p-2 -ml-2 rounded-xl"
+          activeOpacity={0.7}
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Leave Management</Text>
+        <Text
+          className="text-xl font-bold tracking-tight"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Leave Management
+        </Text>
         <TouchableOpacity
-          style={styles.applyIconButton}
+          className="p-2 rounded-lg"
+          style={{ backgroundColor: `${COLORS.primary}1A` }}
           onPress={() => setApplyModalVisible(true)}
         >
           <CalendarPlus size={20} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.contentWrapper,
-          { maxWidth: isDesktop ? 800 : "100%" },
-        ]}
+      {/* Teacher Info Bar */}
+      <View
+        className="flex-row justify-between px-5 py-3 border-b"
+        style={{
+          backgroundColor: COLORS.primaryLight,
+          borderBottomColor: COLORS.border,
+        }}
       >
-        {/* --- BALANCES SECTION --- */}
-        <Text style={styles.sectionTitle}>Leave Balances</Text>
-        <View style={styles.balancesRow}>
-          {LEAVE_BALANCES.map((balance, index) => (
-            <View key={index} style={styles.balanceBox}>
-              <Text style={styles.balanceAvailable}>{balance.available}</Text>
-              <Text style={styles.balanceTotal}>/ {balance.total}</Text>
-              <Text style={styles.balanceLabel}>{balance.type}</Text>
-            </View>
-          ))}
+        <Text
+          className="text-xs font-bold"
+          style={{ color: COLORS.primaryDark, flex: 1 }}
+          numberOfLines={1}
+        >
+          Teacher: {teacherName} ({teacherId})
+        </Text>
+        <Text
+          className="text-xs font-bold"
+          style={{ color: COLORS.primaryDark }}
+          numberOfLines={1}
+        >
+          Class: {assignedClass}
+        </Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingVertical: 24,
+          maxWidth: isDesktop ? 800 : "100%",
+          alignSelf: "center",
+          width: "100%",
+          paddingBottom: 60,
+        }}
+      >
+        {/* Leave Stats (replacing old balances) */}
+        <Text
+          className="text-lg font-bold mb-4"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Leave Statistics
+        </Text>
+        <View className="flex-row gap-4 mb-6">
+          <View
+            className="flex-1 bg-white py-5 rounded-2xl items-center border"
+            style={{
+              backgroundColor: COLORS.bgWhite,
+              borderColor: COLORS.border,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            {statsLoading ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <>
+                <Text
+                  className="text-[28px] font-black"
+                  style={{ color: COLORS.warning }}
+                >
+                  {totalPendingRequests}
+                </Text>
+                <Text
+                  className="text-xs font-bold uppercase mt-1"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  Pending
+                </Text>
+              </>
+            )}
+          </View>
+          <View
+            className="flex-1 bg-white py-5 rounded-2xl items-center border"
+            style={{
+              backgroundColor: COLORS.bgWhite,
+              borderColor: COLORS.border,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            {statsLoading ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <>
+                <Text
+                  className="text-[28px] font-black"
+                  style={{ color: COLORS.error }}
+                >
+                  {totalRejectedLeaves}
+                </Text>
+                <Text
+                  className="text-xs font-bold uppercase mt-1"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  Rejected
+                </Text>
+              </>
+            )}
+          </View>
         </View>
 
-        {/* --- APPLY BUTTON --- */}
+        {/* Apply New Leave Button */}
         <TouchableOpacity
-          style={styles.mainApplyButton}
+          className="py-[18px] rounded-2xl items-center mb-8"
+          style={{
+            backgroundColor: COLORS.primary,
+            shadowColor: COLORS.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 4,
+          }}
           activeOpacity={0.9}
           onPress={() => setApplyModalVisible(true)}
         >
-          <Text style={styles.mainApplyButtonText}>Apply for New Leave</Text>
+          <Text className="text-white font-extrabold text-base tracking-wide">
+            Apply for New Leave
+          </Text>
         </TouchableOpacity>
 
-        {/* --- HISTORY SECTION --- */}
-        <Text style={styles.sectionTitle}>Leave History</Text>
-        <View style={styles.historyContainer}>
-          {LEAVE_HISTORY.map((leave) => {
-            const StatusIcon = getStatusDisplay(leave.status).icon;
-            const statusColor = getStatusDisplay(leave.status).color;
-            const statusBg = getStatusDisplay(leave.status).bg;
+        {/* Leave History */}
+        <Text
+          className="text-lg font-bold mb-4"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Leave History
+        </Text>
 
-            return (
-              <View key={leave.id} style={styles.leaveCard}>
-                <View style={styles.leaveHeader}>
-                  <Text style={styles.leaveType}>{leave.type}</Text>
-                  <View
-                    style={[styles.statusBadge, { backgroundColor: statusBg }]}
+        {historyLoading ? (
+          <View className="py-8 items-center">
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text
+              className="mt-2 text-sm"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Loading history...
+            </Text>
+          </View>
+        ) : errorMsg ? (
+          <View
+            className="bg-red-50 rounded-2xl p-6 items-center border"
+            style={{ borderColor: COLORS.error }}
+          >
+            <Text
+              className="text-lg font-bold mb-2"
+              style={{ color: COLORS.error }}
+            >
+              Error
+            </Text>
+            <Text
+              className="text-sm text-center mb-4"
+              style={{ color: COLORS.textSecondary }}
+            >
+              {errorMsg}
+            </Text>
+            <TouchableOpacity
+              className="px-6 py-3 rounded-full"
+              style={{ backgroundColor: COLORS.primary }}
+              onPress={() => {
+                setStatsLoading(true);
+                setHistoryLoading(true);
+                setErrorMsg(null);
+                const refetch = async () => {
+                  try {
+                    const statsRes = await leaveClient.get(
+                      "/api/teacher/leave/getStats",
+                    );
+                    setTotalPendingRequests(
+                      statsRes.data.totalPendingRequests || 0,
+                    );
+                    setTotalRejectedLeaves(
+                      statsRes.data.totalRejectedLeaves || 0,
+                    );
+                    const historyRes = await leaveClient.get(
+                      "/api/teacher/leave/history",
+                    );
+                    setLeaveHistory(
+                      Array.isArray(historyRes.data) ? historyRes.data : [],
+                    );
+                  } catch (err: any) {
+                    setErrorMsg(
+                      err.response?.data?.message || "Failed to reload.",
+                    );
+                  } finally {
+                    setStatsLoading(false);
+                    setHistoryLoading(false);
+                  }
+                };
+                refetch();
+              }}
+            >
+              <Text className="text-white font-semibold">Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : leaveHistory.length === 0 ? (
+          <View className="items-center py-12 gap-3">
+            <CalendarPlus size={48} color={COLORS.textSecondary} />
+            <Text
+              className="text-lg font-bold"
+              style={{ color: COLORS.textPrimary }}
+            >
+              No leave applications yet
+            </Text>
+            <Text
+              className="text-sm text-center"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Tap the + button to apply for leave
+            </Text>
+          </View>
+        ) : (
+          <View className="gap-4">
+            {leaveHistory.map((leave) => {
+              const StatusIcon = getStatusDisplay(leave.leaveStatus).icon;
+              const statusColor = getStatusDisplay(leave.leaveStatus).color;
+              const statusBg = getStatusDisplay(leave.leaveStatus).bg;
+              const leaveTypeDisplay = getLeaveTypeLabel(leave.leaveType);
+              const duration =
+                leave.startDate === leave.endDate
+                  ? formatDate(leave.startDate)
+                  : `${formatDate(leave.startDate)} - ${formatDate(leave.endDate)}`;
+              const days =
+                Math.ceil(
+                  (new Date(leave.endDate).getTime() -
+                    new Date(leave.startDate).getTime()) /
+                    (1000 * 3600 * 24),
+                ) + 1;
+
+              return (
+                <View
+                  key={leave.leaveId}
+                  className="bg-white p-5 rounded-2xl border-l-4"
+                  style={{
+                    backgroundColor: COLORS.bgWhite,
+                    borderColor: COLORS.border,
+                    borderLeftColor: COLORS.textSecondary,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}
+                >
+                  <View className="flex-row justify-between items-start mb-2">
+                    <Text
+                      className="text-base font-bold"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      {leaveTypeDisplay}
+                    </Text>
+                    <View
+                      className="flex-row items-center px-2 py-1 rounded-md gap-1"
+                      style={{ backgroundColor: statusBg }}
+                    >
+                      <StatusIcon size={14} color={statusColor} />
+                      <Text
+                        className="text-xs font-bold"
+                        style={{ color: statusColor }}
+                      >
+                        {leave.leaveStatus}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text
+                    className="text-xs font-semibold mb-3"
+                    style={{ color: COLORS.textSecondary }}
                   >
-                    <StatusIcon size={14} color={statusColor} />
-                    <Text style={[styles.statusText, { color: statusColor }]}>
-                      {leave.status}
+                    {duration} • {days} Day(s)
+                  </Text>
+
+                  <View
+                    className="bg-gray-100 p-3 rounded-lg"
+                    style={{ backgroundColor: COLORS.lightGray }}
+                  >
+                    <Text
+                      className="text-sm italic"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      "{leave.reason}"
                     </Text>
                   </View>
                 </View>
-
-                <Text style={styles.leaveDuration}>
-                  {leave.duration} • {leave.days} Day(s)
-                </Text>
-
-                <View style={styles.reasonBox}>
-                  <Text style={styles.reasonText}>"{leave.reason}"</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
-      {/* --- APPLY LEAVE MODAL --- */}
+      {/* Apply Leave Modal (unchanged) */}
       <Modal visible={isApplyModalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
+          className="flex-1 bg-black/50 justify-end"
         >
           <View
-            style={[
-              styles.modalContent,
-              {
-                maxWidth: isDesktop ? 600 : "100%",
-                width: "100%",
-                alignSelf: "center",
-              },
-            ]}
+            className="bg-white rounded-t-2xl p-6 max-h-[90%]"
+            style={{
+              backgroundColor: COLORS.bgWhite,
+              maxWidth: isDesktop ? 600 : "100%",
+              width: "100%",
+              alignSelf: "center",
+            }}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Request Leave</Text>
+            <View className="flex-row justify-between items-center mb-6">
+              <Text
+                className="text-xl font-bold"
+                style={{ color: COLORS.textPrimary }}
+              >
+                Request Leave
+              </Text>
               <TouchableOpacity
                 onPress={() => setApplyModalVisible(false)}
-                style={styles.closeButton}
+                className="p-1"
               >
                 <XCircle size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Leave Type</Text>
+              {/* Leave Type Dropdown */}
+              <View className="mb-5 z-10">
+                <Text
+                  className="text-sm font-bold mb-2"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  Leave Type
+                </Text>
                 <TouchableOpacity
-                  style={styles.dropdown}
+                  className="flex-row justify-between items-center px-4 py-3.5 rounded-xl"
+                  style={{ backgroundColor: COLORS.lightGray }}
                   onPress={() => setTypeDropdownVisible(!isTypeDropdownVisible)}
                 >
                   <Text
-                    style={[
-                      styles.dropdownText,
-                      selectedType === "Select Leave Type" && {
-                        color: "#A0522D80",
-                      },
-                    ]}
+                    className="text-base font-semibold"
+                    style={{
+                      color: !selectedTypeValue
+                        ? `${COLORS.textSecondary}80`
+                        : COLORS.textPrimary,
+                    }}
                   >
-                    {selectedType}
+                    {selectedTypeLabel}
                   </Text>
                   <ChevronDown size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
                 {isTypeDropdownVisible && (
-                  <View style={styles.dropdownList}>
+                  <View
+                    className="bg-white rounded-xl mt-1 border"
+                    style={{
+                      borderColor: COLORS.border,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 8,
+                      elevation: 4,
+                    }}
+                  >
                     {LEAVE_TYPES.map((type) => (
                       <TouchableOpacity
-                        key={type}
-                        style={styles.dropdownItem}
+                        key={type.value}
+                        className="py-4 px-4 border-b"
+                        style={{ borderBottomColor: COLORS.border }}
                         onPress={() => {
-                          setSelectedType(type);
+                          setSelectedTypeValue(type.value);
                           setTypeDropdownVisible(false);
                         }}
                       >
-                        <Text style={styles.dropdownItemText}>{type}</Text>
+                        <Text
+                          className="text-base font-medium"
+                          style={{ color: COLORS.textPrimary }}
+                        >
+                          {type.label}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 )}
               </View>
 
-              <View style={styles.rowInputs}>
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>Start Date</Text>
+              {/* Start & End Date */}
+              <View className="flex-row gap-4 mb-5">
+                <View className="flex-1">
+                  <Text
+                    className="text-sm font-bold mb-2"
+                    style={{ color: COLORS.textPrimary }}
+                  >
+                    Start Date
+                  </Text>
                   <TextInput
-                    style={styles.input}
+                    className="px-4 py-3.5 rounded-xl text-base"
+                    style={{
+                      backgroundColor: COLORS.lightGray,
+                      color: COLORS.textPrimary,
+                    }}
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#A0522D80"
+                    placeholderTextColor={`${COLORS.textSecondary}80`}
                     value={startDate}
                     onChangeText={setStartDate}
                   />
                 </View>
-                <View style={{ width: 16 }} />
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>End Date (Optional)</Text>
+                <View className="flex-1">
+                  <Text
+                    className="text-sm font-bold mb-2"
+                    style={{ color: COLORS.textPrimary }}
+                  >
+                    End Date (Optional)
+                  </Text>
                   <TextInput
-                    style={styles.input}
+                    className="px-4 py-3.5 rounded-xl text-base"
+                    style={{
+                      backgroundColor: COLORS.lightGray,
+                      color: COLORS.textPrimary,
+                    }}
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#A0522D80"
+                    placeholderTextColor={`${COLORS.textSecondary}80`}
                     value={endDate}
                     onChangeText={setEndDate}
                   />
                 </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Reason</Text>
+              {/* Reason */}
+              <View className="mb-5">
+                <Text
+                  className="text-sm font-bold mb-2"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  Reason
+                </Text>
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  className="px-4 py-3.5 rounded-xl text-base min-h-[100px]"
+                  style={{
+                    backgroundColor: COLORS.lightGray,
+                    color: COLORS.textPrimary,
+                    textAlignVertical: "top",
+                  }}
                   placeholder="Explain briefly..."
-                  placeholderTextColor="#A0522D80"
+                  placeholderTextColor={`${COLORS.textSecondary}80`}
                   multiline
                   numberOfLines={4}
                   value={reason}
                   onChangeText={setReason}
-                  textAlignVertical="top"
                 />
               </View>
             </ScrollView>
 
             <TouchableOpacity
-              style={styles.submitBtn}
+              className="py-4 rounded-xl items-center mt-2"
+              style={{ backgroundColor: COLORS.primary }}
               onPress={handleApplyLeave}
+              disabled={submitting}
             >
-              <Text style={styles.submitBtnText}>Submit Application</Text>
+              {submitting ? (
+                <ActivityIndicator color={COLORS.white} />
+              ) : (
+                <Text className="text-white font-bold text-base">
+                  Submit Application
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -325,213 +759,3 @@ export default function LeaveManagementScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: COLORS.lightGray },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-  applyIconButton: {
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
-    padding: 8,
-    borderRadius: 8,
-  },
-
-  contentWrapper: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    alignSelf: "center",
-    width: "100%",
-    paddingBottom: 60,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    marginBottom: 16,
-  },
-
-  // Balances
-  balancesRow: { flexDirection: "row", gap: 16, marginBottom: 24 },
-  balanceBox: {
-    flex: 1,
-    backgroundColor: COLORS.bgWhite,
-    paddingVertical: 20,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  balanceAvailable: { fontSize: 28, fontWeight: "900", color: COLORS.primary },
-  balanceTotal: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  balanceLabel: {
-    fontSize: 12,
-    color: COLORS.textPrimary,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-
-  // Apply Button
-  mainApplyButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 18,
-    borderRadius: 16,
-    alignItems: "center",
-    marginBottom: 32,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  mainApplyButtonText: {
-    color: COLORS.white,
-    fontWeight: "800",
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-
-  // History
-  historyContainer: { gap: 16 },
-  leaveCard: {
-    backgroundColor: COLORS.bgWhite,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.textSecondary,
-  },
-  leaveHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  leaveType: { fontSize: 16, fontWeight: "800", color: COLORS.textPrimary },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
-  },
-  statusText: { fontSize: 12, fontWeight: "800" },
-  leaveDuration: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  reasonBox: {
-    backgroundColor: COLORS.lightGray,
-    padding: 12,
-    borderRadius: 8,
-  },
-  reasonText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontStyle: "italic",
-  },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: COLORS.bgWhite,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: "90%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  modalTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-  closeButton: { padding: 4 },
-  inputGroup: { marginBottom: 20, zIndex: 10 },
-  rowInputs: { flexDirection: "row", zIndex: 1 },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    fontSize: 16,
-    color: COLORS.textPrimary,
-  },
-  textArea: { minHeight: 100 },
-  dropdown: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  dropdownText: { fontSize: 16, color: COLORS.textPrimary, fontWeight: "600" },
-  dropdownList: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  dropdownItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  dropdownItemText: {
-    fontSize: 16,
-    color: COLORS.textPrimary,
-    fontWeight: "500",
-  },
-  submitBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  submitBtnText: { color: COLORS.white, fontWeight: "800", fontSize: 16 },
-});

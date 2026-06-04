@@ -1,379 +1,391 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   ArrowLeft,
-  Award,
-  ChevronDown,
-  ShieldCheck,
-  Star,
+  Calendar,
+  CalendarCheck,
+  CalendarX,
+  Clock,
+  FileText,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Modal,
+  ActivityIndicator,
+  Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from "react-native";
+import { teacherClient } from "../Axios/teacherClient";
 
 const COLORS = {
+  primary: "#E35336",
+  accent: "#F5F50C",
+  secondary: "#F4A460",
+  primaryLight: "#FEE2DB",
+  secondaryLight: "#FEF0E8",
+  bgWarm: "#FFF8F2",
   bgWhite: "#FFFFFF",
-  lightGray: "#F5F5F5",
-  primary: "#E35336", // Terracotta
-  textPrimary: "#5C2E14", // Dark Brown
-  textSecondary: "#A0522D", // Sienna
-  border: "#EAEAEE",
-  success: "#2E7D32",
-  warning: "#F57C00",
-  danger: "#C62828",
+  lightGray: "#F8F9FA",
+  textPrimary: "#3B2A1F",
+  textSecondary: "#8B5E3C",
+  textTertiary: "#B8956E",
+  success: "#10B981",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+  border: "#F0E4D8",
+  white: "#FFFFFF",
 };
 
-const CLASSES = ["10-A", "10-B", "11-Science", "12-Science"];
+const platformShadow = Platform.select({
+  web: { boxShadow: "0px 4px 16px rgba(0,0,0,0.04)" } as any,
+  default: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+});
 
-// Comprehensive student data
-const DUMMY_STUDENTS = [
-  {
-    id: "1",
-    name: "Aarav Sharma",
-    score: 92,
-    grade: "A+",
-    discipline: "Excellent",
-    overall: "Outstanding",
-  },
-  {
-    id: "2",
-    name: "Priya Patel",
-    score: 85,
-    grade: "A",
-    discipline: "Good",
-    overall: "Very Good",
-  },
-  {
-    id: "3",
-    name: "Rohan Gupta",
-    score: 65,
-    grade: "C",
-    discipline: "Needs Attention",
-    overall: "Average",
-  },
-  {
-    id: "4",
-    name: "Ananya Singh",
-    score: 42,
-    grade: "F",
-    discipline: "Poor",
-    overall: "Needs Help",
-  },
-];
-
-export default function ComprehensiveReportsScreen() {
+export default function TeacherAttendanceHistoryScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
-  const [selectedClass, setSelectedClass] = useState("10-A");
-  const [isDropdownVisible, setDropdownVisible] = useState(false);
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ present: 0, absent: 0, halfDay: 0 });
 
-  const getPerformanceColor = (score: number) => {
-    if (score >= 80) return COLORS.success;
-    if (score >= 60) return COLORS.warning;
-    return COLORS.danger;
+  useEffect(() => {
+    const fetchAttendanceHistory = async () => {
+      setLoading(true);
+      try {
+        let teacherId = "TCH2026001"; // Fallback ID
+        if (Platform.OS === "web") {
+          teacherId = localStorage.getItem("userUsername") || teacherId;
+        } else {
+          teacherId = (await AsyncStorage.getItem("userUsername")) || teacherId;
+        }
+
+        const res = await teacherClient.get(
+          `/api/student/teacher/teacher/${teacherId}/attendance`,
+        );
+
+        const data = res.data || [];
+
+        // Sort records by date (newest first)
+        const sortedData = data.sort(
+          (a: any, b: any) =>
+            new Date(b.attendanceDate).getTime() -
+            new Date(a.attendanceDate).getTime(),
+        );
+
+        setRecords(sortedData);
+
+        // Calculate basic stats for the summary cards
+        let present = 0,
+          absent = 0,
+          halfDay = 0;
+        sortedData.forEach((record: any) => {
+          const status = record.status?.toUpperCase();
+          if (status === "PRESENT") present++;
+          else if (status === "ABSENT") absent++;
+          else if (status === "HALF_DAY") halfDay++;
+        });
+
+        setStats({ present, absent, halfDay });
+      } catch (error) {
+        console.error("Failed to load attendance history:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendanceHistory();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const getStatusConfig = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "PRESENT":
+        return {
+          color: COLORS.success,
+          bg: `${COLORS.success}15`,
+          label: "Present",
+        };
+      case "ABSENT":
+        return {
+          color: COLORS.danger,
+          bg: `${COLORS.danger}15`,
+          label: "Absent",
+        };
+      case "HALF_DAY":
+        return {
+          color: COLORS.warning,
+          bg: `${COLORS.warning}15`,
+          label: "Half Day",
+        };
+      case "LEAVE":
+        return {
+          color: COLORS.secondary,
+          bg: `${COLORS.secondary}15`,
+          label: "On Leave",
+        };
+      default:
+        return {
+          color: COLORS.textSecondary,
+          bg: COLORS.lightGray,
+          label: status || "Unknown",
+        };
+    }
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
       <StatusBar
         style="dark"
         backgroundColor={COLORS.bgWhite}
         translucent={false}
       />
 
-      {/* --- HEADER --- */}
-      <View style={styles.header}>
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between px-5 pb-4 border-b"
+        style={{
+          paddingTop: Platform.OS === "android" ? 50 : 40,
+          backgroundColor: COLORS.bgWhite,
+          borderBottomColor: COLORS.border,
+        }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="p-2 -ml-2 rounded-xl"
+          activeOpacity={0.7}
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Class Performance</Text>
+        <Text
+          className="text-xl font-bold tracking-tight"
+          style={{ color: COLORS.textPrimary }}
+        >
+          My Attendance
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <View
-        style={[styles.contentWrapper, { maxWidth: isDesktop ? 800 : "100%" }]}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingVertical: 24,
+          maxWidth: isDesktop ? 800 : "100%",
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
-        {/* --- CLASS FILTER --- */}
-        <View style={styles.selectorContainer}>
-          <Text style={styles.label}>Select Class</Text>
-          <TouchableOpacity
-            style={styles.dropdownButton}
-            activeOpacity={0.8}
-            onPress={() => setDropdownVisible(true)}
+        {/* Quick Stats Summary */}
+        <View className="flex-row justify-between gap-4 mb-6">
+          <View
+            className="flex-1 bg-white p-4 rounded-2xl border items-center"
+            style={{ borderColor: COLORS.border, ...platformShadow }}
           >
-            <Text style={styles.dropdownButtonText}>{selectedClass}</Text>
-            <ChevronDown size={20} color={COLORS.textSecondary} />
-          </TouchableOpacity>
+            <View
+              className="w-10 h-10 rounded-full items-center justify-center mb-2"
+              style={{ backgroundColor: `${COLORS.success}1A` }}
+            >
+              <CalendarCheck size={20} color={COLORS.success} />
+            </View>
+            <Text
+              className="text-2xl font-black"
+              style={{ color: COLORS.textPrimary }}
+            >
+              {stats.present}
+            </Text>
+            <Text
+              className="text-xs font-semibold uppercase tracking-wider mt-1"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Present
+            </Text>
+          </View>
+
+          <View
+            className="flex-1 bg-white p-4 rounded-2xl border items-center"
+            style={{ borderColor: COLORS.border, ...platformShadow }}
+          >
+            <View
+              className="w-10 h-10 rounded-full items-center justify-center mb-2"
+              style={{ backgroundColor: `${COLORS.danger}1A` }}
+            >
+              <CalendarX size={20} color={COLORS.danger} />
+            </View>
+            <Text
+              className="text-2xl font-black"
+              style={{ color: COLORS.textPrimary }}
+            >
+              {stats.absent}
+            </Text>
+            <Text
+              className="text-xs font-semibold uppercase tracking-wider mt-1"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Absent
+            </Text>
+          </View>
+
+          <View
+            className="flex-1 bg-white p-4 rounded-2xl border items-center"
+            style={{ borderColor: COLORS.border, ...platformShadow }}
+          >
+            <View
+              className="w-10 h-10 rounded-full items-center justify-center mb-2"
+              style={{ backgroundColor: `${COLORS.warning}1A` }}
+            >
+              <Clock size={20} color={COLORS.warning} />
+            </View>
+            <Text
+              className="text-2xl font-black"
+              style={{ color: COLORS.textPrimary }}
+            >
+              {stats.halfDay}
+            </Text>
+            <Text
+              className="text-xs font-semibold uppercase tracking-wider mt-1"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Half Days
+            </Text>
+          </View>
         </View>
 
-        {/* --- COMPREHENSIVE STUDENT LIST --- */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
+        <Text
+          className="text-lg font-bold mb-4"
+          style={{ color: COLORS.textPrimary }}
         >
-          {DUMMY_STUDENTS.map((student) => {
-            const statusColor = getPerformanceColor(student.score);
-            return (
-              <View key={student.id} style={styles.studentCard}>
-                {/* Header: Name & Overall Badge */}
-                <View style={styles.cardHeaderRow}>
-                  <Text style={styles.studentName}>{student.name}</Text>
-                  <View
-                    style={[
-                      styles.overallBadge,
-                      { backgroundColor: `${statusColor}15` },
-                    ]}
-                  >
-                    <Star
-                      size={12}
-                      color={statusColor}
-                      fill={statusColor}
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={[styles.overallText, { color: statusColor }]}>
-                      {student.overall}
-                    </Text>
-                  </View>
-                </View>
+          Attendance History
+        </Text>
 
-                {/* Metrics Grid */}
-                <View style={styles.metricsGrid}>
-                  <View style={styles.metricBox}>
-                    <View style={styles.metricIconRow}>
-                      <Award size={14} color={COLORS.textSecondary} />
-                      <Text style={styles.metricLabel}>Grade</Text>
-                    </View>
-                    <Text style={[styles.metricValue, { color: statusColor }]}>
-                      {student.grade}
-                    </Text>
-                  </View>
-
-                  <View style={[styles.metricBox, styles.metricBoxMiddle]}>
-                    <View style={styles.metricIconRow}>
-                      <ShieldCheck size={14} color={COLORS.textSecondary} />
-                      <Text style={styles.metricLabel}>Discipline</Text>
-                    </View>
-                    <Text style={styles.metricValue}>{student.discipline}</Text>
-                  </View>
-
-                  <View style={styles.metricBox}>
-                    <View style={styles.metricIconRow}>
-                      <Text style={styles.metricLabel}>Marks</Text>
-                    </View>
-                    <Text style={[styles.metricValue, { fontSize: 20 }]}>
-                      {student.score}%
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Progress Bar for Marks */}
-                <View style={styles.progressContainer}>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        {
-                          width: `${student.score}%`,
-                          backgroundColor: statusColor,
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-              </View>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* --- DROPDOWN MODAL --- */}
-      <Modal visible={isDropdownVisible} transparent animationType="fade">
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setDropdownVisible(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Choose a Class</Text>
-            {CLASSES.map((cls) => (
-              <TouchableOpacity
-                key={cls}
-                style={[
-                  styles.modalOption,
-                  selectedClass === cls && styles.modalOptionActive,
-                ]}
-                onPress={() => {
-                  setSelectedClass(cls);
-                  setDropdownVisible(false);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.modalOptionText,
-                    selectedClass === cls && styles.modalOptionTextActive,
-                  ]}
-                >
-                  {cls}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {loading ? (
+          <View className="py-20 items-center justify-center">
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text
+              className="mt-4 font-semibold text-sm"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Loading records...
+            </Text>
           </View>
-        </TouchableOpacity>
-      </Modal>
+        ) : records.length === 0 ? (
+          <View
+            className="bg-white p-8 rounded-2xl border items-center"
+            style={{ borderColor: COLORS.border, ...platformShadow }}
+          >
+            <Calendar size={40} color={COLORS.textTertiary} strokeWidth={1.5} />
+            <Text
+              className="text-base font-bold mt-4"
+              style={{ color: COLORS.textPrimary }}
+            >
+              No records found
+            </Text>
+            <Text
+              className="text-sm mt-1 text-center"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Your attendance history will appear here once marked.
+            </Text>
+          </View>
+        ) : (
+          <View className="gap-4 pb-10">
+            {records.map((record) => {
+              const statusConfig = getStatusConfig(record.status);
+              return (
+                <View
+                  key={record.id}
+                  className="bg-white p-5 rounded-2xl border"
+                  style={{
+                    backgroundColor: COLORS.bgWhite,
+                    borderColor: COLORS.border,
+                    ...platformShadow,
+                  }}
+                >
+                  <View className="flex-row justify-between items-center">
+                    <View className="flex-row items-center gap-3">
+                      <View
+                        className="w-12 h-12 rounded-xl items-center justify-center"
+                        style={{ backgroundColor: COLORS.lightGray }}
+                      >
+                        <Calendar size={22} color={COLORS.textSecondary} />
+                      </View>
+                      <View>
+                        <Text
+                          className="text-base font-bold"
+                          style={{ color: COLORS.textPrimary }}
+                        >
+                          {formatDate(record.attendanceDate)}
+                        </Text>
+                        <Text
+                          className="text-xs font-medium mt-0.5"
+                          style={{ color: COLORS.textTertiary }}
+                        >
+                          ID: {record.teacherId}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      className="px-3 py-1.5 rounded-lg"
+                      style={{ backgroundColor: statusConfig.bg }}
+                    >
+                      <Text
+                        className="text-xs font-bold uppercase tracking-wider"
+                        style={{ color: statusConfig.color }}
+                      >
+                        {statusConfig.label}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {record.remarks && (
+                    <View
+                      className="mt-4 pt-4 border-t flex-row items-start gap-2"
+                      style={{ borderTopColor: COLORS.border }}
+                    >
+                      <FileText
+                        size={16}
+                        color={COLORS.textTertiary}
+                        style={{ marginTop: 2 }}
+                      />
+                      <Text
+                        className="text-sm leading-5 flex-1"
+                        style={{ color: COLORS.textSecondary }}
+                      >
+                        <Text className="font-semibold text-textPrimary">
+                          Remarks:{" "}
+                        </Text>
+                        {record.remarks}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: COLORS.lightGray },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-
-  contentWrapper: { flex: 1, width: "100%", alignSelf: "center" },
-
-  selectorContainer: {
-    padding: 24,
-    backgroundColor: COLORS.bgWhite,
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  dropdownButton: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  dropdownButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
-
-  listContainer: { paddingHorizontal: 24, paddingBottom: 40, gap: 16 },
-
-  studentCard: {
-    backgroundColor: COLORS.bgWhite,
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  studentName: { fontSize: 18, fontWeight: "800", color: COLORS.textPrimary },
-  overallBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  overallText: { fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
-
-  metricsGrid: {
-    flexDirection: "row",
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  metricBox: { flex: 1, alignItems: "center", justifyContent: "center" },
-  metricBoxMiddle: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 8,
-  },
-  metricIconRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  metricLabel: { fontSize: 12, color: COLORS.textSecondary, fontWeight: "600" },
-  metricValue: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    textAlign: "center",
-  },
-
-  progressContainer: { marginTop: 4 },
-  progressBarBg: {
-    height: 6,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressBarFill: { height: "100%", borderRadius: 3 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: COLORS.bgWhite,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    marginBottom: 16,
-  },
-  modalOption: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalOptionActive: { backgroundColor: "rgba(227, 83, 54, 0.05)" },
-  modalOptionText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    fontWeight: "600",
-  },
-  modalOptionTextActive: { color: COLORS.primary, fontWeight: "800" },
-});

@@ -7,7 +7,6 @@ import {
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -16,12 +15,17 @@ import {
 } from "react-native";
 
 const COLORS = {
-  bgWhite: "#FFFFFF",
-  lightGray: "#F5F5F5",
   primary: "#E35336",
-  textPrimary: "#5C2E14",
-  textSecondary: "#A0522D",
-  border: "#EAEAEE",
+  accent: "#F5F50C",
+  secondary: "#F4A460",
+  primaryLight: "#FEE2DB",
+  secondaryLight: "#FEF0E8",
+  bgWarm: "#FFF8F2",
+  bgWhite: "#FFFFFF",
+  textPrimary: "#3B2A1F",
+  textSecondary: "#8B5E3C",
+  textTertiary: "#B8956E",
+  border: "#F0E4D8",
   white: "#FFFFFF",
 };
 
@@ -50,7 +54,8 @@ export default function AssignHomeworkScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.mainContainer}
+      className="flex-1"
+      style={{ backgroundColor: COLORS.bgWhite }}
     >
       <StatusBar
         style="dark"
@@ -58,36 +63,63 @@ export default function AssignHomeworkScreen() {
         translucent={false}
       />
 
-      <View style={styles.header}>
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between px-5 pb-4 border-b"
+        style={{
+          paddingTop: 40,
+          backgroundColor: COLORS.bgWhite,
+          borderBottomColor: COLORS.border,
+        }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="p-2 -ml-2 rounded-xl"
+          activeOpacity={0.7}
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Assign Homework</Text>
+        <Text
+          className="text-xl font-bold tracking-tight"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Assign Homework
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
-        contentContainerStyle={[
-          styles.formContainer,
-          { maxWidth: isDesktop ? 800 : "100%" },
-        ]}
+        contentContainerStyle={{
+          padding: 24,
+          alignSelf: "center",
+          width: "100%",
+          maxWidth: isDesktop ? 800 : "100%",
+          paddingBottom: 100,
+        }}
       >
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Class & Section</Text>
+        {/* Class Selector */}
+        <View className="mb-5">
+          <Text
+            className="text-sm font-bold mb-2"
+            style={{ color: COLORS.textPrimary }}
+          >
+            Class & Section
+          </Text>
           <TouchableOpacity
-            style={styles.dropdown}
+            className="flex-row justify-between items-center px-4 py-4 rounded-xl"
+            style={{
+              backgroundColor: COLORS.lightGray,
+            }}
             onPress={() => setDropdownVisible(true)}
           >
             <Text
-              style={[
-                styles.dropdownText,
-                selectedClass === "Select Class" && {
-                  color: COLORS.textSecondary,
-                },
-              ]}
+              className="text-base font-semibold"
+              style={{
+                color:
+                  selectedClass === "Select Class"
+                    ? COLORS.textSecondary
+                    : COLORS.textPrimary,
+              }}
             >
               {selectedClass}
             </Text>
@@ -95,74 +127,148 @@ export default function AssignHomeworkScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Assignment Title</Text>
+        {/* Assignment Title */}
+        <View className="mb-5">
+          <Text
+            className="text-sm font-bold mb-2"
+            style={{ color: COLORS.textPrimary }}
+          >
+            Assignment Title
+          </Text>
           <TextInput
-            style={styles.input}
+            className="px-4 py-4 rounded-xl text-base border border-transparent"
+            style={{
+              backgroundColor: COLORS.lightGray,
+              color: COLORS.textPrimary,
+            }}
             placeholder="e.g. Chapter 5 Practice Questions"
-            placeholderTextColor="#A0522D80"
+            placeholderTextColor={`${COLORS.textSecondary}80`}
             value={title}
             onChangeText={setTitle}
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Due Date</Text>
+        {/* Due Date */}
+        <View className="mb-5">
+          <Text
+            className="text-sm font-bold mb-2"
+            style={{ color: COLORS.textPrimary }}
+          >
+            Due Date
+          </Text>
           <TextInput
-            style={styles.input}
+            className="px-4 py-4 rounded-xl text-base border border-transparent"
+            style={{
+              backgroundColor: COLORS.lightGray,
+              color: COLORS.textPrimary,
+            }}
             placeholder="e.g. YYYY-MM-DD"
-            placeholderTextColor="#A0522D80"
+            placeholderTextColor={`${COLORS.textSecondary}80`}
             value={dueDate}
             onChangeText={setDueDate}
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description & Instructions</Text>
+        {/* Description */}
+        <View className="mb-5">
+          <Text
+            className="text-sm font-bold mb-2"
+            style={{ color: COLORS.textPrimary }}
+          >
+            Description & Instructions
+          </Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            className="px-4 py-4 rounded-xl text-base border border-transparent min-h-[120px]"
+            style={{
+              backgroundColor: COLORS.lightGray,
+              color: COLORS.textPrimary,
+              textAlignVertical: "top",
+            }}
             placeholder="Provide detailed instructions..."
-            placeholderTextColor="#A0522D80"
+            placeholderTextColor={`${COLORS.textSecondary}80`}
             multiline
             numberOfLines={4}
             value={desc}
             onChangeText={setDesc}
-            textAlignVertical="top"
           />
         </View>
 
-        <TouchableOpacity style={styles.uploadBox}>
+        {/* File Upload Placeholder */}
+        <TouchableOpacity
+          className="items-center py-8 mt-2 rounded-2xl border-2 border-dashed"
+          style={{
+            backgroundColor: `${COLORS.primary}0D`,
+            borderColor: `${COLORS.primary}33`,
+          }}
+        >
           <UploadCloud
             size={32}
             color={COLORS.primary}
             style={{ marginBottom: 8 }}
           />
-          <Text style={styles.uploadTitle}>Attach a File</Text>
-          <Text style={styles.uploadSub}>PDF, DOCX, or Images (Max 5MB)</Text>
+          <Text
+            className="text-base font-bold"
+            style={{ color: COLORS.primary }}
+          >
+            Attach a File
+          </Text>
+          <Text
+            className="text-xs mt-1"
+            style={{ color: COLORS.textSecondary }}
+          >
+            PDF, DOCX, or Images (Max 5MB)
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.submitBtn} onPress={handleAssign}>
-          <Text style={styles.submitBtnText}>Assign Homework</Text>
+      {/* Bottom Bar */}
+      <View
+        className="absolute bottom-0 w-full p-6 bg-white border-t"
+        style={{
+          backgroundColor: COLORS.bgWhite,
+          borderTopColor: COLORS.border,
+        }}
+      >
+        <TouchableOpacity
+          className="py-4 rounded-xl items-center"
+          style={{ backgroundColor: COLORS.primary }}
+          onPress={handleAssign}
+        >
+          <Text
+            className="text-white font-bold text-base"
+            style={{ fontWeight: "800" }}
+          >
+            Assign Homework
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Class Selector Modal */}
       <Modal visible={isDropdownVisible} transparent animationType="fade">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          className="flex-1 bg-black/50 justify-end"
           activeOpacity={1}
           onPress={() => setDropdownVisible(false)}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Class</Text>
+          <View
+            className="bg-white rounded-t-2xl p-6"
+            style={{ backgroundColor: COLORS.bgWhite }}
+          >
+            <Text
+              className="text-lg font-bold mb-4"
+              style={{ color: COLORS.textPrimary }}
+            >
+              Select Class
+            </Text>
             {CLASSES.map((cls) => (
               <TouchableOpacity
                 key={cls}
+                className="py-4 border-b"
                 style={[
-                  styles.modalOption,
-                  selectedClass === cls && styles.modalOptionActive,
+                  selectedClass === cls && {
+                    backgroundColor: `${COLORS.primary}0D`,
+                  },
+                  { borderBottomColor: COLORS.border },
                 ]}
                 onPress={() => {
                   setSelectedClass(cls);
@@ -170,9 +276,13 @@ export default function AssignHomeworkScreen() {
                 }}
               >
                 <Text
+                  className="text-base font-semibold"
                   style={[
-                    styles.modalOptionText,
-                    selectedClass === cls && styles.modalOptionTextActive,
+                    { color: COLORS.textSecondary },
+                    selectedClass === cls && {
+                      color: COLORS.primary,
+                      fontWeight: "800",
+                    },
                   ]}
                 >
                   {cls}
@@ -185,111 +295,3 @@ export default function AssignHomeworkScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: COLORS.bgWhite },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-  formContainer: {
-    padding: 24,
-    alignSelf: "center",
-    width: "100%",
-    paddingBottom: 100,
-  },
-  inputGroup: { marginBottom: 20 },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-    fontSize: 16,
-    color: COLORS.textPrimary,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  textArea: { minHeight: 120 },
-  dropdown: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  dropdownText: { fontSize: 16, color: COLORS.textPrimary, fontWeight: "600" },
-  uploadBox: {
-    backgroundColor: "rgba(227, 83, 54, 0.05)",
-    borderWidth: 2,
-    borderColor: "rgba(227, 83, 54, 0.2)",
-    borderStyle: "dashed",
-    borderRadius: 16,
-    padding: 32,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  uploadTitle: { fontSize: 16, fontWeight: "700", color: COLORS.primary },
-  uploadSub: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
-  bottomBar: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    padding: 24,
-    backgroundColor: COLORS.bgWhite,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  submitBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  submitBtnText: { color: COLORS.white, fontWeight: "800", fontSize: 16 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: COLORS.bgWhite,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    marginBottom: 16,
-  },
-  modalOption: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalOptionActive: { backgroundColor: "rgba(227, 83, 54, 0.05)" },
-  modalOptionText: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    fontWeight: "600",
-  },
-  modalOptionTextActive: { color: COLORS.primary, fontWeight: "800" },
-});

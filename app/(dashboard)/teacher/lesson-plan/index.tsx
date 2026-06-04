@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -5,7 +6,6 @@ import {
   BookOpen,
   Calendar,
   CheckCircle2,
-  Clock,
   Edit2,
   Filter,
   Plus,
@@ -13,142 +13,265 @@ import {
   Search,
   Target,
   Trash2,
-  TrendingUp,
   Users,
   X,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
 } from "react-native";
+import { teacherClient } from "../Axios/teacherClient";
 
 const COLORS = {
-  bgWhite: "#FFFFFF",
-  lightGray: "#F5F5F5",
   primary: "#E35336",
-  textPrimary: "#5C2E14",
-  textSecondary: "#A0522D",
+  accent: "#F5F50C",
+  secondary: "#F4A460",
+  primaryLight: "#FEE2DB",
+  secondaryLight: "#FEF0E8",
+  bgWarm: "#FFF8F2",
+  bgWhite: "#FFFFFF",
+  textPrimary: "#3B2A1F",
+  textSecondary: "#8B5E3C",
+  textTertiary: "#B8956E",
+  success: "#10B981",
+  warning: "#F59E0B",
+  pending: "#6B7280",
+  border: "#F0E4D8",
   white: "#FFFFFF",
-  success: "#4CAF50",
-  warning: "#FF9800",
-  pending: "#757575",
-  accent: "#F4A460",
-  border: "#EAEAEE",
-  error: "#D32F2F",
+  lightGray: "#F3F4F6",
 };
 
-// Mock data for lesson plans
-const DUMMY_PLANS = [
-  {
-    id: "1",
-    classStr: "10-A",
-    subject: "Mathematics",
-    chapter: "Chapter 5: Quadratic Equations",
-    topics: ["Quadratic Formula", "Discriminant", "Nature of Roots"],
-    status: "In Progress",
-    progress: 65,
-    startDate: "2026-06-01",
-    endDate: "2026-06-10",
-    description: "Understanding quadratic equations and their applications",
-    resources: ["Textbook Chapter 5", "Practice Worksheet", "Video Lectures"],
-    assignments: ["Problem Set 5.1", "Group Project"],
+const platformShadow = Platform.select({
+  web: { boxShadow: "0px 4px 16px rgba(0,0,0,0.04)" } as any,
+  default: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  {
-    id: "2",
-    classStr: "11-Science",
-    subject: "Physics",
-    chapter: "Chapter 3: Laws of Motion",
-    topics: ["Newton's Laws", "Friction", "Circular Motion"],
-    status: "Completed",
-    progress: 100,
-    startDate: "2026-05-15",
-    endDate: "2026-05-28",
-    description: "Study of motion and forces",
-    resources: ["Lab Manual", "Simulation Software"],
-    assignments: ["Lab Report", "Numerical Problems"],
-  },
-  {
-    id: "3",
-    classStr: "10-B",
-    subject: "Mathematics",
-    chapter: "Chapter 6: Triangles",
-    topics: ["Similarity", "Pythagoras Theorem", "Area Theorems"],
-    status: "Pending",
-    progress: 0,
-    startDate: "2026-06-12",
-    endDate: "2026-06-24",
-    description: "Properties and theorems of triangles",
-    resources: ["Geometry Kit", "Reference Book"],
-    assignments: ["Proof Exercises", "MCQ Test"],
-  },
-];
+});
 
-type FilterType = "all" | "in-progress" | "completed" | "pending";
+type FilterType = "all" | "completed" | "pending";
+type ViewMode = "ALL" | "SPECIFIC";
+
+interface Subject {
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+}
+
+interface TeacherClass {
+  classSectionId: string;
+  className: string;
+  section: string;
+  academicYear: string;
+  isPrimaryClassTeacher: boolean;
+  subjectsTaught: Subject[];
+}
+
+interface ApiLessonPlan {
+  lessonPlanId: string;
+  classSectionId: string;
+  className: string;
+  section: string;
+  subjectName: string;
+  teacherName: string;
+  topicName: string;
+  plannedDate: string;
+  isCompleted: boolean;
+}
+
+interface MappedLessonPlan {
+  id: string;
+  classStr: string;
+  subject: string;
+  chapter: string;
+  topics: string[];
+  status: "Completed" | "Pending";
+  startDate: string;
+  endDate: string;
+  description: string;
+  originalData?: ApiLessonPlan;
+}
+
+// Helper to ensure alerts show up on web
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === "web") {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
 
 export default function LessonPlanScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
+
+  const [teacherId, setTeacherId] = useState<string>("");
+  const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
+  const [selectedClass, setSelectedClass] = useState<TeacherClass | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+
+  const [viewMode, setViewMode] = useState<ViewMode>("ALL");
+  const [lessonPlans, setLessonPlans] = useState<MappedLessonPlan[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<any>(null);
-  const [lessonPlans, setLessonPlans] = useState(DUMMY_PLANS);
 
-  // Form state
+  // Modal & Form State
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<MappedLessonPlan | null>(null);
   const [formData, setFormData] = useState({
-    classStr: "",
-    subject: "",
     chapter: "",
     description: "",
     startDate: "",
     endDate: "",
     topics: "",
-    resources: "",
-    assignments: "",
   });
+
+  useEffect(() => {
+    fetchClassesAndSubjects();
+  }, []);
+
+  const fetchClassesAndSubjects = async () => {
+    try {
+      setIsLoadingClasses(true);
+      setError(null);
+
+      const currentTeacherId =
+        Platform.OS === "web"
+          ? localStorage.getItem("userUsername")
+          : await AsyncStorage.getItem("userUsername");
+
+      if (!currentTeacherId) {
+        setError("Teacher ID not found. Please log in again.");
+        return;
+      }
+
+      setTeacherId(currentTeacherId);
+
+      const response = await teacherClient.get(
+        `/api/student/teacher/${currentTeacherId}/classes-subjects`,
+      );
+
+      if (response.data && response.data.classes) {
+        setTeacherClasses(response.data.classes);
+      }
+
+      await fetchAllLessonPlans(currentTeacherId);
+    } catch (err) {
+      console.error("Failed to fetch classes/subjects:", err);
+      setError("Failed to load your assigned classes.");
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
+
+  const fetchAllLessonPlans = async (tid: string) => {
+    try {
+      setIsLoadingPlans(true);
+      setViewMode("ALL");
+      setSelectedClass(null);
+      setSelectedSubject(null);
+
+      const response = await teacherClient.get<ApiLessonPlan[]>(
+        `/api/student/lesson-plans/teacher/${tid}`,
+      );
+      mapAndSetLessonPlans(response.data);
+    } catch (err) {
+      console.error("Failed to fetch all lesson plans:", err);
+      setLessonPlans([]);
+    } finally {
+      setIsLoadingPlans(false);
+    }
+  };
+
+  const fetchSpecificLessonPlans = async (classId: string, subId: string) => {
+    try {
+      setIsLoadingPlans(true);
+      setViewMode("SPECIFIC");
+
+      const response = await teacherClient.get<ApiLessonPlan[]>(
+        `/api/student/lesson-plans/list/${classId}/${subId}`,
+      );
+      mapAndSetLessonPlans(response.data);
+    } catch (err) {
+      console.error("Failed to fetch specific lesson plans:", err);
+      setLessonPlans([]);
+    } finally {
+      setIsLoadingPlans(false);
+    }
+  };
+
+  const mapAndSetLessonPlans = (apiData: ApiLessonPlan[]) => {
+    if (!apiData || !Array.isArray(apiData)) {
+      setLessonPlans([]);
+      return;
+    }
+    const mappedData: MappedLessonPlan[] = apiData.map((item) => ({
+      id: item.lessonPlanId,
+      classStr: `${item.className}-${item.section}`,
+      subject: item.subjectName,
+      chapter: item.topicName,
+      topics: [item.topicName],
+      status: item.isCompleted ? "Completed" : "Pending",
+      startDate: item.plannedDate,
+      endDate: item.plannedDate,
+      description: `Lesson plan for ${item.subjectName} focusing on ${item.topicName}`,
+      originalData: item,
+    }));
+    setLessonPlans(mappedData);
+  };
+
+  useEffect(() => {
+    if (viewMode === "SPECIFIC" && selectedClass && selectedSubject) {
+      fetchSpecificLessonPlans(
+        selectedClass.classSectionId,
+        selectedSubject.subjectId,
+      );
+    }
+  }, [selectedClass, selectedSubject, viewMode]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
       case "Completed":
         return {
           color: COLORS.success,
-          bg: "rgba(76, 175, 80, 0.1)",
+          bg: `${COLORS.success}1A`,
           icon: CheckCircle2,
-          label: "Completed",
-        };
-      case "In Progress":
-        return {
-          color: COLORS.warning,
-          bg: "rgba(255, 152, 0, 0.1)",
-          icon: Clock,
-          label: "In Progress",
         };
       default:
         return {
           color: COLORS.pending,
-          bg: "rgba(117, 117, 117, 0.1)",
+          bg: `${COLORS.pending}1A`,
           icon: BookOpen,
-          label: "Pending",
         };
     }
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -159,158 +282,257 @@ export default function LessonPlanScreen() {
       plan.classStr.toLowerCase().includes(searchQuery.toLowerCase());
 
     let matchesFilter = true;
-    if (activeFilter === "in-progress") {
-      matchesFilter = plan.status === "In Progress";
-    } else if (activeFilter === "completed") {
+    if (activeFilter === "completed")
       matchesFilter = plan.status === "Completed";
-    } else if (activeFilter === "pending") {
+    else if (activeFilter === "pending")
       matchesFilter = plan.status === "Pending";
-    }
 
     return matchesSearch && matchesFilter;
   });
 
   const stats = {
     total: lessonPlans.length,
-    active: lessonPlans.filter((p) => p.status === "In Progress").length,
     completed: lessonPlans.filter((p) => p.status === "Completed").length,
     pending: lessonPlans.filter((p) => p.status === "Pending").length,
-    averageProgress: Math.floor(
-      lessonPlans.reduce((sum, p) => sum + p.progress, 0) / lessonPlans.length,
-    ),
   };
 
-  const handleCreatePlan = () => {
-    if (!formData.classStr || !formData.subject || !formData.chapter) {
-      Alert.alert("Error", "Please fill in all required fields");
+  const handleCreatePlan = async () => {
+    if (!formData.chapter) {
+      showAlert("Error", "Please fill in the chapter/topic name.");
       return;
     }
 
-    const newPlan = {
-      id: Date.now().toString(),
-      classStr: formData.classStr,
-      subject: formData.subject,
-      chapter: formData.chapter,
-      topics: formData.topics.split(",").map((t) => t.trim()),
-      status: "Pending",
-      progress: 0,
-      startDate: formData.startDate || new Date().toISOString().split("T")[0],
-      endDate: formData.endDate || new Date().toISOString().split("T")[0],
-      description: formData.description,
-      resources: formData.resources
-        .split(",")
-        .map((r) => r.trim())
-        .filter((r) => r),
-      assignments: formData.assignments
-        .split(",")
-        .map((a) => a.trim())
-        .filter((a) => a),
-    };
+    setIsSubmitting(true);
 
-    if (editingPlan) {
-      setLessonPlans(
-        lessonPlans.map((p) =>
-          p.id === editingPlan.id ? { ...newPlan, id: p.id } : p,
-        ),
-      );
-      Alert.alert("Success", "Lesson plan updated successfully");
-    } else {
-      setLessonPlans([newPlan, ...lessonPlans]);
-      Alert.alert("Success", "Lesson plan created successfully");
+    try {
+      if (editingPlan) {
+        const classSectionId =
+          editingPlan.originalData?.classSectionId ||
+          selectedClass?.classSectionId;
+        const subjectName = editingPlan.subject;
+
+        let subjectId = selectedSubject?.subjectId;
+        if (!subjectId && classSectionId) {
+          const cls = teacherClasses.find(
+            (c) => c.classSectionId === classSectionId,
+          );
+          const sub = cls?.subjectsTaught.find(
+            (s) => s.subjectName === subjectName,
+          );
+          subjectId = sub?.subjectId;
+        }
+
+        if (!classSectionId || !subjectId) {
+          showAlert("Error", "Missing class or subject info. Cannot update.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const payload = {
+          classSectionId: classSectionId,
+          subjectId: subjectId,
+          teacherId: teacherId,
+          topicName: formData.chapter,
+          plannedDate:
+            formData.startDate || new Date().toISOString().split("T")[0],
+          isCompleted: editingPlan.originalData?.isCompleted || false,
+        };
+
+        await teacherClient.put(
+          `/api/student/lesson-plans/${editingPlan.id}`,
+          payload,
+        );
+        showAlert("Success", "Lesson plan updated successfully.");
+      } else {
+        if (!selectedClass || !selectedSubject) {
+          showAlert("Error", "Please ensure class and subject are selected.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const payload = {
+          classSectionId: selectedClass.classSectionId,
+          subjectId: selectedSubject.subjectId,
+          teacherId: teacherId,
+          topicName: formData.chapter,
+          plannedDate:
+            formData.startDate || new Date().toISOString().split("T")[0],
+          isCompleted: false,
+        };
+
+        await teacherClient.post("/api/student/lesson-plans", payload);
+        showAlert("Success", "Lesson plan created successfully.");
+      }
+
+      if (viewMode === "ALL") {
+        fetchAllLessonPlans(teacherId);
+      } else if (selectedClass && selectedSubject) {
+        fetchSpecificLessonPlans(
+          selectedClass.classSectionId,
+          selectedSubject.subjectId,
+        );
+      }
+      resetForm();
+    } catch (err) {
+      console.error("Failed to save lesson plan:", err);
+      showAlert("Error", "Failed to save lesson plan. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    resetForm();
   };
 
-  const handleEditPlan = (plan: any) => {
+  const handleEditPlan = (plan: MappedLessonPlan) => {
     setEditingPlan(plan);
     setFormData({
-      classStr: plan.classStr,
-      subject: plan.subject,
       chapter: plan.chapter,
       description: plan.description,
       startDate: plan.startDate,
       endDate: plan.endDate,
       topics: plan.topics.join(", "),
-      resources: plan.resources?.join(", ") || "",
-      assignments: plan.assignments?.join(", ") || "",
     });
     setIsModalVisible(true);
   };
 
+  const executeDelete = async (id: string) => {
+    try {
+      await teacherClient.delete(`/api/student/lesson-plans/${id}`);
+      setLessonPlans((prev) => prev.filter((p) => p.id !== id));
+      showAlert("Success", "Lesson plan deleted successfully.");
+    } catch (err) {
+      console.error("Failed to delete lesson plan:", err);
+      showAlert("Error", "Failed to delete lesson plan.");
+    }
+  };
+
   const handleDeletePlan = (id: string) => {
-    Alert.alert(
-      "Delete Lesson Plan",
-      "Are you sure you want to delete this lesson plan?",
-      [
+    const confirmMessage = "Are you sure you want to delete this lesson plan?";
+
+    if (Platform.OS === "web") {
+      if (window.confirm(confirmMessage)) {
+        executeDelete(id);
+      }
+    } else {
+      Alert.alert("Delete Lesson Plan", confirmMessage, [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            setLessonPlans(lessonPlans.filter((p) => p.id !== id));
-            Alert.alert("Success", "Lesson plan deleted successfully");
-          },
+          onPress: () => executeDelete(id),
         },
-      ],
-    );
+      ]);
+    }
   };
 
-  const updateProgress = (id: string, newProgress: number) => {
-    setLessonPlans(
-      lessonPlans.map((plan) =>
-        plan.id === id
-          ? {
-              ...plan,
-              progress: newProgress,
-              status:
-                newProgress === 100
-                  ? "Completed"
-                  : newProgress > 0
-                    ? "In Progress"
-                    : "Pending",
-            }
-          : plan,
-      ),
-    );
+  const handleMarkAsComplete = async (plan: MappedLessonPlan) => {
+    try {
+      const classSectionId =
+        plan.originalData?.classSectionId || selectedClass?.classSectionId;
+      const subjectName = plan.subject;
+
+      let subjectId = selectedSubject?.subjectId;
+      if (!subjectId && classSectionId) {
+        const cls = teacherClasses.find(
+          (c) => c.classSectionId === classSectionId,
+        );
+        const sub = cls?.subjectsTaught.find(
+          (s) => s.subjectName === subjectName,
+        );
+        subjectId = sub?.subjectId;
+      }
+
+      if (!classSectionId || !subjectId) {
+        showAlert("Error", "Missing class or subject info. Cannot update.");
+        return;
+      }
+
+      const payload = {
+        classSectionId: classSectionId,
+        subjectId: subjectId,
+        teacherId: teacherId,
+        topicName: plan.chapter,
+        plannedDate: plan.startDate,
+        isCompleted: true,
+      };
+
+      await teacherClient.put(`/api/student/lesson-plans/${plan.id}`, payload);
+
+      // Optimistically update the UI
+      setLessonPlans((current) =>
+        current.map((p) =>
+          p.id === plan.id
+            ? {
+                ...p,
+                status: "Completed",
+                originalData: { ...p.originalData!, isCompleted: true },
+              }
+            : p,
+        ),
+      );
+
+      showAlert("Success", "Lesson plan marked as completed.");
+    } catch (err) {
+      console.error("Failed to mark as complete:", err);
+      showAlert("Error", "Failed to update lesson plan status.");
+    }
   };
 
   const resetForm = () => {
     setFormData({
-      classStr: "",
-      subject: "",
       chapter: "",
       description: "",
       startDate: "",
       endDate: "",
       topics: "",
-      resources: "",
-      assignments: "",
     });
     setEditingPlan(null);
     setIsModalVisible(false);
   };
 
+  const shouldShowData =
+    viewMode === "ALL" ||
+    (viewMode === "SPECIFIC" && selectedClass && selectedSubject);
+
   return (
-    <View style={styles.mainContainer}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
       <StatusBar
         style="dark"
         backgroundColor={COLORS.bgWhite}
         translucent={false}
       />
 
-      {/* --- HEADER --- */}
-      <View style={styles.header}>
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between px-5 pb-4 border-b"
+        style={{
+          paddingTop: Platform.OS === "android" ? 50 : 40,
+          backgroundColor: COLORS.bgWhite,
+          borderBottomColor: COLORS.border,
+        }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="p-2 -ml-2 rounded-xl"
+          activeOpacity={0.7}
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lesson Plans</Text>
+        <Text
+          className="text-xl font-bold tracking-tight"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Lesson Plans
+        </Text>
         <TouchableOpacity
-          style={styles.addButton}
+          className="p-2 rounded-lg"
+          style={{ backgroundColor: `${COLORS.primary}1A` }}
           onPress={() => {
+            if (viewMode === "ALL" || !selectedClass || !selectedSubject) {
+              showAlert(
+                "Notice",
+                "Please select a specific class and subject below to create a new plan.",
+              );
+              return;
+            }
             resetForm();
             setIsModalVisible(true);
           }}
@@ -319,233 +541,447 @@ export default function LessonPlanScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Class & Subject Selector */}
+      <View
+        className="bg-white border-b px-5 py-4"
+        style={{ borderBottomColor: COLORS.border }}
+      >
+        {isLoadingClasses ? (
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        ) : error ? (
+          <Text
+            className="text-sm font-semibold"
+            style={{ color: COLORS.error }}
+          >
+            {error}
+          </Text>
+        ) : (
+          <View className="gap-4">
+            <View className="flex-row items-center justify-between">
+              <Text
+                className="text-xs font-bold uppercase tracking-wider"
+                style={{ color: COLORS.textSecondary }}
+              >
+                Filter By Class
+              </Text>
+              <TouchableOpacity
+                onPress={() => fetchAllLessonPlans(teacherId)}
+                className="px-3 py-1.5 rounded-lg border"
+                style={{
+                  backgroundColor:
+                    viewMode === "ALL" ? COLORS.primary : COLORS.white,
+                  borderColor:
+                    viewMode === "ALL" ? COLORS.primary : COLORS.border,
+                }}
+              >
+                <Text
+                  className="font-bold text-xs"
+                  style={{
+                    color:
+                      viewMode === "ALL" ? COLORS.white : COLORS.textPrimary,
+                  }}
+                >
+                  Show All Plans
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {teacherClasses.map((cls) => {
+                  const isSelected =
+                    viewMode === "SPECIFIC" &&
+                    selectedClass?.classSectionId === cls.classSectionId;
+                  return (
+                    <TouchableOpacity
+                      key={cls.classSectionId}
+                      onPress={() => {
+                        setViewMode("SPECIFIC");
+                        setSelectedClass(cls);
+                        setSelectedSubject(cls.subjectsTaught[0] || null);
+                      }}
+                      className="px-4 py-2 rounded-lg border"
+                      style={{
+                        backgroundColor: isSelected
+                          ? COLORS.primary
+                          : COLORS.white,
+                        borderColor: isSelected
+                          ? COLORS.primary
+                          : COLORS.border,
+                      }}
+                    >
+                      <Text
+                        className="font-semibold text-sm"
+                        style={{
+                          color: isSelected ? COLORS.white : COLORS.textPrimary,
+                        }}
+                      >
+                        {cls.className}-{cls.section}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {viewMode === "SPECIFIC" &&
+              selectedClass &&
+              selectedClass.subjectsTaught.length > 0 && (
+                <View>
+                  <Text
+                    className="text-xs font-bold uppercase tracking-wider mb-2"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Select Subject
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8 }}
+                  >
+                    {selectedClass.subjectsTaught.map((sub) => {
+                      const isSelected =
+                        selectedSubject?.subjectId === sub.subjectId;
+                      return (
+                        <TouchableOpacity
+                          key={sub.subjectId}
+                          onPress={() => setSelectedSubject(sub)}
+                          className="px-4 py-2 rounded-lg border"
+                          style={{
+                            backgroundColor: isSelected
+                              ? COLORS.secondary
+                              : COLORS.white,
+                            borderColor: isSelected
+                              ? COLORS.secondary
+                              : COLORS.border,
+                          }}
+                        >
+                          <Text
+                            className="font-semibold text-sm"
+                            style={{
+                              color: isSelected
+                                ? COLORS.white
+                                : COLORS.textPrimary,
+                            }}
+                          >
+                            {sub.subjectName}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+          </View>
+        )}
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.contentWrapper,
-          { maxWidth: isDesktop ? 1000 : "100%" },
-        ]}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingVertical: 24,
+          maxWidth: isDesktop ? 1000 : "100%",
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
         {/* Stats Cards */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIconContainer,
-                { backgroundColor: "rgba(227, 83, 54, 0.1)" },
-              ]}
-            >
-              <BookOpen size={24} color={COLORS.primary} />
-            </View>
-            <Text style={styles.statNumber}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Total Plans</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIconContainer,
-                { backgroundColor: "rgba(255, 152, 0, 0.1)" },
-              ]}
-            >
-              <Clock size={24} color={COLORS.warning} />
-            </View>
-            <Text style={styles.statNumber}>{stats.active}</Text>
-            <Text style={styles.statLabel}>In Progress</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIconContainer,
-                { backgroundColor: "rgba(76, 175, 80, 0.1)" },
-              ]}
-            >
-              <CheckCircle2 size={24} color={COLORS.success} />
-            </View>
-            <Text style={styles.statNumber}>{stats.completed}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIconContainer,
-                { backgroundColor: "rgba(244, 164, 96, 0.1)" },
-              ]}
-            >
-              <TrendingUp size={24} color={COLORS.accent} />
-            </View>
-            <Text style={styles.statNumber}>{stats.averageProgress}%</Text>
-            <Text style={styles.statLabel}>Avg Progress</Text>
-          </View>
-        </View>
-
-        {/* Search and Filter */}
-        <View style={styles.searchContainer}>
-          <Search
-            size={20}
-            color={COLORS.textSecondary}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by chapter, subject, or class..."
-            placeholderTextColor={COLORS.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery !== "" && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={styles.filterIconButton}
-            onPress={() => setIsFilterVisible(!isFilterVisible)}
+        {!isLoadingPlans && shouldShowData && lessonPlans.length > 0 && (
+          <View
+            className={
+              Platform.OS === "web"
+                ? "flex-row flex-wrap w-full gap-4 mb-6"
+                : `flex-row flex-wrap justify-between w-full mb-6 ${isDesktop ? "gap-6" : "gap-3"}`
+            }
           >
-            <Filter
-              size={20}
-              color={
-                activeFilter !== "all" ? COLORS.primary : COLORS.textSecondary
-              }
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Filter Chips */}
-        {isFilterVisible && (
-          <View style={styles.filterChips}>
-            <TouchableOpacity
-              style={[styles.chip, activeFilter === "all" && styles.chipActive]}
-              onPress={() => setActiveFilter("all")}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === "all" && styles.chipTextActive,
-                ]}
+            {[
+              {
+                icon: BookOpen,
+                label: "Total Plans",
+                value: stats.total,
+                bg: `${COLORS.primary}1A`,
+                iconColor: COLORS.primary,
+              },
+              {
+                icon: Target,
+                label: "Pending",
+                value: stats.pending,
+                bg: `${COLORS.warning}1A`,
+                iconColor: COLORS.warning,
+              },
+              {
+                icon: CheckCircle2,
+                label: "Completed",
+                value: stats.completed,
+                bg: `${COLORS.success}1A`,
+                iconColor: COLORS.success,
+              },
+            ].map((stat, idx) => (
+              <View
+                key={idx}
+                className="flex-1 min-w-[30%] flex-col items-center justify-center rounded-2xl border"
+                style={{
+                  ...(Platform.OS === "web" ? { flex: 1 } : {}),
+                  padding: isDesktop ? 24 : 16,
+                  backgroundColor: COLORS.bgWhite,
+                  borderColor: COLORS.border,
+                  ...platformShadow,
+                }}
               >
-                All
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.chip,
-                activeFilter === "in-progress" && styles.chipActive,
-              ]}
-              onPress={() => setActiveFilter("in-progress")}
-            >
-              <Clock
-                size={14}
-                color={
-                  activeFilter === "in-progress" ? COLORS.white : COLORS.warning
-                }
-              />
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === "in-progress" && styles.chipTextActive,
-                ]}
-              >
-                In Progress
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.chip,
-                activeFilter === "completed" && styles.chipActive,
-              ]}
-              onPress={() => setActiveFilter("completed")}
-            >
-              <CheckCircle2
-                size={14}
-                color={
-                  activeFilter === "completed" ? COLORS.white : COLORS.success
-                }
-              />
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === "completed" && styles.chipTextActive,
-                ]}
-              >
-                Completed
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.chip,
-                activeFilter === "pending" && styles.chipActive,
-              ]}
-              onPress={() => setActiveFilter("pending")}
-            >
-              <Target
-                size={14}
-                color={
-                  activeFilter === "pending" ? COLORS.white : COLORS.pending
-                }
-              />
-              <Text
-                style={[
-                  styles.chipText,
-                  activeFilter === "pending" && styles.chipTextActive,
-                ]}
-              >
-                Pending
-              </Text>
-            </TouchableOpacity>
+                <View
+                  className="rounded-full justify-center items-center mb-3"
+                  style={{
+                    backgroundColor: stat.bg,
+                    width: isDesktop ? 56 : 44,
+                    height: isDesktop ? 56 : 44,
+                  }}
+                >
+                  <stat.icon
+                    size={isDesktop ? 28 : 24}
+                    color={stat.iconColor}
+                  />
+                </View>
+                <Text
+                  className="font-black text-center mb-1"
+                  style={{
+                    color: COLORS.textPrimary,
+                    fontSize: isDesktop ? 28 : 22,
+                  }}
+                >
+                  {stat.value}
+                </Text>
+                <Text
+                  className="font-bold text-center uppercase tracking-wider"
+                  style={{
+                    color: COLORS.textSecondary,
+                    fontSize: isDesktop ? 12 : 10,
+                  }}
+                >
+                  {stat.label}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
 
-        {/* Lesson Plans List */}
-        {filteredPlans.length === 0 ? (
-          <View style={styles.emptyState}>
-            <BookOpen size={48} color={COLORS.textSecondary} />
-            <Text style={styles.emptyStateTitle}>No lesson plans found</Text>
-            <Text style={styles.emptyStateText}>
-              Try adjusting your search or filter criteria
-            </Text>
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => {
-                resetForm();
-                setIsModalVisible(true);
+        {/* Search and Filter */}
+        {!isLoadingPlans && shouldShowData && lessonPlans.length > 0 && (
+          <>
+            <View
+              className="flex-row items-center rounded-xl px-4 py-1.5 mb-5 border"
+              style={{
+                backgroundColor: COLORS.bgWhite,
+                borderColor: COLORS.border,
               }}
             >
-              <Plus size={20} color={COLORS.white} />
-              <Text style={styles.createButtonText}>Create New Plan</Text>
-            </TouchableOpacity>
+              <Search
+                size={20}
+                color={COLORS.textSecondary}
+                style={{ marginRight: 12 }}
+              />
+              <TextInput
+                className="flex-1 py-3 text-base"
+                placeholder="Search topics..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={
+                  Platform.OS === "web"
+                    ? ({
+                        color: COLORS.textPrimary,
+                        outlineStyle: "none",
+                      } as any)
+                    : { color: COLORS.textPrimary }
+                }
+              />
+              {searchQuery !== "" && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Text
+                    className="font-semibold text-sm py-3 mr-3"
+                    style={{ color: COLORS.primary }}
+                  >
+                    Clear
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                className="p-2 -mr-2"
+                onPress={() => setIsFilterVisible(!isFilterVisible)}
+              >
+                <Filter
+                  size={20}
+                  color={
+                    activeFilter !== "all"
+                      ? COLORS.primary
+                      : COLORS.textSecondary
+                  }
+                />
+              </TouchableOpacity>
+            </View>
+
+            {isFilterVisible && (
+              <View className="flex-row flex-wrap gap-2.5 mb-5">
+                {(["all", "completed", "pending"] as FilterType[]).map(
+                  (filter) => {
+                    let IconComponent = null;
+                    let iconColor = COLORS.textSecondary;
+                    if (filter === "completed") {
+                      IconComponent = CheckCircle2;
+                      iconColor = COLORS.success;
+                    }
+                    if (filter === "pending") {
+                      IconComponent = Target;
+                      iconColor = COLORS.pending;
+                    }
+
+                    const isActive = activeFilter === filter;
+                    return (
+                      <TouchableOpacity
+                        key={filter}
+                        className="flex-row items-center gap-1.5 px-4 py-2.5 rounded-full border"
+                        style={[
+                          isActive
+                            ? {
+                                backgroundColor: COLORS.primary,
+                                borderColor: COLORS.primary,
+                              }
+                            : {
+                                backgroundColor: COLORS.bgWhite,
+                                borderColor: COLORS.border,
+                              },
+                        ]}
+                        onPress={() => setActiveFilter(filter)}
+                      >
+                        {IconComponent && (
+                          <IconComponent
+                            size={14}
+                            color={isActive ? COLORS.white : iconColor}
+                          />
+                        )}
+                        <Text
+                          className="text-xs font-bold capitalize"
+                          style={{
+                            color: isActive
+                              ? COLORS.white
+                              : COLORS.textSecondary,
+                          }}
+                        >
+                          {filter === "all" ? "All" : filter}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  },
+                )}
+              </View>
+            )}
+          </>
+        )}
+
+        {/* Loading / Error / Data List */}
+        {isLoadingPlans ? (
+          <View className="items-center justify-center py-20">
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text
+              className="mt-4 font-bold"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Loading lesson plans...
+            </Text>
+          </View>
+        ) : viewMode === "SPECIFIC" && (!selectedClass || !selectedSubject) ? (
+          <View className="items-center justify-center py-20 gap-3">
+            <BookOpen size={48} color={COLORS.textTertiary} />
+            <Text
+              className="text-lg font-bold mt-2"
+              style={{ color: COLORS.textPrimary }}
+            >
+              Select Class & Subject
+            </Text>
+            <Text
+              className="text-sm text-center font-medium"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Please select a class and subject to view the lesson plans.
+            </Text>
+          </View>
+        ) : filteredPlans.length === 0 ? (
+          <View className="items-center justify-center py-20 gap-3">
+            <View
+              className="w-20 h-20 rounded-full items-center justify-center mb-2"
+              style={{ backgroundColor: COLORS.border }}
+            >
+              <BookOpen size={32} color={COLORS.textSecondary} />
+            </View>
+            <Text
+              className="text-xl font-black mt-2"
+              style={{ color: COLORS.textPrimary }}
+            >
+              {viewMode === "ALL"
+                ? "No lesson plans found"
+                : "No plans for this class & subject"}
+            </Text>
+            <Text
+              className="text-sm text-center mb-4 font-medium"
+              style={{ color: COLORS.textSecondary }}
+            >
+              Try adjusting your search or select a different class.
+            </Text>
+            {viewMode === "SPECIFIC" && (
+              <TouchableOpacity
+                className="flex-row items-center gap-2 px-6 py-3.5 rounded-xl"
+                style={{ backgroundColor: COLORS.primary }}
+                onPress={() => {
+                  resetForm();
+                  setIsModalVisible(true);
+                }}
+              >
+                <Plus size={20} color={COLORS.white} />
+                <Text className="font-bold text-white">Create New Plan</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
-          <View style={styles.listContainer}>
+          <View className="gap-4">
             {filteredPlans.map((plan) => {
-              const StatusIcon = getStatusConfig(plan.status).icon;
-              const statusColor = getStatusConfig(plan.status).color;
-              const statusBg = getStatusConfig(plan.status).bg;
+              const {
+                icon: StatusIcon,
+                color: statusColor,
+                bg: statusBg,
+              } = getStatusConfig(plan.status);
 
               return (
-                <View key={plan.id} style={styles.planCard}>
-                  {/* Header Row */}
-                  <View style={styles.cardHeader}>
-                    <View style={styles.classBadge}>
-                      <Users size={12} color={COLORS.primary} />
-                      <Text style={styles.classBadgeText}>
+                <View
+                  key={plan.id}
+                  className="p-5 rounded-2xl border"
+                  style={{
+                    backgroundColor: COLORS.bgWhite,
+                    borderColor: COLORS.border,
+                    ...platformShadow,
+                  }}
+                >
+                  <View className="flex-row justify-between items-center flex-wrap gap-2 mb-4">
+                    <View
+                      className="flex-row items-center gap-2 px-3 py-1.5 rounded-lg"
+                      style={{ backgroundColor: `${COLORS.primary}1A` }}
+                    >
+                      <Users size={14} color={COLORS.primary} />
+                      <Text
+                        className="text-xs font-bold uppercase tracking-wider"
+                        style={{ color: COLORS.textPrimary }}
+                      >
                         {plan.classStr} • {plan.subject}
                       </Text>
                     </View>
-                    <View style={styles.cardActions}>
-                      <TouchableOpacity
-                        style={styles.actionIcon}
-                        onPress={() => handleEditPlan(plan)}
-                      >
+                    <View className="flex-row gap-4 items-center">
+                      <TouchableOpacity onPress={() => handleEditPlan(plan)}>
                         <Edit2 size={18} color={COLORS.textSecondary} />
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.actionIcon}
                         onPress={() => handleDeletePlan(plan.id)}
                       >
                         <Trash2 size={18} color={COLORS.error} />
@@ -553,25 +989,48 @@ export default function LessonPlanScreen() {
                     </View>
                   </View>
 
-                  {/* Chapter Title */}
-                  <Text style={styles.chapterTitle}>{plan.chapter}</Text>
-
-                  {/* Description */}
-                  <Text style={styles.description} numberOfLines={2}>
-                    {plan.description}
+                  <Text
+                    className="text-xl font-black mb-2 tracking-tight"
+                    style={{ color: COLORS.textPrimary }}
+                  >
+                    {plan.chapter}
                   </Text>
 
-                  {/* Topics */}
+                  {plan.description && (
+                    <Text
+                      className="text-sm leading-5 mb-4 font-medium"
+                      style={{ color: COLORS.textSecondary }}
+                      numberOfLines={2}
+                    >
+                      {plan.description}
+                    </Text>
+                  )}
+
                   {plan.topics && plan.topics.length > 0 && (
-                    <View style={styles.topicsContainer}>
+                    <View className="flex-row flex-wrap gap-2 mb-5">
                       {plan.topics.slice(0, 3).map((topic, index) => (
-                        <View key={index} style={styles.topicTag}>
-                          <Text style={styles.topicText}>{topic}</Text>
+                        <View
+                          key={index}
+                          className="px-3 py-1.5 rounded-lg"
+                          style={{ backgroundColor: COLORS.lightGray }}
+                        >
+                          <Text
+                            className="text-xs font-bold"
+                            style={{ color: COLORS.textSecondary }}
+                          >
+                            {topic}
+                          </Text>
                         </View>
                       ))}
                       {plan.topics.length > 3 && (
-                        <View style={styles.topicTag}>
-                          <Text style={styles.topicText}>
+                        <View
+                          className="px-3 py-1.5 rounded-lg"
+                          style={{ backgroundColor: COLORS.lightGray }}
+                        >
+                          <Text
+                            className="text-xs font-bold"
+                            style={{ color: COLORS.textSecondary }}
+                          >
                             +{plan.topics.length - 3} more
                           </Text>
                         </View>
@@ -579,70 +1038,53 @@ export default function LessonPlanScreen() {
                     </View>
                   )}
 
-                  {/* Progress Section */}
-                  <View style={styles.progressSection}>
-                    <View style={styles.progressHeader}>
+                  <View
+                    className="flex-row items-center justify-between pt-4 border-t"
+                    style={{ borderTopColor: COLORS.border }}
+                  >
+                    <View className="flex-row items-center gap-3">
                       <View
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: statusBg },
-                        ]}
+                        className="flex-row items-center px-3 py-1.5 rounded-lg gap-2"
+                        style={{ backgroundColor: statusBg }}
                       >
                         <StatusIcon size={14} color={statusColor} />
                         <Text
-                          style={[styles.statusText, { color: statusColor }]}
+                          className="text-xs font-black uppercase tracking-wider"
+                          style={{ color: statusColor }}
                         >
                           {plan.status}
                         </Text>
                       </View>
-                      <View style={styles.progressControls}>
+
+                      {plan.status === "Pending" && (
                         <TouchableOpacity
-                          style={styles.progressButton}
-                          onPress={() =>
-                            updateProgress(
-                              plan.id,
-                              Math.max(0, plan.progress - 10),
-                            )
-                          }
+                          onPress={() => handleMarkAsComplete(plan)}
+                          className="flex-row items-center px-3 py-1.5 rounded-lg gap-1 border"
+                          style={{
+                            backgroundColor: COLORS.white,
+                            borderColor: COLORS.success,
+                          }}
                         >
-                          <Text style={styles.progressButtonText}>-</Text>
+                          <CheckCircle2 size={14} color={COLORS.success} />
+                          <Text
+                            className="text-xs font-bold uppercase tracking-wider"
+                            style={{ color: COLORS.success }}
+                          >
+                            Mark Complete
+                          </Text>
                         </TouchableOpacity>
-                        <Text style={styles.progressPercent}>
-                          {plan.progress}%
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.progressButton}
-                          onPress={() =>
-                            updateProgress(
-                              plan.id,
-                              Math.min(100, plan.progress + 10),
-                            )
-                          }
-                        >
-                          <Text style={styles.progressButtonText}>+</Text>
-                        </TouchableOpacity>
-                      </View>
+                      )}
                     </View>
 
-                    <View style={styles.progressBarBg}>
-                      <View
-                        style={[
-                          styles.progressBarFill,
-                          {
-                            width: `${plan.progress}%`,
-                            backgroundColor: statusColor,
-                          },
-                        ]}
-                      />
+                    <View className="flex-row items-center gap-2">
+                      <Calendar size={14} color={COLORS.textSecondary} />
+                      <Text
+                        className="text-xs font-bold"
+                        style={{ color: COLORS.textSecondary }}
+                      >
+                        {formatDate(plan.startDate)}
+                      </Text>
                     </View>
-                  </View>
-
-                  {/* Date Range */}
-                  <View style={styles.dateRangeContainer}>
-                    <Calendar size={14} color={COLORS.textSecondary} />
-                    <Text style={styles.dateRangeText}>
-                      {formatDate(plan.startDate)} - {formatDate(plan.endDate)}
-                    </Text>
                   </View>
                 </View>
               );
@@ -654,144 +1096,199 @@ export default function LessonPlanScreen() {
       {/* Create/Edit Modal */}
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={isModalVisible}
         onRequestClose={resetForm}
       >
-        <View style={styles.modalOverlay}>
+        <View
+          className="flex-1 justify-center items-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <View
-            style={[styles.modalContent, { width: isDesktop ? 600 : "90%" }]}
+            className="rounded-2xl p-6 max-h-[90%]"
+            style={{
+              width: isDesktop ? 600 : "90%",
+              backgroundColor: COLORS.bgWhite,
+              ...platformShadow,
+            }}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingPlan ? "Edit Lesson Plan" : "Create New Lesson Plan"}
+            <View
+              className="flex-row justify-between items-center mb-6 border-b pb-4"
+              style={{ borderBottomColor: COLORS.border }}
+            >
+              <Text
+                className="text-xl font-black"
+                style={{ color: COLORS.textPrimary }}
+              >
+                {editingPlan ? "Edit Lesson Plan" : "Create Lesson Plan"}
               </Text>
-              <TouchableOpacity onPress={resetForm} style={styles.closeButton}>
-                <X size={24} color={COLORS.textPrimary} />
+              <TouchableOpacity
+                onPress={resetForm}
+                className="p-2 bg-gray-100 rounded-full"
+                style={{ backgroundColor: COLORS.lightGray }}
+              >
+                <X size={20} color={COLORS.textPrimary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Class *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 10-A"
-                  value={formData.classStr}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, classStr: text })
-                  }
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Subject *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Mathematics"
-                  value={formData.subject}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, subject: text })
-                  }
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Chapter *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Chapter 5: Quadratic Equations"
-                  value={formData.chapter}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, chapter: text })
-                  }
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Brief description of the lesson plan"
-                  multiline
-                  numberOfLines={3}
-                  value={formData.description}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, description: text })
-                  }
-                />
-              </View>
-
-              <View style={styles.formRow}>
-                <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>Start Date</Text>
+              <View className="gap-5">
+                <View>
+                  <Text
+                    className="text-xs font-bold uppercase tracking-wider mb-2"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Chapter / Topic *
+                  </Text>
                   <TextInput
-                    style={styles.input}
-                    placeholder="YYYY-MM-DD"
-                    value={formData.startDate}
+                    className="border-2 rounded-xl p-3.5 text-sm font-medium"
+                    style={
+                      Platform.OS === "web"
+                        ? ({
+                            borderColor: COLORS.lightGray,
+                            color: COLORS.textPrimary,
+                            backgroundColor: COLORS.white,
+                            outlineStyle: "none",
+                          } as any)
+                        : {
+                            borderColor: COLORS.lightGray,
+                            color: COLORS.textPrimary,
+                            backgroundColor: COLORS.white,
+                          }
+                    }
+                    placeholder="e.g., Quadratic Equations"
+                    placeholderTextColor={COLORS.textTertiary}
+                    value={formData.chapter}
                     onChangeText={(text) =>
-                      setFormData({ ...formData, startDate: text })
+                      setFormData({ ...formData, chapter: text })
                     }
                   />
                 </View>
-                <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>End Date</Text>
+
+                <View>
+                  <Text
+                    className="text-xs font-bold uppercase tracking-wider mb-2"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Description
+                  </Text>
                   <TextInput
-                    style={styles.input}
-                    placeholder="YYYY-MM-DD"
-                    value={formData.endDate}
+                    className="border-2 rounded-xl p-3.5 text-sm font-medium min-h-[100px]"
+                    style={
+                      Platform.OS === "web"
+                        ? ({
+                            borderColor: COLORS.lightGray,
+                            color: COLORS.textPrimary,
+                            backgroundColor: COLORS.white,
+                            outlineStyle: "none",
+                            textAlignVertical: "top",
+                          } as any)
+                        : {
+                            borderColor: COLORS.lightGray,
+                            color: COLORS.textPrimary,
+                            backgroundColor: COLORS.white,
+                            textAlignVertical: "top",
+                          }
+                    }
+                    placeholder="Brief description of the lesson plan"
+                    placeholderTextColor={COLORS.textTertiary}
+                    multiline
+                    numberOfLines={4}
+                    value={formData.description}
                     onChangeText={(text) =>
-                      setFormData({ ...formData, endDate: text })
+                      setFormData({ ...formData, description: text })
                     }
                   />
                 </View>
-              </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Topics (comma-separated)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Quadratic Formula, Discriminant, Nature of Roots"
-                  value={formData.topics}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, topics: text })
-                  }
-                />
-              </View>
+                <View className="flex-row gap-4">
+                  <View className="flex-1">
+                    <Text
+                      className="text-xs font-bold uppercase tracking-wider mb-2"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Start Date
+                    </Text>
+                    <TextInput
+                      className="border-2 rounded-xl p-3.5 text-sm font-medium"
+                      style={
+                        Platform.OS === "web"
+                          ? ({
+                              borderColor: COLORS.lightGray,
+                              color: COLORS.textPrimary,
+                              backgroundColor: COLORS.white,
+                              outlineStyle: "none",
+                            } as any)
+                          : {
+                              borderColor: COLORS.lightGray,
+                              color: COLORS.textPrimary,
+                              backgroundColor: COLORS.white,
+                            }
+                      }
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={COLORS.textTertiary}
+                      value={formData.startDate}
+                      onChangeText={(text) =>
+                        setFormData({ ...formData, startDate: text })
+                      }
+                    />
+                  </View>
+                </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Resources (comma-separated)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Textbook, Worksheet, Video"
-                  value={formData.resources}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, resources: text })
-                  }
-                />
-              </View>
+                <View>
+                  <Text
+                    className="text-xs font-bold uppercase tracking-wider mb-2"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Sub-Topics (comma-separated)
+                  </Text>
+                  <TextInput
+                    className="border-2 rounded-xl p-3.5 text-sm font-medium"
+                    style={
+                      Platform.OS === "web"
+                        ? ({
+                            borderColor: COLORS.lightGray,
+                            color: COLORS.textPrimary,
+                            backgroundColor: COLORS.white,
+                            outlineStyle: "none",
+                          } as any)
+                        : {
+                            borderColor: COLORS.lightGray,
+                            color: COLORS.textPrimary,
+                            backgroundColor: COLORS.white,
+                          }
+                    }
+                    placeholder="e.g., Formula, Discriminant, Roots"
+                    placeholderTextColor={COLORS.textTertiary}
+                    value={formData.topics}
+                    onChangeText={(text) =>
+                      setFormData({ ...formData, topics: text })
+                    }
+                  />
+                </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Assignments (comma-separated)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Problem Set, Quiz, Project"
-                  value={formData.assignments}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, assignments: text })
-                  }
-                />
+                <TouchableOpacity
+                  className="flex-row items-center justify-center gap-2 py-4 rounded-xl mt-4 mb-2 shadow-sm"
+                  style={{
+                    backgroundColor: isSubmitting
+                      ? COLORS.textSecondary
+                      : COLORS.primary,
+                  }}
+                  onPress={handleCreatePlan}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color={COLORS.white} />
+                  ) : (
+                    <>
+                      <Save size={20} color={COLORS.white} />
+                      <Text className="font-black text-white text-base tracking-wide">
+                        {editingPlan ? "UPDATE PLAN" : "SAVE PLAN"}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleCreatePlan}
-              >
-                <Save size={20} color={COLORS.white} />
-                <Text style={styles.saveButtonText}>
-                  {editingPlan ? "Update Plan" : "Create Plan"}
-                </Text>
-              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
@@ -799,390 +1296,3 @@ export default function LessonPlanScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: COLORS.lightGray },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...Platform.select({
-      web: { userSelect: "none" },
-    }),
-  },
-  backButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-  addButton: {
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
-    padding: 8,
-    borderRadius: 8,
-  },
-  contentWrapper: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    alignSelf: "center",
-    width: "100%",
-  },
-  statsGrid: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 24,
-    flexWrap: "wrap",
-  },
-  statCard: {
-    flex: 1,
-    minWidth: 100,
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
-    padding: 14,
-    alignItems: "center",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.05)",
-      },
-    }),
-  },
-  statIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  statNumber: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  searchIcon: {
-    marginRight: 12,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: COLORS.textPrimary,
-  },
-  clearText: {
-    color: COLORS.primary,
-    fontWeight: "600",
-    fontSize: 14,
-    paddingVertical: 12,
-    marginRight: 12,
-  },
-  filterIconButton: {
-    padding: 8,
-    marginRight: -8,
-  },
-  filterChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 20,
-  },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.bgWhite,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  chipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
-  },
-  chipTextActive: {
-    color: COLORS.white,
-  },
-  listContainer: {
-    gap: 16,
-  },
-  planCard: {
-    backgroundColor: COLORS.bgWhite,
-    padding: 20,
-    borderRadius: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-      web: {
-        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.05)",
-      },
-    }),
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  classBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  classBadgeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-  },
-  cardActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  actionIcon: {
-    padding: 4,
-  },
-  chapterTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  topicsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
-  },
-  topicTag: {
-    backgroundColor: "rgba(160, 82, 45, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  topicText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-  },
-  progressSection: {
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  progressControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  progressButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  progressButtonText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
-  progressPercent: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: 4,
-  },
-  dateRangeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  dateRangeText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    gap: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginTop: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  createButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  createButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.white,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 20,
-    padding: 24,
-    maxHeight: "90%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  formGroup: {
-    marginBottom: 16,
-  },
-  formRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    backgroundColor: COLORS.white,
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.white,
-  },
-});

@@ -1,10 +1,10 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Search, User } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
+  Animated,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -13,11 +13,18 @@ import {
 } from "react-native";
 
 const COLORS = {
-  bgWhite: "#FFFFFF",
-  lightGray: "#F5F5F5",
+  // Theme palette
   primary: "#E35336",
-  textPrimary: "#5C2E14",
-  textSecondary: "#A0522D",
+  accent: "#F5F50C",
+  secondary: "#F4A460",
+  primaryLight: "#FEE2DB",
+  secondaryLight: "#FEF0E8",
+  bgWarm: "#FFF8F2",
+  bgWhite: "#FFFFFF",
+  textPrimary: "#3B2A1F",
+  textSecondary: "#8B5E3C",
+  textTertiary: "#B8956E",
+  border: "#F0E4D8",
   white: "#FFFFFF",
 };
 
@@ -53,183 +60,187 @@ export default function ParentsCommunicationScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
+  // Animation refs for each chat item
+  const fadeAnims = useRef(
+    DUMMY_CHATS.map(() => new Animated.Value(0)),
+  ).current;
+  const slideAnims = useRef(
+    DUMMY_CHATS.map(() => new Animated.Value(20)),
+  ).current;
+
+  useEffect(() => {
+    Animated.stagger(
+      120,
+      fadeAnims.map((anim, idx) =>
+        Animated.parallel([
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.spring(slideAnims[idx], {
+            toValue: 0,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ).start();
+  }, []);
+
   return (
-    <View style={styles.mainContainer}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
       <StatusBar
         style="dark"
         backgroundColor={COLORS.bgWhite}
         translucent={false}
       />
 
-      <View style={styles.header}>
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between px-5 pb-4 border-b"
+        style={{
+          paddingTop: 40,
+          backgroundColor: COLORS.bgWhite,
+          borderBottomColor: COLORS.border,
+        }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="p-2 -ml-2 rounded-xl"
+          activeOpacity={0.7}
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Parent Chats</Text>
+        <Text
+          className="text-xl font-bold tracking-tight"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Parent Chats
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View
-        style={[styles.contentWrapper, { maxWidth: isDesktop ? 800 : "100%" }]}
+        className="flex-1 w-full self-center"
+        style={{ maxWidth: isDesktop ? 800 : "100%" }}
       >
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        <View
+          className="flex-row items-center mx-5 mt-6 mb-4 rounded-xl border px-4"
+          style={{
+            backgroundColor: COLORS.bgWhite,
+            borderColor: COLORS.border,
+          }}
+        >
           <Search
             size={20}
             color={COLORS.textSecondary}
-            style={styles.searchIcon}
+            style={{ marginRight: 12 }}
           />
           <TextInput
+            className="flex-1 py-3.5 text-base"
             placeholder="Search by student or parent name..."
-            placeholderTextColor="#A0522D80"
-            style={styles.searchInput}
+            placeholderTextColor={`${COLORS.textSecondary}80`}
+            style={{ color: COLORS.textPrimary }}
           />
         </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 40,
+            gap: 12,
+          }}
         >
-          {DUMMY_CHATS.map((chat) => (
-            <TouchableOpacity
+          {DUMMY_CHATS.map((chat, idx) => (
+            <Animated.View
               key={chat.id}
-              style={styles.chatCard}
-              activeOpacity={0.7}
+              style={{
+                opacity: fadeAnims[idx],
+                transform: [{ translateY: slideAnims[idx] }],
+              }}
             >
-              <View style={styles.avatar}>
-                <User size={24} color={COLORS.primary} />
-              </View>
+              <TouchableOpacity
+                className="flex-row items-center p-4 rounded-2xl border"
+                style={{
+                  backgroundColor: COLORS.bgWhite,
+                  borderColor: COLORS.border,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  elevation: 2,
+                }}
+                activeOpacity={0.7}
+                // onPress would route to individual chat room
+              >
+                <View
+                  className="w-12 h-12 rounded-full justify-center items-center mr-4"
+                  style={{ backgroundColor: COLORS.primaryLight }}
+                >
+                  <User size={24} color={COLORS.primary} />
+                </View>
 
-              <View style={styles.chatDetails}>
-                <View style={styles.chatHeader}>
-                  <Text style={styles.parentName}>{chat.parentName}</Text>
+                <View className="flex-1">
+                  <View className="flex-row justify-between items-center mb-0.5">
+                    <Text
+                      className="text-base font-bold"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      {chat.parentName}
+                    </Text>
+                    <Text
+                      className="text-xs"
+                      style={[
+                        { color: COLORS.textSecondary },
+                        chat.unread > 0 && {
+                          color: COLORS.primary,
+                          fontWeight: "800",
+                        },
+                      ]}
+                    >
+                      {chat.time}
+                    </Text>
+                  </View>
                   <Text
+                    className="text-xs font-bold mb-1"
+                    style={{ color: COLORS.primary }}
+                  >
+                    Parent of {chat.studentName}
+                  </Text>
+                  <Text
+                    className="text-sm"
+                    numberOfLines={1}
                     style={[
-                      styles.timeText,
+                      { color: COLORS.textSecondary },
                       chat.unread > 0 && {
-                        color: COLORS.primary,
-                        fontWeight: "800",
+                        color: COLORS.textPrimary,
+                        fontWeight: "600",
                       },
                     ]}
                   >
-                    {chat.time}
+                    {chat.lastMessage}
                   </Text>
                 </View>
-                <Text style={styles.studentName}>
-                  Parent of {chat.studentName}
-                </Text>
-                <Text
-                  style={[
-                    styles.lastMessage,
-                    chat.unread > 0 && {
-                      color: COLORS.textPrimary,
-                      fontWeight: "600",
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {chat.lastMessage}
-                </Text>
-              </View>
 
-              {chat.unread > 0 && (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadText}>{chat.unread}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+                {chat.unread > 0 && (
+                  <View
+                    className="w-6 h-6 rounded-full justify-center items-center ml-3"
+                    style={{ backgroundColor: COLORS.primary }}
+                  >
+                    <Text className="text-white text-xs font-bold">
+                      {chat.unread}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </ScrollView>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: COLORS.lightGray },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EAEAEE",
-  },
-  backButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-  contentWrapper: { flex: 1, width: "100%", alignSelf: "center" },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.bgWhite,
-    marginHorizontal: 24,
-    marginTop: 24,
-    marginBottom: 16,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: "#EAEAEE",
-  },
-  searchIcon: { marginRight: 12 },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: COLORS.textPrimary,
-  },
-  listContainer: { paddingHorizontal: 24, paddingBottom: 40 },
-  chatCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.bgWhite,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(227, 83, 54, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  chatDetails: { flex: 1 },
-  chatHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  parentName: { fontSize: 16, fontWeight: "800", color: COLORS.textPrimary },
-  timeText: { fontSize: 12, color: COLORS.textSecondary },
-  studentName: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  lastMessage: { fontSize: 14, color: COLORS.textSecondary },
-  unreadBadge: {
-    backgroundColor: COLORS.primary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 12,
-  },
-  unreadText: { color: COLORS.white, fontSize: 12, fontWeight: "800" },
-});

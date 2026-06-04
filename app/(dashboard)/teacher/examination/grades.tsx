@@ -1,3 +1,5 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -8,13 +10,17 @@ import {
   Filter,
   Search,
   TrendingUp,
+  User,
   Users,
+  X,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Animated,
+  Modal,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -23,81 +29,68 @@ import {
 } from "react-native";
 
 const COLORS = {
-  bgWhite: "#FFFFFF",
-  lightGray: "#F5F5F5",
   primary: "#E35336",
-  textPrimary: "#5C2E14",
-  textSecondary: "#A0522D",
+  accent: "#F5F50C",
+  secondary: "#F4A460",
+  primaryLight: "#FEE2DB",
+  secondaryLight: "#FEF0E8",
+  bgWarm: "#FFF8F2",
+  bgWhite: "#FFFFFF",
+  textPrimary: "#3B2A1F",
+  textSecondary: "#8B5E3C",
+  textTertiary: "#B8956E",
+  success: "#10B981",
+  warning: "#F59E0B",
+  error: "#EF4444",
+  border: "#F0E4D8",
   white: "#FFFFFF",
-  success: "#4CAF50",
-  warning: "#FF9800",
-  error: "#D32F2F",
-  accent: "#F4A460",
-  border: "#EAEAEE",
+  lightGray: "#F3F4F6",
 };
 
-const DUMMY_GRADES = [
-  {
-    id: "1",
-    exam: "Term 1 Finals",
-    classStr: "10-A",
-    subject: "Mathematics",
-    avg: 78,
-    highest: 98,
-    passed: 38,
-    total: 40,
-    date: "2026-03-15",
-    gradeDistribution: { A: 12, B: 18, C: 8, D: 2 },
+// --- Cross-Platform Shadow Helper ---
+const platformShadow = Platform.select({
+  web: { boxShadow: "0px 4px 16px rgba(0,0,0,0.04)" } as any,
+  default: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  {
-    id: "2",
-    exam: "Term 1 Finals",
-    classStr: "11-Science",
-    subject: "Physics",
-    avg: 65,
-    highest: 92,
-    passed: 30,
-    total: 35,
-    date: "2026-03-18",
-    gradeDistribution: { A: 8, B: 12, C: 10, D: 5 },
+});
+
+// 1. Isolated Axios instance for the exams microservice
+const examClient = axios.create({
+  baseURL: "http://192.168.88.20:8081",
+  timeout: 10000,
+});
+
+// 2. Request Interceptor: Automatically attaches the token to ALL requests
+examClient.interceptors.request.use(
+  async (config) => {
+    let token = null;
+    try {
+      if (Platform.OS === "web") {
+        token =
+          localStorage.getItem("userToken") ||
+          localStorage.getItem("token") ||
+          localStorage.getItem("authToken");
+      } else {
+        token =
+          (await AsyncStorage.getItem("userToken")) ||
+          (await AsyncStorage.getItem("token")) ||
+          (await AsyncStorage.getItem("authToken"));
+      }
+    } catch (error) {
+      console.error("Error retrieving token:", error);
+    }
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
   },
-  {
-    id: "3",
-    exam: "Unit Test 1",
-    classStr: "10-B",
-    subject: "Mathematics",
-    avg: 82,
-    highest: 100,
-    passed: 39,
-    total: 39,
-    date: "2026-04-10",
-    gradeDistribution: { A: 20, B: 15, C: 4, D: 0 },
-  },
-  {
-    id: "4",
-    exam: "Mid-Term",
-    classStr: "9-A",
-    subject: "English",
-    avg: 71,
-    highest: 95,
-    passed: 28,
-    total: 32,
-    date: "2026-04-05",
-    gradeDistribution: { A: 10, B: 14, C: 4, D: 4 },
-  },
-  {
-    id: "5",
-    exam: "Term 1 Finals",
-    classStr: "12-Commerce",
-    subject: "Economics",
-    avg: 74,
-    highest: 96,
-    passed: 42,
-    total: 45,
-    date: "2026-03-20",
-    gradeDistribution: { A: 15, B: 18, C: 9, D: 3 },
-  },
-];
+  (error) => Promise.reject(error),
+);
 
 type SortBy = "avg" | "date" | "passRate";
 type SortOrder = "asc" | "desc";
@@ -106,48 +99,186 @@ export default function ViewGradesScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedExam, setSelectedExam] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Get unique exam names for filter
-  const examNames = ["all", ...new Set(DUMMY_GRADES.map((g) => g.exam))];
+  // Data States
+  const [teacherId, setTeacherId] = useState<string>("");
+  const [exams, setExams] = useState<any[]>([]);
+  const [loadingExams, setLoadingExams] = useState(true);
 
-  const filteredAndSortedGrades = DUMMY_GRADES.filter((grade) => {
-    const matchesSearch =
-      grade.classStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      grade.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      grade.exam.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesExam = selectedExam === "all" || grade.exam === selectedExam;
-    return matchesSearch && matchesExam;
-  }).sort((a, b) => {
-    if (sortBy === "avg") {
-      return sortOrder === "desc" ? b.avg - a.avg : a.avg - b.avg;
-    } else if (sortBy === "date") {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
-    } else {
-      const passRateA = (a.passed / a.total) * 100;
-      const passRateB = (b.passed / b.total) * 100;
-      return sortOrder === "desc"
-        ? passRateB - passRateA
-        : passRateA - passRateB;
-    }
+  // Modal / Marks State
+  const [selectedExam, setSelectedExam] = useState<any | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
+
+  const [marksData, setMarksData] = useState<any[]>([]);
+  const [loadingMarks, setLoadingMarks] = useState(false);
+  const [stats, setStats] = useState({
+    avg: 0,
+    highest: 0,
+    passed: 0,
+    total: 0,
+    dist: { A: 0, B: 0, C: 0, D: 0, F: 0 },
   });
 
-  // Overall statistics
-  const totalExams = DUMMY_GRADES.length;
-  const overallAvg = Math.floor(
-    DUMMY_GRADES.reduce((sum, g) => sum + g.avg, 0) / totalExams,
-  );
-  const totalPassed = DUMMY_GRADES.reduce((sum, g) => sum + g.passed, 0);
-  const totalStudents = DUMMY_GRADES.reduce((sum, g) => sum + g.total, 0);
-  const overallPassRate = Math.floor((totalPassed / totalStudents) * 100);
+  // Animation refs
+  const statAnims = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  const statSlideAnims = useRef(
+    [0, 1, 2].map(() => new Animated.Value(20)),
+  ).current;
+  const filterAnim = useRef(new Animated.Value(0)).current;
+  const filterSlideAnim = useRef(new Animated.Value(20)).current;
+
+  // 3. Fetch Exams on Mount
+  useEffect(() => {
+    const fetchExams = async () => {
+      try {
+        setLoadingExams(true);
+        let currentTeacherId = "TCH2026001"; // Fallback
+        if (Platform.OS === "web") {
+          currentTeacherId =
+            localStorage.getItem("userUsername") || currentTeacherId;
+        } else {
+          currentTeacherId =
+            (await AsyncStorage.getItem("userUsername")) || currentTeacherId;
+        }
+        setTeacherId(currentTeacherId);
+
+        const res = await examClient.get(`/api/teacher/${currentTeacherId}`);
+        setExams(res.data || []);
+      } catch (error) {
+        console.error("Failed to load exams:", error);
+      } finally {
+        setLoadingExams(false);
+      }
+    };
+    fetchExams();
+  }, []);
+
+  // 4. Fetch Marks when an exam is selected
+  useEffect(() => {
+    const fetchMarks = async () => {
+      if (!selectedExam || !selectedClassId) return;
+
+      try {
+        setLoadingMarks(true);
+        let url = `/api/exams/${selectedExam.examId}/marks?classSectionId=${selectedClassId}`;
+        if (selectedSubjectId) {
+          url += `&subjectId=${selectedSubjectId}`;
+        }
+
+        const res = await examClient.get(url);
+        const data = res.data || [];
+        setMarksData(data);
+        calculateStats(data);
+      } catch (error) {
+        console.error("Failed to load marks:", error);
+        setMarksData([]);
+        calculateStats([]);
+      } finally {
+        setLoadingMarks(false);
+      }
+    };
+
+    if (selectedExam) {
+      fetchMarks();
+    }
+  }, [selectedExam, selectedClassId, selectedSubjectId]);
+
+  const calculateStats = (data: any[]) => {
+    let total = data.length;
+    let sum = 0;
+    let highest = 0;
+    let passed = 0;
+    let dist = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+
+    data.forEach((m) => {
+      const mark = m.obtainedMarks || 0;
+      sum += mark;
+      if (mark > highest) highest = mark;
+      if (mark >= 40) passed++;
+
+      if (mark >= 90) dist.A++;
+      else if (mark >= 80) dist.B++;
+      else if (mark >= 70) dist.C++;
+      else if (mark >= 60) dist.D++;
+      else dist.F++;
+    });
+
+    setStats({
+      avg: total > 0 ? Math.round(sum / total) : 0,
+      highest,
+      passed,
+      total,
+      dist,
+    });
+  };
+
+  const handleOpenReport = (exam: any) => {
+    setSelectedExam(exam);
+    // Auto-select the first assigned class section
+    if (
+      exam.assignedClassSectionIds &&
+      exam.assignedClassSectionIds.length > 0
+    ) {
+      setSelectedClassId(exam.assignedClassSectionIds[0]);
+    }
+    setSelectedSubjectId("");
+  };
+
+  const closeReport = () => {
+    setSelectedExam(null);
+    setMarksData([]);
+  };
+
+  // Entrance Animations
+  useEffect(() => {
+    Animated.stagger(
+      100,
+      statAnims.map((anim, idx) =>
+        Animated.parallel([
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.spring(statSlideAnims[idx], {
+            toValue: 0,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ).start();
+  }, []);
+
+  useEffect(() => {
+    if (showFilters) {
+      Animated.parallel([
+        Animated.timing(filterAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(filterSlideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      filterAnim.setValue(0);
+    }
+  }, [showFilters]);
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -158,7 +289,7 @@ export default function ViewGradesScreen() {
 
   const getGradeColor = (percentage: number) => {
     if (percentage >= 80) return COLORS.success;
-    if (percentage >= 60) return COLORS.accent;
+    if (percentage >= 60) return COLORS.secondary;
     if (percentage >= 40) return COLORS.warning;
     return COLORS.error;
   };
@@ -173,24 +304,52 @@ export default function ViewGradesScreen() {
     return "F";
   };
 
+  // Filter exams for main screen
+  const filteredExams = exams
+    .filter((exam) => {
+      return exam.examName?.toLowerCase().includes(searchQuery.toLowerCase());
+    })
+    .sort((a, b) => {
+      if (sortBy === "date") {
+        const dateA = new Date(a.startDate).getTime();
+        const dateB = new Date(b.startDate).getTime();
+        return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+      }
+      return 0; // Other sorts can be implemented if needed
+    });
+
   return (
-    <View style={styles.mainContainer}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
       <StatusBar
         style="dark"
         backgroundColor={COLORS.bgWhite}
         translucent={false}
       />
 
-      <View style={styles.header}>
+      {/* Header */}
+      <View
+        className="flex-row items-center justify-between px-5 pb-4 border-b"
+        style={{
+          paddingTop: Platform.OS === "android" ? 50 : 40,
+          backgroundColor: COLORS.bgWhite,
+          borderBottomColor: COLORS.border,
+        }}
+      >
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
+          className="p-2 -ml-2 rounded-xl"
+          activeOpacity={0.7}
         >
           <ArrowLeft size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Class Results</Text>
+        <Text
+          className="text-xl font-bold tracking-tight"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Class Results
+        </Text>
         <TouchableOpacity
-          style={styles.filterHeaderButton}
+          className="p-2 -mr-2"
           onPress={() => setShowFilters(!showFilters)}
         >
           <Filter
@@ -202,158 +361,173 @@ export default function ViewGradesScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContainer,
-          { maxWidth: isDesktop ? 1000 : "100%" },
-        ]}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingVertical: 24,
+          maxWidth: isDesktop ? 1000 : "100%",
+          alignSelf: "center",
+          width: "100%",
+        }}
       >
-        {/* Overall Stats Cards */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: "rgba(227, 83, 54, 0.1)" },
-              ]}
-            >
-              <BarChart3 size={22} color={COLORS.primary} />
-            </View>
-            <View>
-              <Text style={styles.statNumber}>{totalExams}</Text>
-              <Text style={styles.statLabel}>Total Exams</Text>
-            </View>
+        <View className="flex-col gap-6 w-full">
+          {/* Overall Stats Cards */}
+          <View
+            className={
+              Platform.OS === "web"
+                ? "flex-row flex-wrap w-full gap-4"
+                : `flex-row flex-wrap justify-between w-full ${isDesktop ? "gap-6" : "gap-3"}`
+            }
+          >
+            {[
+              {
+                icon: BarChart3,
+                label: "Total Exams",
+                value: exams.length,
+                bg: COLORS.primaryLight,
+                iconColor: COLORS.primary,
+              },
+              {
+                icon: TrendingUp,
+                label: "Active Terms",
+                value: "2",
+                bg: `${COLORS.secondary}1A`,
+                iconColor: COLORS.secondary,
+              },
+              {
+                icon: Users,
+                label: "Your Classes",
+                value: "3",
+                bg: `${COLORS.success}1A`,
+                iconColor: COLORS.success,
+              },
+            ].map((stat, idx) => (
+              <Animated.View
+                key={idx}
+                className="flex-1 min-w-[100px] flex-col items-center justify-center rounded-2xl border"
+                style={{
+                  ...(Platform.OS === "web" ? { flex: 1 } : {}),
+                  padding: isDesktop ? 24 : 16,
+                  opacity: statAnims[idx],
+                  transform: [{ translateY: statSlideAnims[idx] }],
+                  backgroundColor: COLORS.bgWhite,
+                  borderColor: COLORS.border,
+                  ...platformShadow,
+                }}
+              >
+                <View
+                  className="rounded-full justify-center items-center mb-3"
+                  style={{
+                    backgroundColor: stat.bg,
+                    width: isDesktop ? 56 : 44,
+                    height: isDesktop ? 56 : 44,
+                  }}
+                >
+                  <stat.icon
+                    size={isDesktop ? 28 : 22}
+                    color={stat.iconColor}
+                  />
+                </View>
+                <Text
+                  className="font-black text-center"
+                  style={{
+                    color: COLORS.textPrimary,
+                    fontSize: isDesktop ? 28 : 20,
+                  }}
+                >
+                  {stat.value}
+                </Text>
+                <Text
+                  className="font-bold text-center mt-1 uppercase tracking-wider"
+                  style={{
+                    color: COLORS.textSecondary,
+                    fontSize: isDesktop ? 12 : 10,
+                  }}
+                >
+                  {stat.label}
+                </Text>
+              </Animated.View>
+            ))}
           </View>
 
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: "rgba(244, 164, 96, 0.1)" },
-              ]}
+          {/* Filters Panel */}
+          {showFilters && (
+            <Animated.View
+              className="rounded-2xl p-5 border"
+              style={{
+                opacity: filterAnim,
+                transform: [{ translateY: filterSlideAnim }],
+                backgroundColor: COLORS.bgWhite,
+                borderColor: COLORS.border,
+                ...platformShadow,
+              }}
             >
-              <TrendingUp size={22} color={COLORS.accent} />
-            </View>
-            <View>
-              <Text style={styles.statNumber}>{overallAvg}%</Text>
-              <Text style={styles.statLabel}>Avg. Score</Text>
-            </View>
-          </View>
-
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: "rgba(76, 175, 80, 0.1)" },
-              ]}
-            >
-              <Users size={22} color={COLORS.success} />
-            </View>
-            <View>
-              <Text style={styles.statNumber}>{overallPassRate}%</Text>
-              <Text style={styles.statLabel}>Pass Rate</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Search and Filters */}
-        {showFilters && (
-          <View style={styles.filtersPanel}>
-            <View style={styles.searchContainer}>
-              <Search size={18} color={COLORS.textSecondary} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search by class, subject or exam..."
-                placeholderTextColor={COLORS.textSecondary}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-              {searchQuery !== "" && (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Text style={styles.clearText}>Clear</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.filterRow}>
-              <View style={styles.filterGroup}>
-                <Text style={styles.filterLabel}>Exam Type</Text>
-                <View style={styles.pickerContainer}>
-                  {examNames.map((exam) => (
+              <View
+                className="flex-row items-center rounded-xl px-4 py-2 mb-5"
+                style={{ backgroundColor: COLORS.lightGray }}
+              >
+                <Search size={18} color={COLORS.textSecondary} />
+                <TextInput
+                  className="flex-1 py-2.5 text-sm ml-2"
+                  placeholder="Search exams..."
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  style={
+                    Platform.OS === "web"
+                      ? ({
+                          color: COLORS.textPrimary,
+                          outlineStyle: "none",
+                        } as any)
+                      : { color: COLORS.textPrimary }
+                  }
+                />
+                {searchQuery !== "" && (
+                  <TouchableOpacity
+                    onPress={() => setSearchQuery("")}
+                    className="ml-2"
+                  >
+                    <Text
+                      className="font-bold text-xs py-2"
+                      style={{ color: COLORS.primary }}
+                    >
+                      Clear
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <View className="gap-3">
+                <Text
+                  className="text-xs font-bold uppercase tracking-wider"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  Sort By
+                </Text>
+                <View className="flex-row flex-wrap items-center gap-2.5">
+                  {(["date"] as SortBy[]).map((sort) => (
                     <TouchableOpacity
-                      key={exam}
+                      key={sort}
+                      className="px-4 py-2.5 rounded-full"
                       style={[
-                        styles.pickerOption,
-                        selectedExam === exam && styles.pickerOptionActive,
+                        sortBy === sort
+                          ? { backgroundColor: COLORS.primary }
+                          : { backgroundColor: COLORS.lightGray },
                       ]}
-                      onPress={() => setSelectedExam(exam)}
+                      onPress={() => setSortBy(sort)}
                     >
                       <Text
-                        style={[
-                          styles.pickerOptionText,
-                          selectedExam === exam &&
-                            styles.pickerOptionTextActive,
-                        ]}
+                        className="text-xs font-bold"
+                        style={{
+                          color:
+                            sortBy === sort ? COLORS.white : COLORS.textPrimary,
+                        }}
                       >
-                        {exam === "all" ? "All Exams" : exam}
+                        Date
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
-              </View>
-
-              <View style={styles.filterGroup}>
-                <Text style={styles.filterLabel}>Sort By</Text>
-                <View style={styles.sortRow}>
                   <TouchableOpacity
-                    style={[
-                      styles.sortButton,
-                      sortBy === "avg" && styles.sortButtonActive,
-                    ]}
-                    onPress={() => setSortBy("avg")}
-                  >
-                    <Text
-                      style={[
-                        styles.sortButtonText,
-                        sortBy === "avg" && styles.sortButtonTextActive,
-                      ]}
-                    >
-                      Avg Score
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.sortButton,
-                      sortBy === "date" && styles.sortButtonActive,
-                    ]}
-                    onPress={() => setSortBy("date")}
-                  >
-                    <Text
-                      style={[
-                        styles.sortButtonText,
-                        sortBy === "date" && styles.sortButtonTextActive,
-                      ]}
-                    >
-                      Date
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.sortButton,
-                      sortBy === "passRate" && styles.sortButtonActive,
-                    ]}
-                    onPress={() => setSortBy("passRate")}
-                  >
-                    <Text
-                      style={[
-                        styles.sortButtonText,
-                        sortBy === "passRate" && styles.sortButtonTextActive,
-                      ]}
-                    >
-                      Pass Rate
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.orderButton}
+                    className="p-2.5 rounded-full ml-auto"
+                    style={{ backgroundColor: COLORS.lightGray }}
                     onPress={() =>
                       setSortOrder(sortOrder === "desc" ? "asc" : "desc")
                     }
@@ -370,431 +544,427 @@ export default function ViewGradesScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+            </Animated.View>
+          )}
+
+          {/* Results List */}
+          {loadingExams ? (
+            <View className="py-20 items-center">
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text
+                className="mt-4 font-semibold text-sm"
+                style={{ color: COLORS.textSecondary }}
+              >
+                Loading exams...
+              </Text>
             </View>
-          </View>
-        )}
-
-        {/* Results List */}
-        {filteredAndSortedGrades.length === 0 ? (
-          <View style={styles.emptyState}>
-            <BarChart3 size={48} color={COLORS.textSecondary} />
-            <Text style={styles.emptyStateTitle}>No results found</Text>
-            <Text style={styles.emptyStateText}>
-              Try adjusting your search or filter criteria
-            </Text>
-          </View>
-        ) : (
-          filteredAndSortedGrades.map((result) => {
-            const passRate = (result.passed / result.total) * 100;
-            const avgColor = getGradeColor(result.avg);
-            const gradeLetter = getGradeLetter(result.avg);
-
-            return (
-              <View key={result.id} style={styles.resultCard}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.titleSection}>
-                    <Text style={styles.examTitle}>{result.exam}</Text>
-                    <Text style={styles.classSubtitle}>
-                      {result.classStr} • {result.subject}
-                    </Text>
+          ) : filteredExams.length === 0 ? (
+            <View className="items-center justify-center py-20 gap-3">
+              <View
+                className="w-20 h-20 rounded-full items-center justify-center mb-2"
+                style={{ backgroundColor: COLORS.border }}
+              >
+                <BarChart3 size={32} color={COLORS.textSecondary} />
+              </View>
+              <Text
+                className="text-xl font-black mt-2"
+                style={{ color: COLORS.textPrimary }}
+              >
+                No exams found
+              </Text>
+            </View>
+          ) : (
+            <View className="flex-col gap-4">
+              {filteredExams.map((exam) => (
+                <View
+                  key={exam.examId}
+                  className="rounded-2xl border"
+                  style={{
+                    backgroundColor: COLORS.bgWhite,
+                    borderColor: COLORS.border,
+                    padding: isDesktop ? 24 : 20,
+                    ...platformShadow,
+                  }}
+                >
+                  <View className="flex-row justify-between items-start mb-4">
+                    <View className="flex-1 pr-4">
+                      <Text
+                        className="text-xl font-black mb-1.5 tracking-tight"
+                        style={{ color: COLORS.textPrimary }}
+                      >
+                        {exam.examName}
+                      </Text>
+                      <Text
+                        className="text-sm font-bold"
+                        style={{ color: COLORS.textSecondary }}
+                      >
+                        Academic Year: {exam.academicYear}
+                      </Text>
+                    </View>
+                    <View
+                      className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg"
+                      style={{ backgroundColor: COLORS.lightGray }}
+                    >
+                      <Calendar size={14} color={COLORS.textSecondary} />
+                      <Text
+                        className="text-xs font-bold"
+                        style={{ color: COLORS.textSecondary }}
+                      >
+                        {formatDate(exam.startDate)}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.dateBadge}>
-                    <Calendar size={12} color={COLORS.textSecondary} />
-                    <Text style={styles.dateText}>
-                      {formatDate(result.date)}
-                    </Text>
+
+                  <View className="flex-row gap-2 mb-6">
+                    {exam.assignedClassSectionIds?.map((classId: string) => (
+                      <View
+                        key={classId}
+                        className="px-3 py-1.5 rounded-full"
+                        style={{ backgroundColor: COLORS.primaryLight }}
+                      >
+                        <Text
+                          className="text-xs font-bold uppercase"
+                          style={{ color: COLORS.primaryDark }}
+                        >
+                          Class: {classId}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
+
+                  <TouchableOpacity
+                    className="py-3.5 rounded-xl items-center border-2"
+                    style={{
+                      borderColor: COLORS.primaryLight,
+                      backgroundColor: COLORS.bgWhite,
+                    }}
+                    activeOpacity={0.7}
+                    onPress={() => handleOpenReport(exam)}
+                  >
+                    <Text
+                      className="text-sm font-black tracking-wide"
+                      style={{ color: COLORS.primary }}
+                    >
+                      View Detailed Results
+                    </Text>
+                  </TouchableOpacity>
                 </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
 
+      {/* DETAILED RESULTS MODAL */}
+      <Modal visible={!!selectedExam} transparent animationType="slide">
+        <View className="flex-1 justify-end bg-black/50">
+          <View
+            className="bg-white rounded-t-3xl pt-6 pb-10"
+            style={{ height: "90%", backgroundColor: COLORS.bgWhite }}
+          >
+            {/* Modal Header */}
+            <View className="flex-row justify-between items-center px-6 mb-6">
+              <View>
+                <Text
+                  className="text-xl font-black"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  {selectedExam?.examName} Results
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={closeReport}
+                className="p-2 bg-gray-100 rounded-full"
+                style={{ backgroundColor: COLORS.lightGray }}
+              >
+                <X size={24} color={COLORS.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Class & Subject Selector */}
+            <View className="px-6 mb-4">
+              <Text
+                className="text-xs font-bold uppercase tracking-wider mb-2"
+                style={{ color: COLORS.textSecondary }}
+              >
+                Select Class
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {selectedExam?.assignedClassSectionIds?.map(
+                  (classId: string) => (
+                    <TouchableOpacity
+                      key={classId}
+                      onPress={() => setSelectedClassId(classId)}
+                      className="px-4 py-2 rounded-lg border"
+                      style={{
+                        backgroundColor:
+                          selectedClassId === classId
+                            ? COLORS.primary
+                            : COLORS.white,
+                        borderColor:
+                          selectedClassId === classId
+                            ? COLORS.primary
+                            : COLORS.border,
+                      }}
+                    >
+                      <Text
+                        className="font-semibold text-sm"
+                        style={{
+                          color:
+                            selectedClassId === classId
+                              ? COLORS.white
+                              : COLORS.textPrimary,
+                        }}
+                      >
+                        {classId}
+                      </Text>
+                    </TouchableOpacity>
+                  ),
+                )}
+              </ScrollView>
+
+              <Text
+                className="text-xs font-bold uppercase tracking-wider mt-4 mb-2"
+                style={{ color: COLORS.textSecondary }}
+              >
+                Subject Filter (Optional)
+              </Text>
+              <TextInput
+                className="border rounded-xl p-3.5 text-sm font-medium mb-2"
+                style={
+                  Platform.OS === "web"
+                    ? ({
+                        borderColor: COLORS.border,
+                        color: COLORS.textPrimary,
+                        backgroundColor: COLORS.white,
+                        outlineStyle: "none",
+                      } as any)
+                    : {
+                        borderColor: COLORS.border,
+                        color: COLORS.textPrimary,
+                        backgroundColor: COLORS.white,
+                      }
+                }
+                placeholder="Enter Subject ID (e.g. SUB2026003)"
+                placeholderTextColor={COLORS.textTertiary}
+                value={selectedSubjectId}
+                onChangeText={setSelectedSubjectId}
+              />
+            </View>
+
+            {loadingMarks ? (
+              <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text
+                  className="mt-4 font-semibold text-sm"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  Fetching marks...
+                </Text>
+              </View>
+            ) : marksData.length === 0 ? (
+              <View className="flex-1 items-center justify-center">
+                <Text
+                  className="font-semibold text-lg"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  No marks found for this class.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingHorizontal: 24,
+                  paddingBottom: 40,
+                }}
+              >
                 {/* Main Stats Row */}
-                <View style={styles.statsRow}>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Class Avg</Text>
-                    <Text style={[styles.statValue, { color: avgColor }]}>
-                      {result.avg}%
+                <View
+                  className="flex-row justify-between items-center rounded-xl p-4 mb-6"
+                  style={{ backgroundColor: COLORS.lightGray }}
+                >
+                  <View className="flex-1 items-center">
+                    <Text
+                      className="text-xs font-bold mb-1 uppercase tracking-wider"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Class Avg
                     </Text>
-                    <Text style={styles.gradeLetter}>{gradeLetter}</Text>
+                    <Text
+                      className="text-2xl font-black"
+                      style={{ color: getGradeColor(stats.avg) }}
+                    >
+                      {stats.avg}%
+                    </Text>
+                    <Text
+                      className="text-[10px] font-black uppercase mt-1 px-2 py-0.5 rounded-md bg-white/60"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Grade {getGradeLetter(stats.avg)}
+                    </Text>
                   </View>
-
-                  <View style={[styles.statBox, styles.statBorder]}>
-                    <Text style={styles.statLabel}>Highest</Text>
-                    <Text style={[styles.statValue, { color: COLORS.success }]}>
-                      {result.highest}%
+                  <View
+                    className="w-px h-12 bg-gray-200 mx-2"
+                    style={{ backgroundColor: COLORS.border }}
+                  />
+                  <View className="flex-1 items-center">
+                    <Text
+                      className="text-xs font-bold mb-1 uppercase tracking-wider"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Highest
+                    </Text>
+                    <Text
+                      className="text-2xl font-black"
+                      style={{ color: COLORS.success }}
+                    >
+                      {stats.highest}
                     </Text>
                   </View>
-
-                  <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Passed</Text>
-                    <Text style={styles.statValue}>
-                      {result.passed}/{result.total}
+                  <View
+                    className="w-px h-12 bg-gray-200 mx-2"
+                    style={{ backgroundColor: COLORS.border }}
+                  />
+                  <View className="flex-1 items-center">
+                    <Text
+                      className="text-xs font-bold mb-1 uppercase tracking-wider"
+                      style={{ color: COLORS.textSecondary }}
+                    >
+                      Passed
                     </Text>
-                    <Text style={styles.passRateText}>{passRate}%</Text>
+                    <Text
+                      className="text-xl font-black mt-1"
+                      style={{ color: COLORS.textPrimary }}
+                    >
+                      {stats.passed}
+                      <Text
+                        className="text-sm font-bold"
+                        style={{ color: COLORS.textSecondary }}
+                      >
+                        /{stats.total}
+                      </Text>
+                    </Text>
                   </View>
                 </View>
 
-                {/* Grade Distribution Bar */}
-                <View style={styles.distributionContainer}>
-                  <Text style={styles.distributionTitle}>
+                {/* Grade Distribution */}
+                <View className="mb-6">
+                  <Text
+                    className="text-sm font-bold mb-3"
+                    style={{ color: COLORS.textPrimary }}
+                  >
                     Grade Distribution
                   </Text>
-                  <View style={styles.distributionBars}>
-                    {Object.entries(result.gradeDistribution).map(
-                      ([grade, count]) => {
-                        const percentage =
-                          ((count as number) / result.total) * 100;
-                        let barColor = COLORS.success;
-                        if (grade === "C") barColor = COLORS.accent;
-                        if (grade === "D") barColor = COLORS.warning;
-                        if (grade === "F") barColor = COLORS.error;
-                        return (
-                          <View
-                            key={grade}
-                            style={styles.distributionBarWrapper}
+                  <View className="gap-3">
+                    {Object.entries(stats.dist).map(([grade, count]) => {
+                      const percentage =
+                        ((count as number) / stats.total) * 100;
+                      let barColor = COLORS.success;
+                      if (grade === "C") barColor = COLORS.secondary;
+                      if (grade === "D") barColor = COLORS.warning;
+                      if (grade === "F") barColor = COLORS.error;
+
+                      return (
+                        <View
+                          key={grade}
+                          className="flex-row items-center gap-3"
+                        >
+                          <Text
+                            className="text-xs font-black w-4 text-center"
+                            style={{ color: COLORS.textPrimary }}
                           >
-                            <View style={styles.distributionBarContainer}>
-                              <View
-                                style={[
-                                  styles.distributionBar,
-                                  {
-                                    width: `${percentage}%`,
-                                    backgroundColor: barColor,
-                                  },
-                                ]}
-                              />
-                            </View>
-                            <Text style={styles.distributionLabel}>
-                              {grade} ({count})
-                            </Text>
+                            {grade}
+                          </Text>
+                          <View
+                            className="flex-1 h-2.5 rounded-full overflow-hidden"
+                            style={{ backgroundColor: COLORS.lightGray }}
+                          >
+                            <View
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${percentage}%`,
+                                backgroundColor: barColor,
+                              }}
+                            />
                           </View>
-                        );
-                      },
-                    )}
+                          <Text
+                            className="text-xs font-bold w-12 text-right"
+                            style={{ color: COLORS.textSecondary }}
+                          >
+                            {count} <Text className="font-normal">st.</Text>
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
 
-                {/* View Details Button */}
-                <TouchableOpacity style={styles.detailsButton}>
-                  <Text style={styles.detailsButtonText}>
-                    View Detailed Report
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })
-        )}
-      </ScrollView>
+                {/* Student Marks List */}
+                <Text
+                  className="text-sm font-bold mb-3 mt-4"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  Student Performance
+                </Text>
+                {marksData.map((mark) => (
+                  <View
+                    key={mark.markId}
+                    className="flex-row items-center justify-between p-4 bg-white border rounded-xl mb-3"
+                    style={{ borderColor: COLORS.border }}
+                  >
+                    <View className="flex-row items-center gap-3 flex-1">
+                      <View
+                        className="w-10 h-10 rounded-full justify-center items-center bg-gray-100"
+                        style={{ backgroundColor: COLORS.lightGray }}
+                      >
+                        <User size={18} color={COLORS.textSecondary} />
+                      </View>
+                      <View>
+                        <Text
+                          className="font-bold text-base"
+                          style={{ color: COLORS.textPrimary }}
+                        >
+                          {mark.studentName}
+                        </Text>
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: COLORS.textSecondary }}
+                        >
+                          Subject: {mark.subjectId}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="items-end">
+                      <Text
+                        className="text-lg font-black"
+                        style={{ color: getGradeColor(mark.obtainedMarks) }}
+                      >
+                        {mark.obtainedMarks}
+                      </Text>
+                      <Text
+                        className="text-[10px] font-bold uppercase mt-1"
+                        style={{
+                          color:
+                            mark.attendanceStatus === "PRESENT"
+                              ? COLORS.success
+                              : COLORS.error,
+                        }}
+                      >
+                        {mark.attendanceStatus}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: COLORS.lightGray },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 16,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    ...Platform.select({
-      web: { userSelect: "none" },
-    }),
-  },
-  backButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: COLORS.textPrimary },
-  filterHeaderButton: { padding: 8, marginRight: -8 },
-  listContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-    alignSelf: "center",
-    width: "100%",
-    gap: 16,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 8,
-  },
-  statCard: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
-    padding: 14,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: { elevation: 3 },
-      web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
-    }),
-  },
-  statIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: "900",
-    color: COLORS.textPrimary,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-  },
-  filtersPanel: {
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: { elevation: 2 },
-      web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
-    }),
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 10,
-    fontSize: 14,
-    marginLeft: 8,
-    color: COLORS.textPrimary,
-  },
-  clearText: {
-    color: COLORS.primary,
-    fontWeight: "600",
-    fontSize: 12,
-    paddingVertical: 10,
-  },
-  filterRow: {
-    gap: 16,
-  },
-  filterGroup: {
-    gap: 8,
-  },
-  filterLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-  },
-  pickerContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  pickerOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: COLORS.lightGray,
-  },
-  pickerOptionActive: {
-    backgroundColor: COLORS.primary,
-  },
-  pickerOptionText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-  },
-  pickerOptionTextActive: {
-    color: COLORS.white,
-  },
-  sortRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  sortButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: COLORS.lightGray,
-  },
-  sortButtonActive: {
-    backgroundColor: COLORS.primary,
-  },
-  sortButtonText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-  },
-  sortButtonTextActive: {
-    color: COLORS.white,
-  },
-  orderButton: {
-    padding: 6,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 20,
-  },
-  resultCard: {
-    backgroundColor: COLORS.bgWhite,
-    padding: 20,
-    borderRadius: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: { elevation: 3 },
-      web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
-    }),
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  titleSection: {
-    flex: 1,
-  },
-  examTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  classSubtitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
-  },
-  dateBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  dateText: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    fontWeight: "500",
-  },
-  statsRow: {
-    flexDirection: "row",
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statBorder: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-  statValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: COLORS.textPrimary,
-  },
-  gradeLetter: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  passRateText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: COLORS.success,
-    marginTop: 2,
-  },
-  distributionContainer: {
-    marginBottom: 16,
-    gap: 8,
-  },
-  distributionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-  },
-  distributionBars: {
-    gap: 8,
-  },
-  distributionBarWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  distributionBarContainer: {
-    flex: 1,
-    height: 8,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  distributionBar: {
-    height: "100%",
-    borderRadius: 4,
-  },
-  distributionLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: COLORS.textSecondary,
-    minWidth: 40,
-  },
-  detailsButton: {
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  detailsButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.primary,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    gap: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.textPrimary,
-    marginTop: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-  },
-});
