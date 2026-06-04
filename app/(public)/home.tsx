@@ -262,7 +262,7 @@ export default function HomeScreen() {
               <View style={[styles.leftContent, { alignItems: isDesktop ? 'flex-start' : 'center' }]}>
                 <Animated.View style={[styles.heroBadge, { opacity: fadeAnimBadge }]}>
                   <ShieldCheck size={14} color={COLORS.primary} />
-                  <Text style={styles.heroBadgeText}>SMART SCHOOL ERP MANAGEMENT SYSTEM</Text>
+                  <Text style={styles.heroBadgeText}>edvance</Text>
                 </Animated.View>
 
                 <Animated.Text style={[
