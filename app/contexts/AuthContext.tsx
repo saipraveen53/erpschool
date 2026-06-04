@@ -35,8 +35,8 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  isAuthenticated: boolean;      // Derived from authenticated state
-  authenticated: boolean;        // Explicit boolean variable
+  isAuthenticated: boolean;
+  authenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -46,7 +46,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [authenticated, setAuthenticated] = useState<boolean>(false);  // ✅ initial false
+  const [authenticated, setAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load stored data on app start
@@ -59,7 +59,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const storedUsername = await AsyncStorage.getItem("userUsername");
         const storedAuth = await AsyncStorage.getItem("authenticated");
 
-        // If authenticated flag is "true" and we have token/role, restore session
         if (storedAuth === "true" && storedToken && storedRole && storedUsername) {
           setToken(storedToken);
           setUser({
@@ -68,10 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             role: storedRole,
             token: storedToken,
           });
-          setAuthenticated(true);   // ✅ restore authenticated state
+          setAuthenticated(true);
           console.log("✅ Restored user session:", storedRole);
         } else {
-          // Clear inconsistent or missing data
+          // Clear inconsistent data
           await AsyncStorage.multiRemove([
             "userToken",
             "refreshToken",
@@ -111,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await AsyncStorage.setItem("refreshToken", refreshToken || "");
       await AsyncStorage.setItem("userRole", role);
       await AsyncStorage.setItem("userUsername", tokenUsername);
-      await AsyncStorage.setItem("authenticated", "true");   // ✅ store true
+      await AsyncStorage.setItem("authenticated", "true");
 
       const userData: User = {
         username: tokenUsername,
@@ -121,9 +120,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       setUser(userData);
       setToken(accessToken);
-      setAuthenticated(true);       
+      setAuthenticated(true);
       console.log("✅ Login successful:", role);
-      router.replace("/")
+      router.replace("/");
     } catch (error: any) {
       console.error("Login error:", error);
       setAuthenticated(false);
@@ -133,40 +132,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
- const logout = async () => {
-  // Add confirmation alert
-  const confirmLogout = Platform.OS === 'web'
-    ? window.confirm("Are you sure you want to logout?")
-    : await new Promise((resolve) => {
-        Alert.alert(
-          "Logout",
-          "Are you sure you want to logout?",
-          [
-            { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
-            { text: "Logout", style: "destructive", onPress: () => resolve(true) }
-          ]
-        );
-      });
+  const logout = async () => {
+    const confirmLogout = Platform.OS === 'web'
+      ? window.confirm("Are you sure you want to logout?")
+      : await new Promise((resolve) => {
+          Alert.alert(
+            "Logout",
+            "Are you sure you want to logout?",
+            [
+              { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+              { text: "Logout", style: "destructive", onPress: () => resolve(true) }
+            ]
+          );
+        });
 
-  if (!confirmLogout) return;
+    if (!confirmLogout) return;
 
-  // Rest of your original code – unchanged
-  await AsyncStorage.multiRemove([
-    "userToken",
-    "refreshToken",
-    "userRole",
-    "userUsername",
-    "authenticated"
-  ]);
-  setUser(null);
-  setToken(null);
-  setAuthenticated(false);
-  if (Platform.OS === 'web') {
-    window.location.href = '/home';
-  } else {
-    router.replace('/(public)/home');
-  }
-};
+    await AsyncStorage.multiRemove([
+      "userToken",
+      "refreshToken",
+      "userRole",
+      "userUsername",
+      "authenticated"
+    ]);
+    setUser(null);
+    setToken(null);
+    setAuthenticated(false);
+    if (Platform.OS === 'web') {
+      window.location.href = '/home';
+    } else {
+      router.replace('/(public)/home');
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -174,8 +171,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         token,
         isLoading,
-        isAuthenticated: authenticated,   // derived from authenticated
-        authenticated,                   // expose explicitly if needed
+        isAuthenticated: authenticated,
+        authenticated,
         login,
         logout,
       }}
