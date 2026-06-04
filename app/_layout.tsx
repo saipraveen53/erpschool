@@ -13,6 +13,10 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import "./globals.css";
 
+export default function RootLayout() {
+  const router = useRouter();
+  const pathname = usePathname(); // 👈 get current route
+
 // Create a QueryClient instance with cache time (e.g., 24 hours)
 const queryClient = new QueryClient({
   defaultOptions: {
