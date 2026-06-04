@@ -246,6 +246,9 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#4D3A30',
     fontSize: 14,
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+    }),
   },
   menuSectionHeader: {
     fontSize: 10,
@@ -311,7 +314,7 @@ const styles = StyleSheet.create({
   mobileHeaderTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fffefe',
+    color: '#f1f1f1',
     marginLeft: 16,
   },
   viewscreenContentArea: { flex: 1 },

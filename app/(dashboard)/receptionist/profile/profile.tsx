@@ -589,10 +589,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
     position: 'relative',
   },
-  avatarImage: { width: '100%', height: '100%' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 36 },
   avatarText: { color: '#fff', fontWeight: '800', fontSize: 22 },
   cameraChip: {
     position: 'absolute',
