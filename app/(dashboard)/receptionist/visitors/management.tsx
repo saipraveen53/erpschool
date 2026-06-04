@@ -1,20 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
+  View,
   TextInput,
   TouchableOpacity,
+  FlatList,
+  Modal,
+  ScrollView,
+  SafeAreaView,
+  Platform,
+  ActivityIndicator,
   useWindowDimensions,
-  View
+  Alert,
+  KeyboardAvoidingView,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export interface VisitorRecord {
   id: string;
@@ -72,20 +73,30 @@ const MOCK_VISITORS: VisitorRecord[] = [
     contactNumber: '+91 99887 76655',
     status: 'Checked In',
     remarks: 'Board certification facilities inspection overview panel.',
-  }
+  },
 ];
 
 export default function VisitorManagement() {
   const { width } = useWindowDimensions();
-  const isMobile = width < 768;
+  const isMobile = width < 992; // Adjusted breakpoint for 4 columns
 
   const [isMounted, setIsMounted] = useState(false);
   const [visitorLog, setVisitorLog] = useState<VisitorRecord[]>(MOCK_VISITORS);
+  
+  // Filtering States
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'All' | 'Active' | 'Concluded'>('All');
+  const [purposeFilter, setPurposeFilter] = useState<string>('All');
+  const [dateFilter, setDateFilter] = useState('');
+
+  // Dropdown UI States
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showPurposeDropdown, setShowPurposeDropdown] = useState(false);
 
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorRecord | null>(null);
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [visitorToDelete, setVisitorToDelete] = useState<VisitorRecord | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -93,7 +104,16 @@ export default function VisitorManagement() {
     hostStaff: '',
     badgeNumber: '',
     contactNumber: '',
-    remarks: ''
+    remarks: '',
+  });
+
+  const [updateForm, setUpdateForm] = useState({
+    name: '',
+    purpose: 'Parent-Teacher Meeting' as VisitorRecord['purpose'],
+    hostStaff: '',
+    badgeNumber: '',
+    contactNumber: '',
+    remarks: '',
   });
 
   useEffect(() => {
@@ -114,23 +134,27 @@ export default function VisitorManagement() {
 
   const filteredVisitors = useMemo(() => {
     return visitorLog.filter((visitor) => {
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        visitor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        visitor.badgeNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        visitor.hostStaff.toLowerCase().includes(searchQuery.toLowerCase());
+        visitor.name.toLowerCase().includes(q) ||
+        visitor.badgeNumber.toLowerCase().includes(q) ||
+        visitor.hostStaff.toLowerCase().includes(q);
 
       const matchesTab =
         filterMode === 'All' ||
         (filterMode === 'Active' && visitor.status === 'Checked In') ||
         (filterMode === 'Concluded' && visitor.status === 'Checked Out');
 
-      return matchesSearch && matchesTab;
+      const matchesPurpose = purposeFilter === 'All' || visitor.purpose === purposeFilter;
+      const matchesDate = !dateFilter || visitor.checkInTime.startsWith(dateFilter);
+
+      return matchesSearch && matchesTab && matchesPurpose && matchesDate;
     });
-  }, [visitorLog, searchQuery, filterMode]);
+  }, [visitorLog, searchQuery, filterMode, purposeFilter, dateFilter]);
 
   const handleCheckInSubmit = () => {
     if (!form.name.trim() || !form.hostStaff.trim() || !form.badgeNumber.trim()) {
-      Alert.alert('Security Directive', 'Visitor Name, Host Staff, and Badge Number are required.');
+      Alert.alert('Validation Warning', 'Visitor Name, Host Staff, and Badge Number are required.');
       return;
     }
 
@@ -147,12 +171,89 @@ export default function VisitorManagement() {
       badgeNumber: form.badgeNumber.trim().toUpperCase(),
       contactNumber: form.contactNumber.trim() || 'N/A',
       status: 'Checked In',
-      remarks: form.remarks.trim() || 'No supplementary security logs recorded.'
+      remarks: form.remarks.trim() || 'No supplementary security logs recorded.',
     };
 
     setVisitorLog([newGuest, ...visitorLog]);
-    setForm({ name: '', purpose: 'Parent-Teacher Meeting', hostStaff: '', badgeNumber: '', contactNumber: '', remarks: '' });
+    setForm({
+      name: '',
+      purpose: 'Parent-Teacher Meeting',
+      hostStaff: '',
+      badgeNumber: '',
+      contactNumber: '',
+      remarks: '',
+    });
     setIsCheckInModalOpen(false);
+  };
+
+  const handleUpdateSubmit = () => {
+    if (!updateForm.name.trim() || !updateForm.hostStaff.trim() || !updateForm.badgeNumber.trim()) {
+      Alert.alert('Validation Warning', 'Visitor Name, Host Staff, and Badge Number are required.');
+      return;
+    }
+
+    if (!selectedVisitor) return;
+
+    const updatedLog = visitorLog.map((visitor) =>
+      visitor.id === selectedVisitor.id
+        ? {
+            ...visitor,
+            name: updateForm.name.trim(),
+            purpose: updateForm.purpose,
+            hostStaff: updateForm.hostStaff.trim(),
+            badgeNumber: updateForm.badgeNumber.trim().toUpperCase(),
+            contactNumber: updateForm.contactNumber.trim() || 'N/A',
+            remarks: updateForm.remarks.trim() || 'No supplementary security logs recorded.',
+          }
+        : visitor
+    );
+
+    setVisitorLog(updatedLog);
+    setUpdateForm({
+      name: '',
+      purpose: 'Parent-Teacher Meeting',
+      hostStaff: '',
+      badgeNumber: '',
+      contactNumber: '',
+      remarks: '',
+    });
+    setSelectedVisitor(null);
+    setIsUpdateModalOpen(false);
+    showSuccessAlert('Visitor record updated successfully.');
+  };
+
+  const handleDeleteVisitor = () => {
+    if (!visitorToDelete) return;
+    setVisitorLog(visitorLog.filter((visitor) => visitor.id !== visitorToDelete.id));
+    setVisitorToDelete(null);
+    showSuccessAlert('Visitor record deleted successfully.');
+  };
+
+  const showSuccessAlert = (message: string) => {
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        window.alert(message);
+      }, 300);
+    } else {
+      Alert.alert('Success', message);
+    }
+  };
+
+  const openUpdateModal = (visitor: VisitorRecord) => {
+    setSelectedVisitor(visitor);
+    setUpdateForm({
+      name: visitor.name,
+      purpose: visitor.purpose,
+      hostStaff: visitor.hostStaff,
+      badgeNumber: visitor.badgeNumber,
+      contactNumber: visitor.contactNumber,
+      remarks: visitor.remarks || '',
+    });
+    setIsUpdateModalOpen(true);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   const handleCheckOutAction = (id: string) => {
@@ -169,550 +270,1081 @@ export default function VisitorManagement() {
     setSelectedVisitor(null);
   };
 
+  const filterLabel = filterMode === 'All' ? 'All Visitors' : filterMode === 'Active' ? 'On Campus' : 'Checked Out';
+
   if (!isMounted) {
     return (
-      <SafeAreaView style={[styles.centerLoader, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#10B981" />
-        <Text style={styles.loaderSubtext}>Initializing Gate Secure Logs...</Text>
+      <SafeAreaView style={[styles.fallbackContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#B91C1C" />
+        <Text style={styles.fallbackText}>Initializing Visitor Control Log...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.viewBaseArea}>
-      {/* Header */}
-      <View style={styles.appTitleNavbarHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.dashboardTitleText}>Visitor Control & Tracking</Text>
-          <Text style={styles.dashboardSubtitleText}>Monitor campus foot traffic, authorize physical badge tags, and timestamp exits cleanly.</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.headerPrimaryTriggerBtn}
-          onPress={() => setIsCheckInModalOpen(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.headerPrimaryTriggerBtnText}>🔑 Log New Entry Guest</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Metrics */}
-      <View style={styles.securityMetricsRowLayout}>
-        <View style={[styles.securityMetricsCard, { borderLeftColor: '#3B82F6' }]}>
-          <Text style={styles.metricsLabelMini}>TOTAL LOG ENTRIES</Text>
-          <Text style={styles.metricsCounterValue}>{visitorMetrics.total}</Text>
-        </View>
-        <View style={[styles.securityMetricsCard, { borderLeftColor: '#10B981' }]}>
-          <Text style={styles.metricsLabelMini}>CURRENTLY ON CAMPUS</Text>
-          <Text style={[styles.metricsCounterValue, { color: '#10B981' }]}>{visitorMetrics.inside}</Text>
-        </View>
-        <View style={[styles.securityMetricsCard, { borderLeftColor: '#64748B' }]}>
-          <Text style={styles.metricsLabelMini}>CONCLUDED TRANSITS</Text>
-          <Text style={styles.metricsCounterValue}>{visitorMetrics.departed}</Text>
-        </View>
-      </View>
-
-      {/* Search & Filters */}
-      <View style={styles.filterControlDeckWrapper}>
-        <TextInput
-          style={styles.searchBarBoxInput}
-          placeholder="Lookup by visitor name, badge number, or host staff..."
-          placeholderTextColor="#94A3B8"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabPillMatrixRow}>
-          {[
-            { label: 'Comprehensive Logs', value: 'All' },
-            { label: 'Inside Premises (Active)', value: 'Active' },
-            { label: 'Checked-Out Logs', value: 'Concluded' }
-          ].map((pill) => {
-            const matchActive = filterMode === pill.value;
-            return (
-              <TouchableOpacity
-                key={pill.value}
-                style={[styles.tabFilterPillItem, matchActive && styles.tabFilterPillItemActive]}
-                onPress={() => setFilterMode(pill.value as any)}
-              >
-                <Text style={[styles.tabFilterPillItemText, matchActive && styles.tabFilterPillItemTextActive]}>
-                  {pill.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      {/* Visitor List */}
-      <FlatList
-        data={filteredVisitors}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.scrollListLayoutBody}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyFeedPlaceholder}>
-            <Text style={styles.emptyFeedPlaceholderText}>No visitor records located matching query parameters.</Text>
+    <SafeAreaView style={styles.viewRootContainer}>
+      <ScrollView style={{ flex: 1, zIndex: 1 }} contentContainerStyle={styles.pageScrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.pageShell}>
+          <View style={styles.topHeaderPanel}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.brandTitleText}>Visitor Control & Tracking</Text>
+              <Text style={styles.brandSubtitleText}>Secure campus access management • Real-time monitoring</Text>
+            </View>
+            <TouchableOpacity style={styles.headerPrimaryAction} onPress={() => setIsCheckInModalOpen(true)}>
+              <Icon name="plus" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.headerPrimaryActionText}>Log New Visitor</Text>
+            </TouchableOpacity>
           </View>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.visitorRegistryListCard}
-            onPress={() => setSelectedVisitor(item)}
-            activeOpacity={0.8}
-          >
-            <View style={styles.cardHeaderFlexBoxRow}>
-              <View style={{ flex: 1 }}>
-                <View style={styles.cardBadgesLayoutRow}>
-                  <Text style={styles.cardBadgeIdText}>{item.id}</Text>
-                  <Text style={styles.cardBadgeTagMarker}>{item.badgeNumber}</Text>
-                </View>
-                <Text style={styles.visitorNameHeadingText}>{item.name}</Text>
-                <Text style={styles.visitorPurposeSubtitleLabel}>{item.purpose}</Text>
-              </View>
 
-              <View style={[
-                styles.statusStateCapsule,
-                item.status === 'Checked In' ? styles.statusStateCapsuleActive : styles.statusStateCapsuleClosed
-              ]}>
-                <Text style={[
-                  styles.statusStateCapsuleText,
-                  item.status === 'Checked In' ? styles.statusActiveText : styles.statusClosedText
-                ]}>
-                  {item.status === 'Checked In' ? '🟢 Present' : '⚪ Departed'}
-                </Text>
-              </View>
+          <View style={styles.metricsSummaryRow}>
+            <View style={[styles.metricDisplayCard, styles.metricWine]}>
+              <Icon name="inbox" size={20} color="#7F1D1D" style={{ marginBottom: 8 }} />
+              <Text style={styles.metricLabelText}>TOTAL ENTRIES</Text>
+              <Text style={styles.metricValueNumber}>{visitorMetrics.total}</Text>
             </View>
-
-            <View style={styles.cardInternalDossierSummaryBox}>
-              <Text style={styles.internalDossierLabelItem}>Host: {item.hostStaff}</Text>
+            <View style={[styles.metricDisplayCard, styles.metricRed]}>
+              <Icon name="user" size={20} color="#B91C1C" style={{ marginBottom: 8 }} />
+              <Text style={styles.metricLabelText}>ON CAMPUS</Text>
+              <Text style={styles.metricValueNumber}>{visitorMetrics.inside}</Text>
             </View>
-
-            <View style={styles.cardFooterFlowLayout}>
-              <Text style={styles.footerTimeLabelText}>In: {item.checkInTime}</Text>
-              {item.checkOutTime && <Text style={styles.footerTimeLabelText}>Out: {item.checkOutTime}</Text>}
+            <View style={[styles.metricDisplayCard, styles.metricRose]}>
+              <Icon name="sign-out" size={20} color="#EF4444" style={{ marginBottom: 8 }} />
+              <Text style={styles.metricLabelText}>CHECKED OUT</Text>
+              <Text style={styles.metricValueNumber}>{visitorMetrics.departed}</Text>
             </View>
-          </TouchableOpacity>
-        )}
-      />
+          </View>
 
-      {/* Detail Modal */}
-      {selectedVisitor && (
-        <Modal transparent visible={!!selectedVisitor} animationType="fade" onRequestClose={() => setSelectedVisitor(null)}>
-          <View style={styles.darkenedBlurOverlayContainer}>
-            <View style={[styles.modalViewportCoreCardBody, isMobile && { margin: 12, width: '94%', maxHeight: '92%' }]}>
-              <Text style={styles.modalMainHeadingTitleText}>Visitor Pass Record</Text>
-              <Text style={styles.modalSubheadingReferenceId}>{selectedVisitor.id}</Text>
-
-              <ScrollView style={styles.modalDossierContentScroller} showsVerticalScrollIndicator={false}>
-                <Text style={styles.dossierSectionMetaLabel}>Visitor Name</Text>
-                <Text style={styles.dossierSectionValueText}>{selectedVisitor.name}</Text>
-
-                <View style={{ flexDirection: 'row', gap: 16 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.dossierSectionMetaLabel}>Badge ID</Text>
-                    <Text style={styles.dossierSectionValueText}>{selectedVisitor.badgeNumber}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.dossierSectionMetaLabel}>Contact</Text>
-                    <Text style={styles.dossierSectionValueText}>{selectedVisitor.contactNumber}</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.dossierSectionMetaLabel}>Purpose</Text>
-                <Text style={styles.dossierSectionValueText}>{selectedVisitor.purpose}</Text>
-
-                <Text style={styles.dossierSectionMetaLabel}>Host Staff</Text>
-                <Text style={styles.dossierSectionValueText}>{selectedVisitor.hostStaff}</Text>
-
-                <View style={styles.timelineBracketWrapperBlock}>
-                  <Text style={styles.timelineItemStampRow}>Check-In: <Text style={{ fontWeight: '600' }}>{selectedVisitor.checkInTime}</Text></Text>
-                  {selectedVisitor.checkOutTime && (
-                    <Text style={styles.timelineItemStampRow}>Check-Out: <Text style={{ fontWeight: '600' }}>{selectedVisitor.checkOutTime}</Text></Text>
+          {/* FILTERING HEADER */}
+          <View style={[styles.controlFilteringBox, { zIndex: 9999, ...(Platform.OS === 'web' ? { position: 'relative' } : {}) }]}>
+            <View style={[isMobile ? styles.filterRowMobile : styles.filterRowWeb, { zIndex: 9999 }]}>
+              
+              {/* 1. Search Bar */}
+              <View style={[styles.filterItemSearch, isMobile && styles.filterItemHalf]}>
+                <View style={styles.searchWrapper}>
+                  <Icon name="search" size={16} color="#B91C1C" style={styles.searchIcon} />
+                  <TextInput
+                    style={styles.globalSearchBox}
+                    placeholder="Search name, badge..."
+                    placeholderTextColor="#B91C1C"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                  {!!searchQuery && (
+                    <TouchableOpacity style={styles.clearSearchButton} onPress={clearSearch}>
+                      <Icon name="times" size={14} color="#FFFFFF" />
+                    </TouchableOpacity>
                   )}
                 </View>
+              </View>
 
-                <Text style={styles.dossierSectionMetaLabel}>Remarks</Text>
-                <Text style={styles.remarksBoxBlockParagraph}>{selectedVisitor.remarks}</Text>
+              {/* 2. Purpose Dropdown */}
+              <View style={[styles.filterItem, { zIndex: 3000 }, isMobile && styles.filterItemHalf]}>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => {
+                    setShowPurposeDropdown(!showPurposeDropdown);
+                    setShowStatusDropdown(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Icon name="briefcase" size={14} color="#7F1D1D" style={{ marginRight: 8 }} />
+                    <Text style={styles.dropdownText} numberOfLines={1}>
+                      {purposeFilter === 'All' ? 'All Purposes' : purposeFilter}
+                    </Text>
+                  </View>
+                  <Icon name={showPurposeDropdown ? 'caret-up' : 'caret-down'} size={12} color="#7F1D1D" />
+                </TouchableOpacity>
+                {showPurposeDropdown && (
+                  <View style={styles.dropdownMenuBelow}>
+                    {/* Replaced nested ScrollView with View to prevent Android scrolling/clipping bugs */}
+                    <View>
+                      <TouchableOpacity
+                        style={[styles.dropdownMenuItem, purposeFilter === 'All' && styles.dropdownMenuItemActive]}
+                        onPress={() => { setPurposeFilter('All'); setShowPurposeDropdown(false); }}
+                      >
+                        <Text style={[styles.dropdownMenuText, purposeFilter === 'All' && styles.dropdownMenuTextActive]}>All Purposes</Text>
+                      </TouchableOpacity>
+                      {PURPOSE_OPTIONS.map((opt) => (
+                        <TouchableOpacity
+                          key={opt}
+                          style={[styles.dropdownMenuItem, purposeFilter === opt && styles.dropdownMenuItemActive]}
+                          onPress={() => { setPurposeFilter(opt); setShowPurposeDropdown(false); }}
+                        >
+                          <Text style={[styles.dropdownMenuText, purposeFilter === opt && styles.dropdownMenuTextActive]}>{opt}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* 3. Date Picker */}
+              <View style={[styles.filterItem, { zIndex: 2000 }, isMobile && styles.filterItemHalf]}>
+                <View style={{ position: 'relative', width: '100%' }}>
+                  {Platform.OS === 'web' ? (
+                    <input
+                      type="date"
+                      value={dateFilter}
+                      onChange={(e) => setDateFilter(e.target.value)}
+                      style={styles.webNativeInputDatePicker}
+                    />
+                  ) : (
+                    <View style={styles.dropdownButton}>
+                      <Icon name="calendar" size={14} color="#7F1D1D" style={{ marginRight: 8 }} />
+                      <TextInput
+                        style={{ flex: 1, color: '#7F1D1D', fontWeight: '600', padding: 0 }}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor="#9F1239"
+                        value={dateFilter}
+                        onChangeText={setDateFilter}
+                      />
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* 4. Status Dropdown */}
+              <View style={[styles.filterItem, { zIndex: 1000 }, isMobile && styles.filterItemHalf]}>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => {
+                    setShowStatusDropdown(!showStatusDropdown);
+                    setShowPurposeDropdown(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Icon name="filter" size={14} color="#7F1D1D" style={{ marginRight: 8 }} />
+                    <Text style={styles.dropdownText} numberOfLines={1}>{filterLabel}</Text>
+                  </View>
+                  <Icon name={showStatusDropdown ? 'caret-up' : 'caret-down'} size={12} color="#7F1D1D" />
+                </TouchableOpacity>
+                {showStatusDropdown && (
+                  <View style={styles.dropdownMenuBelow}>
+                    <View>
+                      {(['All', 'Active', 'Concluded'] as const).map((opt) => {
+                        const active = filterMode === opt;
+                        const label = opt === 'All' ? 'All Visitors' : opt === 'Active' ? 'On Campus' : 'Checked Out';
+                        return (
+                          <TouchableOpacity
+                            key={opt}
+                            style={[styles.dropdownMenuItem, active && styles.dropdownMenuItemActive]}
+                            onPress={() => {
+                              setFilterMode(opt);
+                              setShowStatusDropdown(false);
+                            }}
+                          >
+                            <Icon name={active ? 'check' : 'circle-o'} size={14} color={active ? '#B91C1C' : '#7F1D1D'} style={{ marginRight: 8 }} />
+                            <Text style={[styles.dropdownMenuText, active && styles.dropdownMenuTextActive]}>{label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+              </View>
+
+            </View>
+          </View>
+
+          {isMobile ? (
+            // MOBILE VIEW - Card with action buttons inside
+            <FlatList
+              data={filteredVisitors}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={[styles.listContainerLayout, { zIndex: 1 }]}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              ListEmptyComponent={
+                <View style={styles.emptyStateContainerBox}>
+                  <Icon name="info-circle" size={48} color="#B91C1C" style={{ marginBottom: 12 }} />
+                  <Text style={styles.emptyStateMsg}>No matching visitor records found</Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.dataLogItemCard, { zIndex: 1 }]}
+                  onPress={() => setSelectedVisitor(item)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.cardHeaderFlexRow}>
+                    <View style={styles.cardTitleBlock}>
+                      <View style={styles.metaRowBadging}>
+                        <Text style={styles.cardRecordId}>{item.id}</Text>
+                        <View style={styles.badgeWrapper}>
+                          <Text style={styles.cardTypeLabel}>{item.badgeNumber}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.nameWrapper}>
+                        <Text style={styles.prospectNameHeading} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                      </View>
+                      <View style={styles.purposeWrapper}>
+                        <Icon name="briefcase" size={14} color="#9F1239" style={{ marginRight: 6 }} />
+                        <Text style={styles.visitorPurposeLabel} numberOfLines={1}>
+                          {item.purpose}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.professionalStatusBadge,
+                        item.status === 'Checked In' && styles.professionalStatusOpen,
+                        item.status === 'Checked Out' && styles.professionalStatusResolved,
+                      ]}
+                    >
+                      <Icon
+                        name={item.status === 'Checked In' ? 'circle' : 'check-circle'}
+                        size={10}
+                        color={item.status === 'Checked In' ? '#991B1B' : '#DC2626'}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text
+                        style={[
+                          styles.professionalStatusText,
+                          item.status === 'Checked In' && styles.professionalStatusTextOpen,
+                          item.status === 'Checked Out' && styles.professionalStatusTextResolved,
+                        ]}
+                      >
+                        {item.status === 'Checked In' ? 'ON CAMPUS' : 'DEPARTED'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardFooterLayoutFlex}>
+                    <View style={styles.footerItem}>
+                      <Text style={styles.footerMetaLabel} numberOfLines={2}>
+                        {item.hostStaff}
+                      </Text>
+                    </View>
+                    <View style={styles.footerItem}>
+                      <Icon name="clock-o" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                      <Text style={styles.footerMetaLabel}>In: {item.checkInTime}</Text>
+                    </View>
+                    {item.checkOutTime && (
+                      <View style={styles.footerItem}>
+                        <Icon name="sign-out" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                        <Text style={styles.footerMetaLabel}>Out: {item.checkOutTime}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Action buttons INSIDE the card */}
+                  <View style={styles.cardDivider} />
+                  <View style={styles.cardActionButtonsInside}>
+                    <TouchableOpacity
+                      style={styles.actionButtonIconInside}
+                      onPress={() => setSelectedVisitor(item)}
+                      activeOpacity={0.8}
+                      accessibilityLabel="View visitor details"
+                    >
+                      <Icon name="eye" size={18} color="#7F1D1D" />
+                      <Text style={styles.actionLabelInside}>View</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButtonIconInside}
+                      onPress={() => openUpdateModal(item)}
+                      activeOpacity={0.8}
+                      accessibilityLabel="Update visitor record"
+                    >
+                      <Icon name="pencil" size={16} color="#7F1D1D" />
+                      <Text style={styles.actionLabelInside}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButtonIconDeleteInside}
+                      onPress={() => setVisitorToDelete(item)}
+                      activeOpacity={0.8}
+                      accessibilityLabel="Delete visitor record"
+                    >
+                      <Icon name="trash" size={16} color="#B91C1C" />
+                      <Text style={styles.actionLabelInsideDelete}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          ) : (
+            // DESKTOP VIEW - Professional uniform table
+            <View style={[styles.tableWrapper, { zIndex: 1 }]}>
+              <View style={styles.tableContainer}>
+                <View style={styles.tableHeader}>
+                  <View style={[styles.tableHeaderCell, styles.colIdWrapper]}>
+                    <Text style={[styles.tableHeaderCellText]}>ID</Text>
+                  </View>
+                  <View style={[styles.tableHeaderCell, styles.colNameWrapper]}>
+                    <Text style={[styles.tableHeaderCellText]}>Visitor Name</Text>
+                  </View>
+                  <View style={[styles.tableHeaderCell, styles.colPurposeWrapper]}>
+                    <Text style={[styles.tableHeaderCellText]}>Purpose</Text>
+                  </View>
+                  <View style={[styles.tableHeaderCell, styles.colHostWrapper]}>
+                    <Text style={[styles.tableHeaderCellText]}>Host Staff</Text>
+                  </View>
+                  <View style={[styles.tableHeaderCell, styles.colStatusWrapper]}>
+                    <Text style={[styles.tableHeaderCellText]}>Status</Text>
+                  </View>
+                  <View style={[styles.tableHeaderCell, styles.colActionWrapper]}>
+                    <Text style={[styles.tableHeaderCellText]}>Actions</Text>
+                  </View>
+                </View>
+
+                <FlatList
+                  data={filteredVisitors}
+                  keyExtractor={(item) => item.id}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={false}
+                  contentContainerStyle={[styles.tableBody, { zIndex: 1 }]}
+                  ListEmptyComponent={
+                    <View style={styles.emptyStateContainerBox}>
+                      <Icon name="info-circle" size={48} color="#B91C1C" style={{ marginBottom: 12 }} />
+                      <Text style={styles.emptyStateMsg}>No matching visitor records found</Text>
+                    </View>
+                  }
+                  renderItem={({ item }) => (
+                    <View style={[styles.tableRow, { zIndex: 1 }]}>
+                      <View style={[styles.tableCell, styles.colIdWrapper]}>
+                        <Text style={styles.tableCellText} numberOfLines={1}>
+                          {item.id}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCell, styles.colNameWrapper]}>
+                        <Text style={styles.tableCellText} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCell, styles.colPurposeWrapper]}>
+                        <Text style={styles.tableCellText} numberOfLines={1}>
+                          {item.purpose}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCell, styles.colHostWrapper]}>
+                        <Text style={styles.tableCellText} numberOfLines={1}>
+                          {item.hostStaff}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCell, styles.colStatusWrapper]}>
+                        <View style={[styles.statusBadge, item.status === 'Checked In' ? styles.statusIn : styles.statusOut]}>
+                          <Text style={styles.statusText}>
+                            {item.status === 'Checked In' ? 'ON CAMPUS' : 'DEPARTED'}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={[styles.tableCell, styles.colActionWrapper]}>
+                        <View style={styles.tableActionButtons}>
+                          <TouchableOpacity
+                            style={styles.tableActionButton}
+                            onPress={() => setSelectedVisitor(item)}
+                            activeOpacity={0.7}
+                            accessibilityLabel="View visitor details"
+                          >
+                            <Icon name="eye" size={16} color="#7F1D1D" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.tableActionButton}
+                            onPress={() => openUpdateModal(item)}
+                            activeOpacity={0.7}
+                            accessibilityLabel="Update visitor record"
+                          >
+                            <Icon name="pencil" size={14} color="#7F1D1D" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.tableActionButtonDelete}
+                            onPress={() => setVisitorToDelete(item)}
+                            activeOpacity={0.7}
+                            accessibilityLabel="Delete visitor record"
+                          >
+                            <Icon name="trash" size={14} color="#B91C1C" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                />
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* VISITOR DETAILS MODAL */}
+      {selectedVisitor && (
+        <Modal transparent visible={!!selectedVisitor} animationType="fade" onRequestClose={() => setSelectedVisitor(null)}>
+          <View style={styles.glassviewOverlayScreen}>
+            <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%', maxHeight: '92%' }]}>
+              <View style={styles.modalHeaderWrapper}>
+                <Icon name="user-circle" size={28} color="#7F1D1D" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={styles.modalMainHeaderTitle}>Visitor Pass Record</Text>
+                  <Text style={styles.modalMainHeaderSubtitle}>{selectedVisitor.id}</Text>
+                </View>
+              </View>
+
+              <ScrollView style={styles.modalFormScrollContainer} showsVerticalScrollIndicator={false}>
+                <View style={styles.fieldWrapper}>
+                  <Icon name="user" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                  <Text style={styles.dossierFieldLabel}>Visitor Name</Text>
+                </View>
+                <Text style={styles.dossierFieldValue}>{selectedVisitor.name}</Text>
+
+                <View style={styles.detailTwoColRow}>
+                  <View style={styles.detailCol}>
+                    <View style={styles.fieldWrapper}>
+                      <Icon name="id-badge" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                      <Text style={styles.dossierFieldLabel}>Badge Number</Text>
+                    </View>
+                    <Text style={styles.dossierFieldValue}>{selectedVisitor.badgeNumber}</Text>
+                  </View>
+                  <View style={styles.detailCol}>
+                    <View style={styles.fieldWrapper}>
+                      <Icon name="phone" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                      <Text style={styles.dossierFieldLabel}>Contact</Text>
+                    </View>
+                    <Text style={styles.dossierFieldValue}>{selectedVisitor.contactNumber}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.fieldWrapper}>
+                  <Icon name="briefcase" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                  <Text style={styles.dossierFieldLabel}>Purpose</Text>
+                </View>
+                <Text style={styles.dossierFieldValue}>{selectedVisitor.purpose}</Text>
+
+                <View style={styles.fieldWrapper}>
+                  <Icon name="user-tie" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                  <Text style={styles.dossierFieldLabel}>Host Staff</Text>
+                </View>
+                <Text style={styles.dossierFieldValue}>{selectedVisitor.hostStaff}</Text>
+
+                <View style={styles.fieldWrapper}>
+                  <Icon name="clock-o" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                  <Text style={styles.dossierFieldLabel}>Check-In Time</Text>
+                </View>
+                <Text style={styles.dossierFieldValue}>{selectedVisitor.checkInTime}</Text>
+
+                {selectedVisitor.checkOutTime && (
+                  <>
+                    <View style={styles.fieldWrapper}>
+                      <Icon name="sign-out" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                      <Text style={styles.dossierFieldLabel}>Check-Out Time</Text>
+                    </View>
+                    <Text style={styles.dossierFieldValue}>{selectedVisitor.checkOutTime}</Text>
+                  </>
+                )}
+
+                <View style={styles.fieldWrapper}>
+                  <Icon name="file-text" size={14} color="#9F1239" style={{ marginRight: 8 }} />
+                  <Text style={styles.dossierFieldLabel}>Remarks</Text>
+                </View>
+                <Text style={styles.dossierTextAreaDisplay}>{selectedVisitor.remarks}</Text>
 
                 {selectedVisitor.status === 'Checked In' && (
-                  <TouchableOpacity
-                    style={styles.instantCheckoutTriggerBtn}
-                    onPress={() => handleCheckOutAction(selectedVisitor.id)}
-                  >
-                    <Text style={styles.instantCheckoutTriggerBtnText}>📤 Check Out Visitor</Text>
+                  <TouchableOpacity style={styles.workflowActionButtonItem} onPress={() => handleCheckOutAction(selectedVisitor.id)}>
+                    <Icon name="sign-out" size={18} color="#991B1B" style={{ marginRight: 8 }} />
+                    <Text style={styles.workflowActionButtonText}>Check Out Visitor</Text>
                   </TouchableOpacity>
                 )}
               </ScrollView>
 
-              <TouchableOpacity style={styles.closeDossierViewBtn} onPress={() => setSelectedVisitor(null)}>
-                <Text style={styles.closeDossierViewBtnText}>Close Record</Text>
+              <TouchableOpacity style={styles.dismissDetailsModalBtn} onPress={() => setSelectedVisitor(null)}>
+                <Icon name="times" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.dismissDetailsModalBtnText}>Close Record</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
       )}
 
-      {/* Check-In Modal - Enhanced for Android */}
-<Modal
-  transparent
-  visible={isCheckInModalOpen}
-  animationType="slide"
-  statusBarTranslucent={true}
->
-  <KeyboardAvoidingView
-    style={{ flex: 1 }}
-    behavior={Platform.OS === "ios" ? "padding" : undefined}
-  >
-    <View style={styles.darkenedBlurOverlayContainer}>
-      <View
-        style={[
-          styles.androidModalContainer,
-          isMobile && {
-            width: "95%",
-          },
-        ]}
-      >
-        {/* Header */}
-        <Text style={styles.modalMainHeadingTitleText}>
-          New Visitor Entry
-        </Text>
+      {/* CHECK-IN MODAL */}
+      <Modal transparent visible={isCheckInModalOpen} animationType="slide" onRequestClose={() => setIsCheckInModalOpen(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.glassviewOverlayScreen}>
+            <View style={[styles.modalBodyCardLayout, { width: '95%', maxHeight: '95%' }]}>
+              <View style={styles.modalHeaderWrapper}>
+                <Icon name="user-plus" size={28} color="#7F1D1D" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={styles.modalMainHeaderTitle}>New Visitor Entry</Text>
+                  <Text style={styles.modalMainHeaderSubtitle}>Register guest and issue secure badge</Text>
+                </View>
+              </View>
 
-        <Text style={styles.modalSubheadingReferenceId}>
-          Register guest and issue badge
-        </Text>
-
-        {/* Form */}
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingBottom: 20,
-          }}
-        >
-          <Text style={styles.formInputLabelHeader}>
-            Visitor Name *
-          </Text>
-
-          <TextInput
-            style={styles.formInputTextControlBox}
-            placeholder="Full Name"
-            value={form.name}
-            onChangeText={(text) =>
-              setForm({ ...form, name: text })
-            }
-          />
-
-          <Text style={styles.formInputLabelHeader}>
-            Badge Number *
-          </Text>
-
-          <TextInput
-            style={styles.formInputTextControlBox}
-            placeholder="BADGE-001"
-            value={form.badgeNumber}
-            onChangeText={(text) =>
-              setForm({ ...form, badgeNumber: text })
-            }
-          />
-
-          <Text style={styles.formInputLabelHeader}>
-            Contact Number
-          </Text>
-
-          <TextInput
-            style={styles.formInputTextControlBox}
-            placeholder="+91 XXXXXXXXXX"
-            keyboardType="phone-pad"
-            value={form.contactNumber}
-            onChangeText={(text) =>
-              setForm({ ...form, contactNumber: text })
-            }
-          />
-
-          <Text style={styles.formInputLabelHeader}>
-            Host Staff *
-          </Text>
-
-          <TextInput
-            style={styles.formInputTextControlBox}
-            placeholder="Host Staff Name"
-            value={form.hostStaff}
-            onChangeText={(text) =>
-              setForm({ ...form, hostStaff: text })
-            }
-          />
-
-          <Text style={styles.formInputLabelHeader}>
-            Purpose
-          </Text>
-
-          <View style={styles.formFlexGridBadgeSelectionRow}>
-            {PURPOSE_OPTIONS.map((purpose) => (
-              <TouchableOpacity
-                key={purpose}
-                style={[
-                  styles.badgeSelectorItemElement,
-                  form.purpose === purpose &&
-                    styles.badgeSelectorItemElementActive,
-                ]}
-                onPress={() =>
-                  setForm({
-                    ...form,
-                    purpose,
-                  })
-                }
+              <ScrollView
+                style={{ width: '100%' }}
+                contentContainerStyle={{ paddingBottom: 30 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
               >
-                <Text
-                  style={[
-                    styles.badgeSelectorItemElementText,
-                    form.purpose === purpose &&
-                      styles.badgeSelectorItemElementTextActive,
-                  ]}
-                >
-                  {purpose}
+                <Text style={styles.formFieldLabelText}>
+                  Visitor Name <Text style={{ color: '#EF4444' }}>*</Text>
                 </Text>
-              </TouchableOpacity>
-            ))}
+                <View style={styles.inputWrapper}>
+                  <Icon name="user" size={18} color="#B91C1C" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.formInputBoxControl}
+                    placeholder="Full Name"
+                    value={form.name}
+                    onChangeText={(text) => setForm((prev) => ({ ...prev, name: text }))}
+                  />
+                </View>
+
+                <Text style={styles.formFieldLabelText}>
+                  Badge Number <Text style={{ color: '#EF4444' }}>*</Text>
+                </Text>
+                <View style={styles.inputWrapper}>
+                  <Icon name="id-badge" size={18} color="#B91C1C" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.formInputBoxControl}
+                    placeholder="BADGE-001"
+                    value={form.badgeNumber}
+                    onChangeText={(text) => setForm((prev) => ({ ...prev, badgeNumber: text.toUpperCase() }))}
+                  />
+                </View>
+
+                <Text style={styles.formFieldLabelText}>Contact Number</Text>
+                <View style={styles.inputWrapper}>
+                  <Icon name="phone" size={18} color="#B91C1C" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.formInputBoxControl}
+                    placeholder="+91 XXXXXXXXXX"
+                    keyboardType="phone-pad"
+                    value={form.contactNumber}
+                    onChangeText={(text) => setForm((prev) => ({ ...prev, contactNumber: text }))}
+                  />
+                </View>
+
+                <Text style={styles.formFieldLabelText}>
+                  Host Staff <Text style={{ color: '#EF4444' }}>*</Text>
+                </Text>
+                <View style={styles.inputWrapper}>
+                  <Icon name="user-tie" size={18} color="#B91C1C" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.formInputBoxControl}
+                    placeholder="Host Staff Name & Designation"
+                    value={form.hostStaff}
+                    onChangeText={(text) => setForm((prev) => ({ ...prev, hostStaff: text }))}
+                  />
+                </View>
+
+                <Text style={styles.formFieldLabelText}>Purpose</Text>
+                <View style={styles.customPickerRowLayout}>
+                  {PURPOSE_OPTIONS.map((purpose) => (
+                    <TouchableOpacity
+                      key={purpose}
+                      style={[styles.customPickerItemBadge, form.purpose === purpose && styles.customPickerItemActive]}
+                      onPress={() => setForm((prev) => ({ ...prev, purpose }))}
+                    >
+                      <Icon
+                        name={form.purpose === purpose ? 'check-circle' : 'circle-o'}
+                        size={14}
+                        color={form.purpose === purpose ? '#FFFFFF' : '#7F1D1D'}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text style={[styles.customPickerItemText, form.purpose === purpose && styles.customPickerItemTextActive]}>
+                        {purpose}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.formFieldLabelText}>Remarks</Text>
+                <View style={styles.inputWrapper}>
+                  <Icon name="file-text-o" size={18} color="#B91C1C" style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.formInputBoxControl, styles.formMultiLineTextBoxElement]}
+                    placeholder="Additional notes..."
+                    multiline
+                    textAlignVertical="top"
+                    value={form.remarks}
+                    onChangeText={(text) => setForm((prev) => ({ ...prev, remarks: text }))}
+                  />
+                </View>
+              </ScrollView>
+
+              <View style={styles.formActionLayoutButtonsGroup}>
+                <TouchableOpacity style={[styles.formActionBtnBase, styles.formActionBtnCancel]} onPress={() => setIsCheckInModalOpen(false)}>
+                  <Icon name="times" size={16} color="#7F1D1D" style={{ marginRight: 6 }} />
+                  <Text style={styles.formActionBtnTextCancel}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.formActionBtnBase, styles.formActionBtnSubmit]} onPress={handleCheckInSubmit}>
+                  <Icon name="check" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.formActionBtnTextSubmit}>Check In Visitor</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
-          <Text style={styles.formInputLabelHeader}>
-            Remarks
-          </Text>
+      {/* UPDATE MODAL */}
+      {isUpdateModalOpen && selectedVisitor && (
+        <Modal transparent visible={isUpdateModalOpen} animationType="slide" onRequestClose={() => {
+          setIsUpdateModalOpen(false);
+          setSelectedVisitor(null);
+        }}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <View style={styles.glassviewOverlayScreen}>
+              <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%', maxHeight: '95%' }]}>
+                <View style={styles.modalHeaderWrapper}>
+                  <Icon name="pencil-square-o" size={28} color="#7F1D1D" style={{ marginRight: 10 }} />
+                  <View>
+                    <Text style={styles.modalMainHeaderTitle}>Update Visitor Record</Text>
+                    <Text style={styles.modalMainHeaderSubtitle}>Edit visitor {selectedVisitor.id}</Text>
+                  </View>
+                </View>
 
-          <TextInput
-            multiline
-            textAlignVertical="top"
-            numberOfLines={4}
-            style={[
-              styles.formInputTextControlBox,
-              {
-                height: 100,
-              },
-            ]}
-            placeholder="Additional Notes"
-            value={form.remarks}
-            onChangeText={(text) =>
-              setForm({ ...form, remarks: text })
-            }
-          />
-        </ScrollView>
+                <ScrollView
+                  style={{ width: '100%' }}
+                  contentContainerStyle={{ paddingBottom: 30 }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={styles.formFieldLabelText}>
+                    Visitor Name <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
+                  <View style={styles.inputWrapper}>
+                    <Icon name="user" size={18} color="#B91C1C" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.formInputBoxControl}
+                      placeholder="Full Name"
+                      value={updateForm.name}
+                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, name: text }))}
+                    />
+                  </View>
 
-        {/* Footer Buttons */}
-        <View style={styles.formActionControlsGroupRow}>
-          <TouchableOpacity
-            style={[
-              styles.formActionBtnBaseElement,
-              styles.formActionBtnCancel,
-            ]}
-            onPress={() => setIsCheckInModalOpen(false)}
-          >
-            <Text style={styles.formActionBtnCancelText}>
-              Cancel
-            </Text>
-          </TouchableOpacity>
+                  <Text style={styles.formFieldLabelText}>
+                    Badge Number <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
+                  <View style={styles.inputWrapper}>
+                    <Icon name="id-badge" size={18} color="#B91C1C" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.formInputBoxControl}
+                      placeholder="BADGE-001"
+                      value={updateForm.badgeNumber}
+                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, badgeNumber: text.toUpperCase() }))}
+                    />
+                  </View>
 
-          <TouchableOpacity
-            style={[
-              styles.formActionBtnBaseElement,
-              styles.formActionBtnSubmit,
-            ]}
-            onPress={handleCheckInSubmit}
-          >
-            <Text style={styles.formActionBtnSubmitText}>
-              Check In Visitor
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  </KeyboardAvoidingView>
-</Modal>
+                  <Text style={styles.formFieldLabelText}>Contact Number</Text>
+                  <View style={styles.inputWrapper}>
+                    <Icon name="phone" size={18} color="#B91C1C" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.formInputBoxControl}
+                      placeholder="+91 XXXXXXXXXX"
+                      keyboardType="phone-pad"
+                      value={updateForm.contactNumber}
+                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, contactNumber: text }))}
+                    />
+                  </View>
+
+                  <Text style={styles.formFieldLabelText}>
+                    Host Staff <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
+                  <View style={styles.inputWrapper}>
+                    <Icon name="user-tie" size={18} color="#B91C1C" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.formInputBoxControl}
+                      placeholder="Host Staff Name & Designation"
+                      value={updateForm.hostStaff}
+                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, hostStaff: text }))}
+                    />
+                  </View>
+
+                  <Text style={styles.formFieldLabelText}>Purpose</Text>
+                  <View style={styles.customPickerRowLayout}>
+                    {PURPOSE_OPTIONS.map((purpose) => (
+                      <TouchableOpacity
+                        key={purpose}
+                        style={[styles.customPickerItemBadge, updateForm.purpose === purpose && styles.customPickerItemActive]}
+                        onPress={() => setUpdateForm((prev) => ({ ...prev, purpose }))}
+                      >
+                        <Icon
+                          name={updateForm.purpose === purpose ? 'check-circle' : 'circle-o'}
+                          size={14}
+                          color={updateForm.purpose === purpose ? '#FFFFFF' : '#7F1D1D'}
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text style={[styles.customPickerItemText, updateForm.purpose === purpose && styles.customPickerItemTextActive]}>
+                          {purpose}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={styles.formFieldLabelText}>Remarks</Text>
+                  <View style={styles.inputWrapper}>
+                    <Icon name="file-text-o" size={18} color="#B91C1C" style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.formInputBoxControl, styles.formMultiLineTextBoxElement]}
+                      placeholder="Additional notes..."
+                      multiline
+                      textAlignVertical="top"
+                      value={updateForm.remarks}
+                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, remarks: text }))}
+                    />
+                  </View>
+                </ScrollView>
+
+                <View style={styles.formActionLayoutButtonsGroup}>
+                  <TouchableOpacity
+                    style={[styles.formActionBtnBase, styles.formActionBtnCancel]}
+                    onPress={() => {
+                      setIsUpdateModalOpen(false);
+                      setSelectedVisitor(null);
+                    }}
+                  >
+                    <Icon name="times" size={16} color="#7F1D1D" style={{ marginRight: 6 }} />
+                    <Text style={styles.formActionBtnTextCancel}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.formActionBtnBase, styles.formActionBtnSubmit]}
+                    onPress={handleUpdateSubmit}
+                  >
+                    <Icon name="check" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.formActionBtnTextSubmit}>Update Visitor</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {visitorToDelete && (
+        <Modal transparent visible={!!visitorToDelete} animationType="fade" onRequestClose={() => setVisitorToDelete(null)}>
+          <View style={styles.glassviewOverlayScreen}>
+            <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%' }, styles.deleteConfirmCard]}>
+              <View style={styles.deleteIconWrapper}>
+                <Icon name="trash-o" size={48} color="#B91C1C" />
+              </View>
+              <Text style={styles.deleteConfirmTitle}>Delete Visitor Record?</Text>
+              <Text style={styles.deleteConfirmSubtitle}>
+                Are you sure you want to delete "{visitorToDelete.name}"'s record?
+              </Text>
+              <Text style={styles.deleteConfirmWarning}>This action cannot be undone.</Text>
+
+              <View style={styles.deleteConfirmActions}>
+                <TouchableOpacity
+                  style={[styles.formActionBtnBase, styles.formActionBtnCancel]}
+                  onPress={() => setVisitorToDelete(null)}
+                >
+                  <Icon name="times" size={16} color="#7F1D1D" style={{ marginRight: 6 }} />
+                  <Text style={styles.formActionBtnTextCancel}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.formActionBtnBase, styles.formActionBtnSubmit, styles.deleteConfirmButton]}
+                  onPress={handleDeleteVisitor}
+                >
+                  <Icon name="trash" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.formActionBtnTextSubmit}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
 
-// Responsive Premium Styling for Visitor Management
 const styles = StyleSheet.create({
-  centerLoader: { flex: 1, backgroundColor: '#F8FAFC' },
-  loaderSubtext: { marginTop: 12, color: '#64748B', fontSize: 14 },
+  fallbackContainer: { flex: 1, backgroundColor: '#FFF1F2' },
+  fallbackText: { marginTop: 12, color: '#B91C1C', fontSize: 14 },
 
-  viewBaseArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  viewRootContainer: { flex: 1, backgroundColor: '#FFF1F2' },
+  pageScrollContent: { flexGrow: 1 },
+  pageShell: { maxWidth: 1400, width: '100%', alignSelf: 'center' },
 
-  appTitleNavbarHeader: {
+  topHeaderPanel: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderColor: '#FECACA',
+  },
+  brandTitleText: { fontSize: 23, fontWeight: '700', color: '#7F1D1D' },
+  brandSubtitleText: { fontSize: 13.5, color: '#9F1239', marginTop: 4 },
+
+  headerPrimaryAction: {
+    backgroundColor: '#B91C1C',
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerPrimaryActionText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
+
+  metricsSummaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 20,
+    gap: 14,
+  },
+  metricDisplayCard: {
+    flex: 1,
+    minWidth: 140,
+    borderRadius: 22,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  metricWine: { borderLeftWidth: 6, borderLeftColor: '#7F1D1D' },
+  metricRed: { borderLeftWidth: 6, borderLeftColor: '#B91C1C' },
+  metricRose: { borderLeftWidth: 6, borderLeftColor: '#EF4444' },
+  metricLabelText: { fontSize: 12.5, color: '#9F1239', fontWeight: '600', textTransform: 'uppercase' },
+  metricValueNumber: { fontSize: 28, fontWeight: '700', marginTop: 8, color: '#7F1D1D' },
+
+  controlFilteringBox: {
+    paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#FECACA',
   },
-  dashboardTitleText: { fontSize: 22, fontWeight: '700', color: '#0F172A' },
-  dashboardSubtitleText: { fontSize: 13.5, color: '#64748B', marginTop: 4 },
+  
+  // --- RESPONSIVE 4-FILTER ROW STYLES ---
+  filterRowWeb: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  filterRowMobile: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  filterItemSearch: { flex: 1.5, position: 'relative' },
+  filterItem: { flex: 1, position: 'relative' },
+  filterItemHalf: { minWidth: '47%' },
 
-  headerPrimaryTriggerBtn: {
-    backgroundColor: '#10B981',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 10,
+  searchWrapper: { position: 'relative', justifyContent: 'center' },
+  searchIcon: { position: 'absolute', left: 14, top: 15, zIndex: 1 },
+  globalSearchBox: {
+    backgroundColor: '#FFF1F2',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingRight: 42,
+    paddingLeft: 42,
+    paddingVertical: 13,
+    fontSize: 14,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    color: '#431407',
   },
-  headerPrimaryTriggerBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
+  clearSearchButton: {
+    position: 'absolute',
+    right: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#B91C1C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
+  },
 
-  securityMetricsRowLayout: {
+  // --- DROPDOWN SELECTOR UI STYLES ---
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    backgroundColor: '#FFF1F2',
+    paddingHorizontal: 16,
+    height: 48,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
   },
-  securityMetricsCard: {
-    flex: 1,
-    minWidth: 135,
+  dropdownText: { fontSize: 14, color: '#7F1D1D', fontWeight: '600' },
+  dropdownMenuBelow: {
+    position: 'absolute',
+    top: 54, 
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FECACA',
     borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderLeftWidth: 5,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+      android: { elevation: 15 },
+      default: {},
+    }),
   },
-  metricsLabelMini: { fontSize: 12, color: '#64748B', fontWeight: '600', textTransform: 'uppercase' },
-  metricsCounterValue: { fontSize: 26, fontWeight: '700', marginTop: 8, color: '#0F172A' },
-
-  filterControlDeckWrapper: { padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#E2E8F0' },
-  searchBarBoxInput: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
+  dropdownMenuItem: {
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    paddingVertical: 13,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FDE8E8',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  tabPillMatrixRow: { flexDirection: 'row', marginTop: 12 },
-  tabFilterPillItem: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 22, backgroundColor: '#F1F5F9', marginRight: 8 },
-  tabFilterPillItemActive: { backgroundColor: '#0F172A' },
-  tabFilterPillItemText: { fontSize: 13.5, color: '#475569', fontWeight: '500' },
-  tabFilterPillItemTextActive: { color: '#FFFFFF', fontWeight: '600' },
+  dropdownMenuItemActive: { backgroundColor: '#FFF1F2' },
+  dropdownMenuText: { color: '#7F1D1D', fontSize: 14.5, fontWeight: '500' },
+  dropdownMenuTextActive: { color: '#B91C1C', fontWeight: '700' },
 
-  scrollListLayoutBody: { padding: 16, gap: 12 },
-  visitorRegistryListCard: {
+  webNativeInputDatePicker: {
+    width: '100%',
+    height: '48px',
+    padding: '0 16px',
+    borderRadius: '12px',
+    border: '1px solid #FECACA',
+    fontSize: '14px',
+    color: '#7F1D1D',
+    fontWeight: '600',
+    fontFamily: 'inherit',
+    backgroundColor: '#FFF1F2',
+    boxSizing: 'border-box',
+  },
+  // ----------------------------------------
+
+  listContainerLayout: { padding: 20, gap: 14 },
+
+  dataLogItemCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 18,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#FECACA',
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  cardHeaderFlexBoxRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  cardBadgesLayoutRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  cardBadgeIdText: { fontSize: 12, fontWeight: '700', color: '#64748B' },
-  cardBadgeTagMarker: { fontSize: 12, fontWeight: '700', color: '#10B981' },
-  visitorNameHeadingText: { fontSize: 17, fontWeight: '600', color: '#0F172A', marginTop: 4 },
-  visitorPurposeSubtitleLabel: { fontSize: 13.5, color: '#64748B', marginTop: 3 },
-  statusStateCapsule: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20 },
-  statusStateCapsuleActive: { backgroundColor: '#D1FAE5' },
-  statusStateCapsuleClosed: { backgroundColor: '#F1F5F9' },
-  statusStateCapsuleText: { fontSize: 12.5, fontWeight: '600' },
-  statusActiveText: { color: '#065F46' },
-  statusClosedText: { color: '#475569' },
-  cardInternalDossierSummaryBox: { marginTop: 12, padding: 12, backgroundColor: '#F8FAFC', borderRadius: 10 },
-  internalDossierLabelItem: { fontSize: 13, color: '#475569' },
-  cardFooterFlowLayout: { flexDirection: 'row', gap: 16, marginTop: 12 },
-  footerTimeLabelText: { fontSize: 13, color: '#64748B' },
+  cardHeaderFlexRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  cardTitleBlock: { flex: 1, minWidth: 0 },
+  metaRowBadging: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' },
+  cardRecordId: { fontSize: 12.5, fontWeight: '700', color: '#DC2626' },
+  badgeWrapper: { flexDirection: 'row', alignItems: 'center' },
+  cardTypeLabel: { fontSize: 12.5, color: '#9F1239', fontWeight: '500' },
+  nameWrapper: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  prospectNameHeading: { fontSize: 18, fontWeight: '600', color: '#7F1D1D' },
+  purposeWrapper: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  visitorPurposeLabel: { fontSize: 13.5, color: '#9F1239' },
 
-  emptyFeedPlaceholder: { alignItems: 'center', paddingVertical: 80 },
-  emptyFeedPlaceholderText: { fontSize: 15, color: '#94A3B8' },
-
-  darkenedBlurOverlayContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+  professionalStatusBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    minWidth: 115,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
+    flexShrink: 0,
+    flexDirection: 'row',
   },
-  modalViewportCoreCardBody: {
+  professionalStatusText: { fontSize: 13, fontWeight: '700' },
+  professionalStatusOpen: { backgroundColor: '#FEE2E2', borderColor: '#FECACA' },
+  professionalStatusTextOpen: { color: '#991B1B' },
+  professionalStatusResolved: { backgroundColor: '#FFF1F2', borderColor: '#FECACA' },
+  professionalStatusTextResolved: { color: '#DC2626' },
+
+  cardFooterLayoutFlex: { marginTop: 14, gap: 8 },
+  footerItem: { flexDirection: 'row', alignItems: 'center' },
+  footerMetaLabel: { fontSize: 13.5, color: '#9F1239' },
+
+  cardDivider: { height: 1, backgroundColor: '#FDE8E8', marginVertical: 14 },
+
+  cardActionButtonsInside: {
+    flexDirection: 'row',
+    gap: 16,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 4,
+  },
+  actionButtonIconInside: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 6 },
+  actionButtonIconDeleteInside: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 6 },
+  actionLabelInside: { fontSize: 13, fontWeight: '600', color: '#7F1D1D' },
+  actionLabelInsideDelete: { fontSize: 13, fontWeight: '600', color: '#B91C1C' },
+
+  tableWrapper: { paddingHorizontal: 20, paddingBottom: 20 },
+  tableContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    width: '100%',
-    maxWidth: 520,
-    maxHeight: '90%',
-  },
-  modalMainHeadingTitleText: { fontSize: 21, fontWeight: '700', color: '#0F172A' },
-  modalSubheadingReferenceId: { fontSize: 13.5, color: '#10B981', marginTop: 4 },
-
-  modalDossierContentScroller: { marginVertical: 12 },
-  dossierSectionMetaLabel: { fontSize: 12, fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', marginTop: 16 },
-  dossierSectionValueText: { fontSize: 16.5, color: '#0F172A', marginTop: 4 },
-
-  timelineBracketWrapperBlock: { backgroundColor: '#F8FAFC', padding: 14, borderRadius: 12, marginTop: 16 },
-  timelineItemStampRow: { fontSize: 13.5, color: '#475569', marginBottom: 6 },
-
-  remarksBoxBlockParagraph: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#475569',
-    backgroundColor: '#F8FAFC',
-    padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginTop: 8,
+    borderColor: '#FECACA',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#FFF1F2', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 2, borderBottomColor: '#FECACA' },
+  tableHeaderCell: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  colIdWrapper: { flex: 1.2, minWidth: 120 },
+  colNameWrapper: { flex: 2.2, minWidth: 200 },
+  colPurposeWrapper: { flex: 1.8, minWidth: 170 },
+  colHostWrapper: { flex: 2.4, minWidth: 240 },
+  colStatusWrapper: { flex: 1.3, minWidth: 140 },
+  colActionWrapper: { flex: 1.2, minWidth: 140, justifyContent: 'center' },
+  tableHeaderCellText: { fontSize: 13, fontWeight: '700', color: '#7F1D1D' },
+  tableBody: { paddingBottom: 8 },
+  tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#FDE8E8' },
+  tableCell: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  tableCellId: { fontWeight: '600' },
+  tableCellText: { fontSize: 14, color: '#431407', flex: 1 },
+  tableActionButtons: { flexDirection: 'row', gap: 12, justifyContent: 'flex-start' },
+  tableActionButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FDFBFB', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center', justifyContent: 'center' },
+  tableActionButtonDelete: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', alignItems: 'center', justifyContent: 'center' },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, alignSelf: 'flex-start', minWidth: 108, alignItems: 'center', flexDirection: 'row' },
+  statusIn: { backgroundColor: '#FEE2E2' },
+  statusOut: { backgroundColor: '#FFF1F2' },
+  statusText: { fontSize: 12, fontWeight: '700', color: '#7F1D1D' },
 
-  instantCheckoutTriggerBtn: {
-    backgroundColor: '#EF4444',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  instantCheckoutTriggerBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
-androidModalContainer: {
-  backgroundColor: "#FFFFFF",
-  width: "92%",
-  maxHeight: "85%",
-  borderRadius: 20,
-  padding: 20,
-},
-  closeDossierViewBtn: {
-    backgroundColor: '#0F172A',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  closeDossierViewBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
+  emptyStateContainerBox: { alignItems: 'center', paddingVertical: 90 },
+  emptyStateMsg: { fontSize: 15.5, color: '#B91C1C', textAlign: 'center' },
 
- formContentScrollContainer: {
-  maxHeight: 500,
-},
-  formInputLabelHeader: { fontSize: 13.5, fontWeight: '600', color: '#475569', marginTop: 14, marginBottom: 6 },
-  formInputTextControlBox: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    backgroundColor: '#FFFFFF',
-  },
-  formFlexGridBadgeSelectionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 8 },
-  badgeSelectorItemElement: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  badgeSelectorItemElementActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
-  badgeSelectorItemElementText: { fontSize: 13, color: '#475569' },
-  badgeSelectorItemElementTextActive: { color: '#FFFFFF', fontWeight: '600' },
-  formMultiLineTextAreaElement: { height: 100, textAlignVertical: 'top' },
+  glassviewOverlayScreen: { flex: 1, backgroundColor: 'rgba(60, 33, 20, 0.55)', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  modalBodyCardLayout: { backgroundColor: '#FFFFFF', borderRadius: 22, padding: 24, width: '95%', maxWidth: 540, maxHeight: '94%' },
+  modalHeaderWrapper: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  modalMainHeaderTitle: { fontSize: 22, fontWeight: '700', color: '#7F1D1D' },
+  modalMainHeaderSubtitle: { fontSize: 14, color: '#DC2626', marginTop: 4 },
+  modalFormScrollContainer: { marginVertical: 16 },
+  fieldWrapper: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
+  dossierFieldLabel: { fontSize: 12.5, fontWeight: '600', color: '#9F1239', textTransform: 'uppercase' },
+  dossierFieldValue: { fontSize: 16.5, color: '#431407', marginTop: 4, fontWeight: '500' },
+  detailTwoColRow: { flexDirection: 'row', gap: 16 },
+  detailCol: { flex: 1, minWidth: 0 },
+  dossierTextAreaDisplay: { fontSize: 15.5, lineHeight: 23, color: '#4B5563', backgroundColor: '#FFF1F2', padding: 18, borderRadius: 14, borderWidth: 1, borderColor: '#FECACA', marginTop: 8 },
+  workflowActionButtonItem: { backgroundColor: '#FEE2E2', paddingVertical: 15, borderRadius: 14, alignItems: 'center', marginTop: 24, flexDirection: 'row', justifyContent: 'center' },
+  workflowActionButtonText: { color: '#991B1B', fontWeight: '600', fontSize: 15 },
+  dismissDetailsModalBtn: { backgroundColor: '#B91C1C', paddingVertical: 15, borderRadius: 14, alignItems: 'center', marginTop: 28, flexDirection: 'row', justifyContent: 'center' },
+  dismissDetailsModalBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15.5 },
 
-  formActionControlsGroupRow: { flexDirection: 'row', gap: 12, marginTop: 24 },
-  formActionBtnBaseElement: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
-  formActionBtnCancel: { backgroundColor: '#F1F5F9' },
-  formActionBtnSubmit: { backgroundColor: '#10B981' },
-  formActionBtnCancelText: { color: '#475569', fontWeight: '600', fontSize: 15 },
-  formActionBtnSubmitText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
+  formFieldLabelText: { fontSize: 14, fontWeight: '600', color: '#7F1D1D', marginTop: 16, marginBottom: 7 },
+  inputWrapper: { position: 'relative' },
+  inputIcon: { position: 'absolute', left: 14, top: 13, zIndex: 1 },
+  formInputBoxControl: { borderWidth: 1, borderColor: '#FECACA', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 13, fontSize: 15.5, backgroundColor: '#FFFFFF', paddingLeft: 42 },
+  customPickerRowLayout: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 10 },
+  customPickerItemBadge: { paddingVertical: 9, paddingHorizontal: 18, borderRadius: 12, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF1F2', flexDirection: 'row', alignItems: 'center' },
+  customPickerItemActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
+  customPickerItemText: { fontSize: 13.5, color: '#7F1D1D' },
+  customPickerItemTextActive: { color: '#FFFFFF', fontWeight: '600' },
+  formMultiLineTextBoxElement: { minHeight: 120, textAlignVertical: 'top', paddingLeft: 42 },
+
+  formActionLayoutButtonsGroup: { flexDirection: 'row', gap: 14, marginTop: 28 },
+  formActionBtnBase: { flex: 1, paddingVertical: 15, borderRadius: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
+  formActionBtnCancel: { backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECACA' },
+  formActionBtnSubmit: { backgroundColor: '#DC2626' },
+  formActionBtnTextCancel: { color: '#7F1D1D', fontWeight: '600', fontSize: 15.5 },
+  formActionBtnTextSubmit: { color: '#FFFFFF', fontWeight: '600', fontSize: 15.5 },
+
+  deleteConfirmCard: { alignItems: 'center', padding: 24 },
+  deleteIconWrapper: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 2, borderColor: '#FECACA' },
+  deleteConfirmTitle: { fontSize: 20, fontWeight: '700', color: '#7F1D1D', textAlign: 'center' },
+  deleteConfirmSubtitle: { fontSize: 15, color: '#4B5563', textAlign: 'center', marginTop: 12, lineHeight: 22 },
+  deleteConfirmWarning: { fontSize: 13, color: '#B91C1C', textAlign: 'center', marginTop: 8, fontWeight: '600' },
+  deleteConfirmActions: { flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' },
+  deleteConfirmButton: { backgroundColor: '#DC2626' },
 });
