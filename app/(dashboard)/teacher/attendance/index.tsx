@@ -592,7 +592,7 @@ export default function MarkAttendanceScreen() {
                   className="text-xs font-semibold"
                   style={{ color: COLORS.primary }}
                 >
-                  📅 Open Calendar
+                  Open Calendar
                 </Text>
               </TouchableOpacity>
             </View>

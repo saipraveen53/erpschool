@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -58,10 +57,16 @@ const COLORS = {
   gradientEnd: "#FEE2DB",
 };
 
-// Separate axios instance for exams API
-const examClient = axios.create({
-  baseURL: "http://192.168.88.19:8081",
-  timeout: 10000,
+// --- Cross-Platform Shadow Helper ---
+const platformShadow = Platform.select({
+  web: { boxShadow: "0px 4px 16px rgba(0,0,0,0.04)" } as any,
+  default: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
 });
 
 const teacherModules = [
@@ -140,6 +145,21 @@ export default function TeacherDashboard() {
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
+  // Assigned Subjects & Count Stats State
+  const [assignedStats, setAssignedStats] = useState({
+    assignmentCount: 0,
+    assignedSubjectCount: 0,
+  });
+  const [assignedLoading, setAssignedLoading] = useState(true);
+
+  // Attendance summary state (present, absent, half-day)
+  const [attendanceSummary, setAttendanceSummary] = useState({
+    presentCount: 0,
+    absentCount: 0,
+    leaveCount: 0,
+  });
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+
   // Notifications
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -167,9 +187,9 @@ export default function TeacherDashboard() {
   const [feedImageModalVisible, setFeedImageModalVisible] = useState(false);
   const [feedPreviewImage, setFeedPreviewImage] = useState("");
 
-  // Exams state
-  const [exams, setExams] = useState<any[]>([]);
-  const [examsLoading, setExamsLoading] = useState(true);
+  // Notices state
+  const [notices, setNotices] = useState<any[]>([]);
+  const [noticesLoading, setNoticesLoading] = useState(true);
 
   const calendarDates = useMemo(() => {
     const dates = [];
@@ -245,6 +265,70 @@ export default function TeacherDashboard() {
     fetchDashboardStats();
   }, [teacherId]);
 
+  // Fetch Assigned Subjects & Assignment Counts
+  useEffect(() => {
+    const fetchAssignedStats = async () => {
+      try {
+        setAssignedLoading(true);
+        const res = await teacherClient.get(
+          "/api/student/teacher/assignedCount",
+        );
+        if (res.data) {
+          setAssignedStats({
+            assignmentCount: res.data.assignmentCount || 0,
+            assignedSubjectCount: res.data.assignedSubjectCount || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load assigned stats:", error);
+      } finally {
+        setAssignedLoading(false);
+      }
+    };
+
+    fetchAssignedStats();
+  }, []);
+
+  // Fetch attendance summary
+  useEffect(() => {
+    if (!teacherId) return;
+
+    const fetchAttendanceSummary = async () => {
+      setAttendanceLoading(true);
+      const month = selectedDate.getMonth() + 1; // getMonth() is 0-indexed
+      const year = selectedDate.getFullYear();
+      try {
+        const res = await teacherClient.get(
+          "/api/student/teacher/dashboard/attendance",
+          {
+            params: {
+              teacherId,
+              month,
+              year,
+            },
+          },
+        );
+        const data = res.data;
+        setAttendanceSummary({
+          presentCount: data.presentCount ?? 0,
+          absentCount: data.absentCount ?? 0,
+          leaveCount: data.leaveCount ?? 0,
+        });
+      } catch (error) {
+        console.error("Failed to load attendance summary:", error);
+        setAttendanceSummary({
+          presentCount: 0,
+          absentCount: 0,
+          leaveCount: 0,
+        });
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    fetchAttendanceSummary();
+  }, [teacherId, selectedDate]);
+
   // Fetch campus feed (using teacherClient)
   useEffect(() => {
     const fetchFeed = async () => {
@@ -260,6 +344,21 @@ export default function TeacherDashboard() {
     fetchFeed();
   }, []);
 
+  // Fetch school notices (using teacherClient)
+  useEffect(() => {
+    const fetchNotices = async () => {
+      try {
+        const res = await teacherClient.get("/api/student/notice/all");
+        setNotices(res.data);
+      } catch (err) {
+        console.error("Failed to load notices:", err);
+      } finally {
+        setNoticesLoading(false);
+      }
+    };
+    fetchNotices();
+  }, []);
+
   // Helper for feed image URL
   const getFeedImageUrl = (path: string) => {
     if (!path) return null;
@@ -268,7 +367,7 @@ export default function TeacherDashboard() {
     return `${baseURL}${path.startsWith("/") ? path : `/${path}`}`;
   };
 
-  // Fetch unread count
+  // Fetch unread count (using teacherClient)
   const fetchUnreadCount = async () => {
     if (!teacherId) return;
     try {
@@ -281,7 +380,7 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Fetch notifications (with pagination)
+  // Fetch notifications (with pagination) (using teacherClient)
   const fetchNotifications = async (reset = false) => {
     if (!teacherId) return;
     const currentPage = reset ? 0 : page;
@@ -309,7 +408,7 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Mark notification as read
+  // Mark notification as read (using teacherClient)
   const markAsRead = async (notificationId: number) => {
     try {
       await teacherClient.post(
@@ -380,6 +479,22 @@ export default function TeacherDashboard() {
       ? Math.min(width - 32, 340)
       : Math.min(width - 40, 400);
   const dropdownRightOffset = Platform.OS === "android" ? 16 : 20;
+
+  // Helper to format month name
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
   return (
     <View className="flex-1" style={{ backgroundColor: COLORS.lightGray }}>
@@ -507,7 +622,7 @@ export default function TeacherDashboard() {
         />
       )}
 
-      {/* Notifications Dropdown - Refined */}
+      {/* Notifications Dropdown */}
       {dropdownVisible && (
         <Animated.View
           style={{
@@ -752,9 +867,9 @@ export default function TeacherDashboard() {
           <Text className="text-white text-2xl font-black mb-6">
             Your Teaching Dashboard
           </Text>
-          <View className="flex-row gap-4">
+          <View className="flex-row flex-wrap gap-4">
             <View
-              className="flex-1 p-4 rounded-xl"
+              className="flex-1 min-w-[100px] p-4 rounded-xl"
               style={{
                 backgroundColor: "rgba(244, 164, 96, 0.2)",
                 borderWidth: 1,
@@ -775,7 +890,7 @@ export default function TeacherDashboard() {
               </Text>
             </View>
             <View
-              className="flex-1 p-4 rounded-xl"
+              className="flex-1 min-w-[100px] p-4 rounded-xl"
               style={{
                 backgroundColor: "rgba(244, 164, 96, 0.2)",
                 borderWidth: 1,
@@ -796,7 +911,7 @@ export default function TeacherDashboard() {
               </Text>
             </View>
             <View
-              className="flex-1 p-4 rounded-xl"
+              className="flex-1 min-w-[100px] p-4 rounded-xl"
               style={{
                 backgroundColor: "rgba(244, 164, 96, 0.2)",
                 borderWidth: 1,
@@ -818,7 +933,142 @@ export default function TeacherDashboard() {
                 Pass Percentage
               </Text>
             </View>
+
+            {/* Assigned Stats Cards */}
+            <View
+              className="flex-1 min-w-[100px] p-4 rounded-xl"
+              style={{
+                backgroundColor: "rgba(244, 164, 96, 0.2)",
+                borderWidth: 1,
+                borderColor: "rgba(244, 164, 96, 0.4)",
+              }}
+            >
+              <Text
+                className="text-3xl font-black mb-1"
+                style={{ color: COLORS.secondary }}
+              >
+                {assignedLoading ? "-" : assignedStats.assignedSubjectCount}
+              </Text>
+              <Text
+                className="text-xs font-medium"
+                style={{ color: COLORS.cardLight }}
+              >
+                Assigned Subjects
+              </Text>
+            </View>
+            <View
+              className="flex-1 min-w-[100px] p-4 rounded-xl"
+              style={{
+                backgroundColor: "rgba(244, 164, 96, 0.2)",
+                borderWidth: 1,
+                borderColor: "rgba(244, 164, 96, 0.4)",
+              }}
+            >
+              <Text
+                className="text-3xl font-black mb-1"
+                style={{ color: COLORS.secondary }}
+              >
+                {assignedLoading ? "-" : assignedStats.assignmentCount}
+              </Text>
+              <Text
+                className="text-xs font-medium"
+                style={{ color: COLORS.cardLight }}
+              >
+                Assignments
+              </Text>
+            </View>
           </View>
+        </View>
+
+        {/* Attendance Summary Card (Present, Absent, Half-Day) */}
+        <View
+          className="p-5 rounded-3xl mb-8 bg-white"
+          style={{
+            borderColor: COLORS.border,
+            borderWidth: 1,
+            ...platformShadow,
+          }}
+        >
+          <View className="flex-row justify-between items-center mb-4">
+            <Text
+              className="text-xl font-extrabold"
+              style={{ color: COLORS.textPrimary }}
+            >
+              Attendance Summary
+            </Text>
+            <Text
+              className="text-sm font-medium"
+              style={{ color: COLORS.textSecondary }}
+            >
+              {monthNames[selectedDate.getMonth()]} {selectedDate.getFullYear()}
+            </Text>
+          </View>
+
+          {attendanceLoading ? (
+            <View className="py-8 items-center">
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text
+                className="text-sm mt-2"
+                style={{ color: COLORS.textSecondary }}
+              >
+                Loading attendance...
+              </Text>
+            </View>
+          ) : (
+            <View className="flex-row flex-wrap gap-4">
+              <View
+                className="flex-1 min-w-[100px] p-4 rounded-xl items-center justify-center"
+                style={{ backgroundColor: `${COLORS.primaryLight}60` }}
+              >
+                <Text
+                  className="text-3xl font-black mb-1"
+                  style={{ color: COLORS.primaryDark }}
+                >
+                  {attendanceSummary.presentCount}
+                </Text>
+                <Text
+                  className="text-xs font-bold"
+                  style={{ color: COLORS.primaryDark }}
+                >
+                  Present
+                </Text>
+              </View>
+              <View
+                className="flex-1 min-w-[100px] p-4 rounded-xl items-center justify-center"
+                style={{ backgroundColor: `${COLORS.textTertiary}20` }}
+              >
+                <Text
+                  className="text-3xl font-black mb-1"
+                  style={{ color: COLORS.textTertiary }}
+                >
+                  {attendanceSummary.absentCount}
+                </Text>
+                <Text
+                  className="text-xs font-bold"
+                  style={{ color: COLORS.textTertiary }}
+                >
+                  Absent
+                </Text>
+              </View>
+              <View
+                className="flex-1 min-w-[100px] p-4 rounded-xl items-center justify-center"
+                style={{ backgroundColor: `${COLORS.secondary}20` }}
+              >
+                <Text
+                  className="text-3xl font-black mb-1"
+                  style={{ color: COLORS.secondary }}
+                >
+                  {attendanceSummary.leaveCount}
+                </Text>
+                <Text
+                  className="text-xs font-bold"
+                  style={{ color: COLORS.secondary }}
+                >
+                  Half Day / Leave
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Quick Access */}
@@ -910,7 +1160,7 @@ export default function TeacherDashboard() {
           <View
             style={Platform.OS === "web" ? { flex: 1, overflow: "hidden" } : {}}
           >
-            <View className="mb-5">
+            <View className={Platform.OS === "web" ? "mb-5" : "mt-8 mb-5"}>
               <Text
                 className="text-2xl font-extrabold tracking-tight"
                 style={{ color: COLORS.textPrimary }}
@@ -925,132 +1175,276 @@ export default function TeacherDashboard() {
               </Text>
             </View>
 
-            {feedLoading ? (
-              <View className="py-8 items-center">
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text
-                  className="mt-2 text-sm"
-                  style={{ color: COLORS.textSecondary }}
+            {/* Campus Happenings Box */}
+            <View
+              className="rounded-3xl border overflow-hidden"
+              style={{
+                backgroundColor: COLORS.bgWhite,
+                borderColor: COLORS.border,
+                height: 400,
+                ...platformShadow,
+              }}
+            >
+              {feedLoading ? (
+                <View className="flex-1 items-center justify-center">
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text
+                    className="mt-2 text-sm"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Loading happenings...
+                  </Text>
+                </View>
+              ) : feedItems.length === 0 ? (
+                <View className="flex-1 items-center justify-center p-8">
+                  <Text
+                    className="text-base font-semibold"
+                    style={{ color: COLORS.textPrimary }}
+                  >
+                    No updates available
+                  </Text>
+                  <Text
+                    className="text-sm mt-1 text-center"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Check back later for campus news
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ padding: 20, gap: 16 }}
                 >
-                  Loading happenings...
-                </Text>
-              </View>
-            ) : feedItems.length === 0 ? (
-              <View
-                className="bg-white p-8 rounded-2xl border items-center"
-                style={{
-                  backgroundColor: COLORS.bgWhite,
-                  borderColor: COLORS.border,
-                }}
-              >
+                  {feedItems.map((item) => {
+                    const imageUrl = getFeedImageUrl(item.imageUrl);
+                    const hasImage =
+                      imageUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl);
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          if (hasImage) {
+                            setFeedPreviewImage(imageUrl);
+                            setFeedImageModalVisible(true);
+                          }
+                        }}
+                        className="w-full bg-white rounded-2xl border overflow-hidden"
+                        style={{
+                          backgroundColor: COLORS.bgWhite,
+                          borderColor: COLORS.border,
+                        }}
+                      >
+                        {hasImage && (
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={{ width: "100%", height: 140 }}
+                            resizeMode="cover"
+                          />
+                        )}
+                        <View className="p-4">
+                          <View className="flex-row justify-between items-start mb-2">
+                            <Text
+                              className="font-bold text-base flex-1 mr-2"
+                              style={{ color: COLORS.textPrimary }}
+                            >
+                              {item.title}
+                            </Text>
+                            <View
+                              className="px-2 py-1 rounded-full"
+                              style={{ backgroundColor: COLORS.primaryLight }}
+                            >
+                              <Text
+                                className="text-[10px] font-bold uppercase"
+                                style={{ color: COLORS.primary }}
+                              >
+                                {item.type}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text
+                            className="text-sm leading-5 mb-3"
+                            style={{ color: COLORS.textSecondary }}
+                            numberOfLines={3}
+                          >
+                            {item.description}
+                          </Text>
+                          <View
+                            className="flex-row justify-between items-center pt-2 border-t"
+                            style={{ borderTopColor: COLORS.border }}
+                          >
+                            <View className="flex-row items-center gap-1">
+                              <Calendar size={12} color={COLORS.textTertiary} />
+                              <Text
+                                className="text-xs font-semibold"
+                                style={{ color: COLORS.textTertiary }}
+                              >
+                                {new Date(item.postDate).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  },
+                                )}
+                              </Text>
+                            </View>
+                            <Text
+                              className="text-xs italic"
+                              style={{ color: COLORS.textTertiary }}
+                            >
+                              by {item.postedBy}
+                            </Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+
+          {/* Right side: School Notices */}
+          <View
+            style={Platform.OS === "web" ? { flex: 1, overflow: "hidden" } : {}}
+          >
+            <View
+              className={`flex-row justify-between items-end ${Platform.OS === "web" ? "mb-5" : "mt-8 mb-5"}`}
+            >
+              <View className="flex-1">
                 <Text
-                  className="text-base font-semibold"
+                  className="text-2xl font-extrabold tracking-tight"
                   style={{ color: COLORS.textPrimary }}
                 >
-                  No updates available
+                  📢 School Notices
                 </Text>
                 <Text
                   className="text-sm mt-1"
                   style={{ color: COLORS.textSecondary }}
                 >
-                  Check back later for campus news
+                  Important announcements and updates
                 </Text>
               </View>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 16, paddingBottom: 8 }}
+              <TouchableOpacity
+                onPress={() =>
+                  router.push("/teacher/communication/notices" as any)
+                }
               >
-                {feedItems.map((item) => {
-                  const imageUrl = getFeedImageUrl(item.imageUrl);
-                  const hasImage =
-                    imageUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl);
-                  return (
-                    <TouchableOpacity
-                      key={item.id}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        if (hasImage) {
-                          setFeedPreviewImage(imageUrl);
-                          setFeedImageModalVisible(true);
-                        }
-                      }}
-                      className="w-80 bg-white rounded-2xl border overflow-hidden"
+                <Text
+                  className="text-sm font-bold"
+                  style={{ color: COLORS.primary }}
+                >
+                  View All
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Notice Box */}
+            <View
+              className="rounded-3xl border overflow-hidden"
+              style={{
+                backgroundColor: COLORS.bgWhite,
+                borderColor: COLORS.border,
+                height: 400,
+                ...platformShadow,
+              }}
+            >
+              {noticesLoading ? (
+                <View className="flex-1 items-center justify-center">
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text
+                    className="mt-2 text-sm"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Loading notices...
+                  </Text>
+                </View>
+              ) : notices.length === 0 ? (
+                <View className="flex-1 items-center justify-center p-8">
+                  <Text
+                    className="text-base font-semibold"
+                    style={{ color: COLORS.textPrimary }}
+                  >
+                    No notices available
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ padding: 20, gap: 16 }}>
+                  {notices.slice(0, 2).map((notice) => (
+                    <View
+                      key={notice.id}
+                      className="w-full bg-white rounded-2xl border p-5"
                       style={{
                         backgroundColor: COLORS.bgWhite,
                         borderColor: COLORS.border,
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 6,
-                        elevation: 2,
                       }}
                     >
-                      {hasImage && (
-                        <Image
-                          source={{ uri: imageUrl }}
-                          style={{ width: "100%", height: 140 }}
-                          resizeMode="cover"
-                        />
-                      )}
-                      <View className="p-4">
-                        <View className="flex-row justify-between items-start mb-2">
-                          <Text
-                            className="font-bold text-base flex-1 mr-2"
-                            style={{ color: COLORS.textPrimary }}
-                          >
-                            {item.title}
-                          </Text>
-                          <View
-                            className="px-2 py-1 rounded-full"
-                            style={{ backgroundColor: COLORS.primaryLight }}
-                          >
-                            <Text
-                              className="text-[10px] font-bold uppercase"
-                              style={{ color: COLORS.primary }}
-                            >
-                              {item.type}
-                            </Text>
-                          </View>
-                        </View>
+                      <View className="flex-row justify-between items-start mb-3">
                         <Text
-                          className="text-sm leading-5 mb-3"
-                          style={{ color: COLORS.textSecondary }}
-                          numberOfLines={3}
+                          className="font-bold text-base flex-1 mr-2"
+                          style={{ color: COLORS.textPrimary }}
+                          numberOfLines={2}
                         >
-                          {item.description}
+                          {notice.noticeName}
                         </Text>
-                        <View className="flex-row justify-between items-center">
-                          <View className="flex-row items-center gap-1">
-                            <Calendar size={12} color={COLORS.textTertiary} />
-                            <Text
-                              className="text-xs"
-                              style={{ color: COLORS.textTertiary }}
-                            >
-                              {new Date(item.postDate).toLocaleDateString(
-                                undefined,
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                },
-                              )}
-                            </Text>
-                          </View>
+                        <View
+                          className="px-2 py-1 rounded-full"
+                          style={{
+                            backgroundColor:
+                              notice.noticeType === "EMERGENCY"
+                                ? `${COLORS.primary}20`
+                                : notice.noticeType === "ACADEMIC"
+                                  ? `${COLORS.secondary}20`
+                                  : COLORS.primaryLight,
+                          }}
+                        >
                           <Text
-                            className="text-xs italic"
-                            style={{ color: COLORS.textTertiary }}
+                            className="text-[10px] font-bold uppercase"
+                            style={{
+                              color:
+                                notice.noticeType === "EMERGENCY"
+                                  ? COLORS.primaryDark
+                                  : notice.noticeType === "ACADEMIC"
+                                    ? COLORS.secondary
+                                    : COLORS.primary,
+                            }}
                           >
-                            by {item.postedBy}
+                            {notice.noticeType}
                           </Text>
                         </View>
                       </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            )}
+                      <Text
+                        className="text-sm leading-5 mb-4"
+                        style={{ color: COLORS.textSecondary }}
+                        numberOfLines={3}
+                      >
+                        {notice.noticeDescription}
+                      </Text>
+                      <View
+                        className="flex-row items-center gap-1.5 mt-auto pt-3 border-t"
+                        style={{ borderTopColor: COLORS.border }}
+                      >
+                        <Calendar size={12} color={COLORS.textTertiary} />
+                        <Text
+                          className="text-xs font-semibold"
+                          style={{ color: COLORS.textTertiary }}
+                        >
+                          {new Date(notice.noticeDate).toLocaleDateString(
+                            undefined,
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>

@@ -61,7 +61,7 @@ const platformShadow = Platform.select({
 
 // 1. Isolated Axios instance for the exams microservice
 const examClient = axios.create({
-  baseURL: "http://192.168.88.20:8081",
+  baseURL: "http://192.168.88.24:8083",
   timeout: 10000,
 });
 

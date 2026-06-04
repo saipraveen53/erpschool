@@ -3,25 +3,25 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-  ArrowLeft,
-  CalendarPlus,
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  XCircle,
+    ArrowLeft,
+    CalendarPlus,
+    CheckCircle,
+    ChevronDown,
+    Clock,
+    XCircle,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+    useWindowDimensions,
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
@@ -47,7 +47,7 @@ const COLORS = {
 
 // Dedicated axios instance for leave management endpoints
 const leaveClient = axios.create({
-  baseURL: "http://192.168.88.20:8081",
+  baseURL: "http://192.168.88.24:8083",
   timeout: 10000,
 });
 

@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios, {
-  AxiosError,
-  AxiosInstance,
-  InternalAxiosRequestConfig,
+    AxiosError,
+    AxiosInstance,
+    InternalAxiosRequestConfig,
 } from "axios";
 
 const getToken = async (): Promise<string | null> => {
@@ -41,5 +41,5 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
 };
 
 export const rootApi: AxiosInstance = createAxiosInstance(
-  "http://192.168.88.20:8081",
+  "http://192.168.88.24:8083",
 );

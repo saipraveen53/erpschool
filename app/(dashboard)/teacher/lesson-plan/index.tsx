@@ -96,11 +96,8 @@ interface MappedLessonPlan {
   classStr: string;
   subject: string;
   chapter: string;
-  topics: string[];
   status: "Completed" | "Pending";
-  startDate: string;
-  endDate: string;
-  description: string;
+  plannedDate: string;
   originalData?: ApiLessonPlan;
 }
 
@@ -139,10 +136,7 @@ export default function LessonPlanScreen() {
   const [editingPlan, setEditingPlan] = useState<MappedLessonPlan | null>(null);
   const [formData, setFormData] = useState({
     chapter: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-    topics: "",
+    plannedDate: "",
   });
 
   useEffect(() => {
@@ -229,11 +223,8 @@ export default function LessonPlanScreen() {
       classStr: `${item.className}-${item.section}`,
       subject: item.subjectName,
       chapter: item.topicName,
-      topics: [item.topicName],
       status: item.isCompleted ? "Completed" : "Pending",
-      startDate: item.plannedDate,
-      endDate: item.plannedDate,
-      description: `Lesson plan for ${item.subjectName} focusing on ${item.topicName}`,
+      plannedDate: item.plannedDate,
       originalData: item,
     }));
     setLessonPlans(mappedData);
@@ -334,7 +325,7 @@ export default function LessonPlanScreen() {
           teacherId: teacherId,
           topicName: formData.chapter,
           plannedDate:
-            formData.startDate || new Date().toISOString().split("T")[0],
+            formData.plannedDate || new Date().toISOString().split("T")[0],
           isCompleted: editingPlan.originalData?.isCompleted || false,
         };
 
@@ -356,7 +347,7 @@ export default function LessonPlanScreen() {
           teacherId: teacherId,
           topicName: formData.chapter,
           plannedDate:
-            formData.startDate || new Date().toISOString().split("T")[0],
+            formData.plannedDate || new Date().toISOString().split("T")[0],
           isCompleted: false,
         };
 
@@ -385,10 +376,7 @@ export default function LessonPlanScreen() {
     setEditingPlan(plan);
     setFormData({
       chapter: plan.chapter,
-      description: plan.description,
-      startDate: plan.startDate,
-      endDate: plan.endDate,
-      topics: plan.topics.join(", "),
+      plannedDate: plan.plannedDate,
     });
     setIsModalVisible(true);
   };
@@ -450,13 +438,12 @@ export default function LessonPlanScreen() {
         subjectId: subjectId,
         teacherId: teacherId,
         topicName: plan.chapter,
-        plannedDate: plan.startDate,
+        plannedDate: plan.plannedDate,
         isCompleted: true,
       };
 
       await teacherClient.put(`/api/student/lesson-plans/${plan.id}`, payload);
 
-      // Optimistically update the UI
       setLessonPlans((current) =>
         current.map((p) =>
           p.id === plan.id
@@ -479,10 +466,7 @@ export default function LessonPlanScreen() {
   const resetForm = () => {
     setFormData({
       chapter: "",
-      description: "",
-      startDate: "",
-      endDate: "",
-      topics: "",
+      plannedDate: "",
     });
     setEditingPlan(null);
     setIsModalVisible(false);
@@ -996,50 +980,8 @@ export default function LessonPlanScreen() {
                     {plan.chapter}
                   </Text>
 
-                  {plan.description && (
-                    <Text
-                      className="text-sm leading-5 mb-4 font-medium"
-                      style={{ color: COLORS.textSecondary }}
-                      numberOfLines={2}
-                    >
-                      {plan.description}
-                    </Text>
-                  )}
-
-                  {plan.topics && plan.topics.length > 0 && (
-                    <View className="flex-row flex-wrap gap-2 mb-5">
-                      {plan.topics.slice(0, 3).map((topic, index) => (
-                        <View
-                          key={index}
-                          className="px-3 py-1.5 rounded-lg"
-                          style={{ backgroundColor: COLORS.lightGray }}
-                        >
-                          <Text
-                            className="text-xs font-bold"
-                            style={{ color: COLORS.textSecondary }}
-                          >
-                            {topic}
-                          </Text>
-                        </View>
-                      ))}
-                      {plan.topics.length > 3 && (
-                        <View
-                          className="px-3 py-1.5 rounded-lg"
-                          style={{ backgroundColor: COLORS.lightGray }}
-                        >
-                          <Text
-                            className="text-xs font-bold"
-                            style={{ color: COLORS.textSecondary }}
-                          >
-                            +{plan.topics.length - 3} more
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
-
                   <View
-                    className="flex-row items-center justify-between pt-4 border-t"
+                    className="flex-row items-center justify-between pt-4 border-t mt-4"
                     style={{ borderTopColor: COLORS.border }}
                   >
                     <View className="flex-row items-center gap-3">
@@ -1082,7 +1024,7 @@ export default function LessonPlanScreen() {
                         className="text-xs font-bold"
                         style={{ color: COLORS.textSecondary }}
                       >
-                        {formatDate(plan.startDate)}
+                        {formatDate(plan.plannedDate)}
                       </Text>
                     </View>
                   </View>
@@ -1138,7 +1080,7 @@ export default function LessonPlanScreen() {
                     className="text-xs font-bold uppercase tracking-wider mb-2"
                     style={{ color: COLORS.textSecondary }}
                   >
-                    Chapter / Topic *
+                    Topic Name *
                   </Text>
                   <TextInput
                     className="border-2 rounded-xl p-3.5 text-sm font-medium"
@@ -1170,77 +1112,7 @@ export default function LessonPlanScreen() {
                     className="text-xs font-bold uppercase tracking-wider mb-2"
                     style={{ color: COLORS.textSecondary }}
                   >
-                    Description
-                  </Text>
-                  <TextInput
-                    className="border-2 rounded-xl p-3.5 text-sm font-medium min-h-[100px]"
-                    style={
-                      Platform.OS === "web"
-                        ? ({
-                            borderColor: COLORS.lightGray,
-                            color: COLORS.textPrimary,
-                            backgroundColor: COLORS.white,
-                            outlineStyle: "none",
-                            textAlignVertical: "top",
-                          } as any)
-                        : {
-                            borderColor: COLORS.lightGray,
-                            color: COLORS.textPrimary,
-                            backgroundColor: COLORS.white,
-                            textAlignVertical: "top",
-                          }
-                    }
-                    placeholder="Brief description of the lesson plan"
-                    placeholderTextColor={COLORS.textTertiary}
-                    multiline
-                    numberOfLines={4}
-                    value={formData.description}
-                    onChangeText={(text) =>
-                      setFormData({ ...formData, description: text })
-                    }
-                  />
-                </View>
-
-                <View className="flex-row gap-4">
-                  <View className="flex-1">
-                    <Text
-                      className="text-xs font-bold uppercase tracking-wider mb-2"
-                      style={{ color: COLORS.textSecondary }}
-                    >
-                      Start Date
-                    </Text>
-                    <TextInput
-                      className="border-2 rounded-xl p-3.5 text-sm font-medium"
-                      style={
-                        Platform.OS === "web"
-                          ? ({
-                              borderColor: COLORS.lightGray,
-                              color: COLORS.textPrimary,
-                              backgroundColor: COLORS.white,
-                              outlineStyle: "none",
-                            } as any)
-                          : {
-                              borderColor: COLORS.lightGray,
-                              color: COLORS.textPrimary,
-                              backgroundColor: COLORS.white,
-                            }
-                      }
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={COLORS.textTertiary}
-                      value={formData.startDate}
-                      onChangeText={(text) =>
-                        setFormData({ ...formData, startDate: text })
-                      }
-                    />
-                  </View>
-                </View>
-
-                <View>
-                  <Text
-                    className="text-xs font-bold uppercase tracking-wider mb-2"
-                    style={{ color: COLORS.textSecondary }}
-                  >
-                    Sub-Topics (comma-separated)
+                    Planned Date
                   </Text>
                   <TextInput
                     className="border-2 rounded-xl p-3.5 text-sm font-medium"
@@ -1258,11 +1130,11 @@ export default function LessonPlanScreen() {
                             backgroundColor: COLORS.white,
                           }
                     }
-                    placeholder="e.g., Formula, Discriminant, Roots"
+                    placeholder="YYYY-MM-DD"
                     placeholderTextColor={COLORS.textTertiary}
-                    value={formData.topics}
+                    value={formData.plannedDate}
                     onChangeText={(text) =>
-                      setFormData({ ...formData, topics: text })
+                      setFormData({ ...formData, plannedDate: text })
                     }
                   />
                 </View>
