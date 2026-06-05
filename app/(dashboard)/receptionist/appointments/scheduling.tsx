@@ -12,15 +12,16 @@ import {
   Platform,
   ActivityIndicator,
   useWindowDimensions,
-  Alert,
   KeyboardAvoidingView,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export interface Appointment {
   id: string;
   visitorName: string;
   purpose: 'Admission Discussion' | 'Principal Meeting' | 'Grievance Drop' | 'Vendor Discussion' | 'Other';
   phone: string;
+  email: string; // Added email
   date: string;
   timeSlot: string;
   assignedTo: string;
@@ -34,6 +35,7 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     visitorName: 'Suresh Bhatia',
     purpose: 'Admission Discussion',
     phone: '+91 91234 56789',
+    email: 'suresh.bhatia@gmail.com',
     date: '2026-05-29',
     timeSlot: '14:30',
     assignedTo: 'Admissions Counselor (Ms. Priya)',
@@ -45,6 +47,7 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     visitorName: 'Dr. Kavita Reddy',
     purpose: 'Principal Meeting',
     phone: '+91 98480 22310',
+    email: 'kavita.reddy@gmail.com',
     date: '2026-05-29',
     timeSlot: '16:00',
     assignedTo: 'Principal Desk',
@@ -56,6 +59,7 @@ const MOCK_APPOINTMENTS: Appointment[] = [
     visitorName: 'Ramesh Kumar',
     purpose: 'Grievance Drop',
     phone: '+91 77601 99283',
+    email: 'ramesh.kumar@gmail.com',
     date: '2026-05-28',
     timeSlot: '11:00',
     assignedTo: 'Administrative Officer',
@@ -102,27 +106,24 @@ export default function Scheduling() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
+  // Success Modal State
+  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
+
   const [form, setForm] = useState({
     visitorName: '',
     purpose: 'Admission Discussion' as Appointment['purpose'],
     phone: '',
+    email: '',
     date: new Date().toISOString().split('T')[0],
     timeSlot: '09:00',
     assignedTo: '',
     notes: '',
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const triggerAlert = (title: string, message: string) => {
-    if (Platform.OS === 'web') {
-      window.alert(`${title}: ${message}`);
-    } else {
-      Alert.alert(title, message);
-    }
-  };
 
   const metrics = useMemo(() => {
     return appointments.reduce(
@@ -159,16 +160,54 @@ export default function Scheduling() {
     });
   }, [appointments, searchQuery, activeFilter, purposeFilter, dateFilter]);
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    // Visitor Name Validation (At least 6 characters)
+    if (!form.visitorName.trim()) {
+      errors.visitorName = 'Visitor Name is required.';
+    } else if (form.visitorName.trim().length < 6) {
+      errors.visitorName = 'Name must be at least 6 characters long.';
+    }
+
+    // Phone Validation (Exactly 10 digits starting with 6 or 9)
+    const cleanPhone = form.phone.replace(/[\s\-\+]/g, '');
+    const phoneToTest = cleanPhone.startsWith('91') && cleanPhone.length === 12 ? cleanPhone.slice(2) : cleanPhone;
+    
+   if (!form.phone.trim()) {
+      errors.phone = 'Phone Number is required.';
+    } else if (!/^[6978]\d{9}$/.test(phoneToTest)) {
+      errors.phone = 'Phone must be exactly 10 digits and start with 6, 9, 7, or 8.';
+    }
+
+
+    // Email Validation (Must have @gmail.com)
+    if (!form.email.trim()) {
+      errors.email = 'Email Address is required.';
+    } else if (!form.email.toLowerCase().endsWith('@gmail.com')) {
+      errors.email = 'Please enter a valid @gmail.com address.';
+    }
+
+    if (!form.assignedTo.trim()) errors.assignedTo = 'Assigned Staff is required.';
+    if (!form.date) errors.date = 'Date is required.';
+    if (!form.timeSlot.trim()) errors.timeSlot = 'Time Slot is required.';
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const resetForm = () => {
     setForm({
       visitorName: '',
       purpose: 'Admission Discussion',
       phone: '',
+      email: '',
       date: new Date().toISOString().split('T')[0],
       timeSlot: '09:00',
       assignedTo: '',
       notes: '',
     });
+    setFormErrors({});
   };
 
   const openCreateModal = () => {
@@ -185,11 +224,13 @@ export default function Scheduling() {
       visitorName: selectedAppointment.visitorName,
       purpose: selectedAppointment.purpose,
       phone: selectedAppointment.phone,
+      email: selectedAppointment.email || '',
       date: selectedAppointment.date,
       timeSlot: selectedAppointment.timeSlot,
       assignedTo: selectedAppointment.assignedTo,
       notes: selectedAppointment.notes,
     });
+    setFormErrors({});
     setIsEditMode(true);
     setShowDetailsModal(false);
     setIsCreateModalOpen(true);
@@ -201,10 +242,7 @@ export default function Scheduling() {
   };
 
   const handleCreateOrUpdateAppointment = () => {
-    if (!form.visitorName.trim() || !form.phone.trim() || !form.timeSlot.trim() || !form.assignedTo.trim() || !form.date) {
-      triggerAlert('Validation Error', 'Please fill all required fields.');
-      return;
-    }
+    if (!validateForm()) return;
 
     if (isEditMode && selectedAppointment) {
       const updated: Appointment = {
@@ -212,6 +250,7 @@ export default function Scheduling() {
         visitorName: form.visitorName.trim(),
         purpose: form.purpose,
         phone: form.phone.trim(),
+        email: form.email.trim(),
         date: form.date,
         timeSlot: form.timeSlot.trim(),
         assignedTo: form.assignedTo.trim(),
@@ -222,9 +261,7 @@ export default function Scheduling() {
       setSelectedAppointment(updated);
       setIsCreateModalOpen(false);
       setIsEditMode(false);
-      setTimeout(() => {
-        triggerAlert('Success', 'Your appointment updated successfully!');
-      }, 100);
+      setSuccessModal({ visible: true, title: 'Updated!', message: 'Your appointment was updated successfully.' });
       return;
     }
 
@@ -234,6 +271,7 @@ export default function Scheduling() {
       visitorName: form.visitorName.trim(),
       purpose: form.purpose,
       phone: form.phone.trim(),
+      email: form.email.trim(),
       date: form.date,
       timeSlot: form.timeSlot.trim(),
       assignedTo: form.assignedTo.trim(),
@@ -245,17 +283,13 @@ export default function Scheduling() {
     resetForm();
     setIsCreateModalOpen(false);
     setIsEditMode(false);
-    setTimeout(() => {
-      triggerAlert('Success', 'Appointment booked successfully!');
-    }, 100);
+    setSuccessModal({ visible: true, title: 'Success!', message: 'Appointment booked successfully.' });
   };
 
   const updateStatus = (id: string, nextStatus: Appointment['status']) => {
     setAppointments((prev) => prev.map((item) => (item.id === id ? { ...item, status: nextStatus } : item)));
     setSelectedAppointment((prev) => (prev && prev.id === id ? { ...prev, status: nextStatus } : prev));
-    setTimeout(() => {
-      triggerAlert('Status Updated', `Appointment status changed to ${nextStatus}.`);
-    }, 100);
+    setSuccessModal({ visible: true, title: 'Status Updated', message: `Appointment status changed to ${nextStatus}.` });
   };
 
   const handleDeleteAppointment = () => {
@@ -265,9 +299,7 @@ export default function Scheduling() {
     setShowDeleteConfirm(false);
     setShowDetailsModal(false);
     setSelectedAppointment(null);
-    setTimeout(() => {
-      triggerAlert('Deleted', 'Appointment record removed successfully.');
-    }, 100);
+    setSuccessModal({ visible: true, title: 'Deleted', message: 'Appointment record removed successfully.' });
   };
 
   const handleViewAppointment = (appointment: Appointment) => {
@@ -280,15 +312,15 @@ export default function Scheduling() {
   if (!isMounted) {
     return (
       <SafeAreaView style={[styles.screenContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#991B1B" />
-        <Text style={{ marginTop: 12, color: '#991B1B', fontSize: 14, fontWeight: '600' }}>Loading Management Console...</Text>
+        <ActivityIndicator size="large" color="#DC2626" />
+        <Text style={{ marginTop: 12, color: '#DC2626', fontSize: 14, fontWeight: '600' }}>Loading Management Console...</Text>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.screenContainer}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.pageScrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1, zIndex: 1 }} contentContainerStyle={styles.pageScrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.pageShell}>
           
           {/* Header Dashboard Area */}
@@ -325,30 +357,30 @@ export default function Scheduling() {
           </View>
 
           {/* Core Controls & Filters Layout */}
-          <View style={styles.controlContainer}>
-            <View style={isMobile ? styles.filterGridMobile : styles.filterRowWeb}>
+          <View style={[styles.controlContainer, { zIndex: 9999, ...(Platform.OS === 'web' ? { position: 'relative' } : {}) }]}>
+            <View style={[isMobile ? styles.filterGridMobile : styles.filterRowWeb, { zIndex: 9999 }]}>
               
-              {/* Search Field Element with Magnifying Glass Icon */}
-              <View style={isMobile ? styles.mobileRowFullWidth : { flex: 1.5, position: 'relative' }}>
+              {/* Search Field Element */}
+              <View style={[isMobile ? styles.mobileRowFullWidth : { flex: 1.5 }, { position: 'relative', zIndex: 1 }]}>
                 <View style={styles.searchBoxWrap}>
-                  <Text style={styles.searchMagnifyIcon}>🔍</Text>
+                  <Icon name="search" size={15} color="#B91C1C" style={styles.searchMagnifyIcon} />
                   <TextInput
                     style={styles.searchInputElementIconification}
                     placeholder="Search visitor, ID, or officer..."
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor="#B91C1C"
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                   />
                   {!!searchQuery && (
                     <TouchableOpacity style={styles.clearSearchButton} onPress={() => setSearchQuery('')}>
-                      <Text style={styles.clearSearchButtonText}>×</Text>
+                      <Icon name="times" size={14} color="#FFFFFF" />
                     </TouchableOpacity>
                   )}
                 </View>
               </View>
 
               {/* Status Operations Droplist Controller */}
-              <View style={isMobile ? styles.mobileRowHalfWidth : styles.filterGroupItem}>
+              <View style={[isMobile ? styles.mobileRowHalfWidth : styles.filterGroupItem, { zIndex: 3000 }]}>
                 <TouchableOpacity
                   style={styles.dropdownSelector}
                   onPress={() => {
@@ -358,32 +390,34 @@ export default function Scheduling() {
                   activeOpacity={0.8}
                 >
                   <Text style={styles.dropdownText} numberOfLines={1}>{selectedFilterLabel}</Text>
-                  <Text style={styles.dropdownArrow}>{isFilterDropdownOpen ? '▲' : '▼'}</Text>
+                  <Icon name={isFilterDropdownOpen ? 'caret-up' : 'caret-down'} size={12} color="#7F1D1D" style={{ marginLeft: 8 }} />
                 </TouchableOpacity>
                 
                 {isFilterDropdownOpen && (
                   <View style={styles.floatingDropdownMenu}>
-                    {FILTER_OPTIONS.map((option) => {
-                      const active = activeFilter === option.value;
-                      return (
-                        <TouchableOpacity
-                          key={option.value}
-                          style={[styles.inlineDropdownItem, active && styles.inlineDropdownItemActive]}
-                          onPress={() => {
-                            setActiveFilter(option.value);
-                            setIsFilterDropdownOpen(false);
-                          }}
-                        >
-                          <Text style={[styles.inlineDropdownItemText, active && styles.inlineDropdownItemTextActive]}>{option.label}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                    <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={false}>
+                      {FILTER_OPTIONS.map((option) => {
+                        const active = activeFilter === option.value;
+                        return (
+                          <TouchableOpacity
+                            key={option.value}
+                            style={[styles.inlineDropdownItem, active && styles.inlineDropdownItemActive]}
+                            onPress={() => {
+                              setActiveFilter(option.value);
+                              setIsFilterDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={[styles.inlineDropdownItemText, active && styles.inlineDropdownItemTextActive]}>{option.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
                   </View>
                 )}
               </View>
 
               {/* Functional Purpose Filter Configuration Droplist */}
-              <View style={isMobile ? styles.mobileRowHalfWidth : styles.filterGroupItem}>
+              <View style={[isMobile ? styles.mobileRowHalfWidth : styles.filterGroupItem, { zIndex: 2000 }]}>
                 <TouchableOpacity
                   style={styles.dropdownSelector}
                   onPress={() => {
@@ -393,61 +427,63 @@ export default function Scheduling() {
                   activeOpacity={0.8}
                 >
                   <Text style={styles.dropdownText} numberOfLines={1}>{purposeFilter === 'All' ? 'All Purposes' : purposeFilter}</Text>
-                  <Text style={styles.dropdownArrow}>{isPurposeDropdownOpen ? '▲' : '▼'}</Text>
+                  <Icon name={isPurposeDropdownOpen ? 'caret-up' : 'caret-down'} size={12} color="#7F1D1D" style={{ marginLeft: 8 }} />
                 </TouchableOpacity>
 
                 {isPurposeDropdownOpen && (
                   <View style={styles.floatingDropdownMenu}>
-                    <TouchableOpacity
-                      style={[styles.inlineDropdownItem, purposeFilter === 'All' && styles.inlineDropdownItemActive]}
-                      onPress={() => {
-                        setPurposeFilter('All');
-                        setIsPurposeDropdownOpen(false);
-                      }}
-                    >
-                      <Text style={[styles.inlineDropdownItemText, purposeFilter === 'All' && styles.inlineDropdownItemTextActive]}>All Purposes</Text>
-                    </TouchableOpacity>
-                    {PURPOSE_OPTIONS.map((p) => {
-                      const active = purposeFilter === p;
-                      return (
-                        <TouchableOpacity
-                          key={p}
-                          style={[styles.inlineDropdownItem, active && styles.inlineDropdownItemActive]}
-                          onPress={() => {
-                            setPurposeFilter(p);
-                            setIsPurposeDropdownOpen(false);
-                          }}
-                        >
-                          <Text style={[styles.inlineDropdownItemText, active && styles.inlineDropdownItemTextActive]}>{p}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                    <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={false}>
+                      <TouchableOpacity
+                        style={[styles.inlineDropdownItem, purposeFilter === 'All' && styles.inlineDropdownItemActive]}
+                        onPress={() => {
+                          setPurposeFilter('All');
+                          setIsPurposeDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={[styles.inlineDropdownItemText, purposeFilter === 'All' && styles.inlineDropdownItemTextActive]}>All Purposes</Text>
+                      </TouchableOpacity>
+                      {PURPOSE_OPTIONS.map((p) => {
+                        const active = purposeFilter === p;
+                        return (
+                          <TouchableOpacity
+                            key={p}
+                            style={[styles.inlineDropdownItem, active && styles.inlineDropdownItemActive]}
+                            onPress={() => {
+                              setPurposeFilter(p);
+                              setIsPurposeDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={[styles.inlineDropdownItemText, active && styles.inlineDropdownItemTextActive]}>{p}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
                   </View>
                 )}
               </View>
 
               {/* Structured Responsive Date Filter Control */}
-              <View style={isMobile ? styles.mobileRowFullWidth : styles.filterGroupItem}>
+              <View style={[isMobile ? styles.mobileRowFullWidth : styles.filterGroupItem, { zIndex: 1000 }]}>
                 <View style={styles.datePickerFilterWrapper}>
                   {Platform.OS === 'web' ? (
                     <input
                       type="date"
                       value={dateFilter}
                       onChange={(e) => setDateFilter(e.target.value)}
-                      style={styles.webNativeInputDatePicker}
+                      style={styles.webNativeInputDatePicker as any}
                     />
                   ) : (
                     <TextInput
                       style={styles.searchInputElement}
                       placeholder="Filter Date: YYYY-MM-DD"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor="#B91C1C"
                       value={dateFilter}
                       onChangeText={setDateFilter}
                     />
                   )}
                   {!!dateFilter && (
                     <TouchableOpacity style={styles.clearDatePickerButton} onPress={() => setDateFilter('')}>
-                      <Text style={styles.clearSearchButtonText}>×</Text>
+                      <Icon name="times" size={14} color="#FFFFFF" />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -458,7 +494,7 @@ export default function Scheduling() {
 
           {/* Graphical Presentation Elements Engine Layout */}
           {isWeb ? (
-            <View style={styles.webTableShell}>
+            <View style={[styles.webTableShell, { zIndex: 1 }]}>
               <View style={styles.tableHeaderRow}>
                 <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Visitor</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1.4 }]}>Purpose</Text>
@@ -511,7 +547,7 @@ export default function Scheduling() {
             <FlatList
               data={filteredAppointments}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContainerStyles}
+              contentContainerStyle={[styles.listContainerStyles, { zIndex: 1 }]}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
               ListEmptyComponent={
@@ -520,7 +556,7 @@ export default function Scheduling() {
                 </View>
               }
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.dataCard} onPress={() => handleViewAppointment(item)} activeOpacity={0.85}>
+                <TouchableOpacity style={[styles.dataCard, { zIndex: 1 }]} onPress={() => handleViewAppointment(item)} activeOpacity={0.85}>
                   <View style={styles.dataCardHeaderModern}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.cardIdBadge}>{item.id}</Text>
@@ -538,8 +574,14 @@ export default function Scheduling() {
                   </View>
                   <View style={styles.cardDivider} />
                   <View style={styles.dataCardFooter}>
-                    <Text style={styles.footerMetaItem}>🕒 {item.timeSlot} • {item.date}</Text>
-                    <Text style={styles.footerMetaItem}>📞 {item.phone}</Text>
+                    <View style={styles.footerItem}>
+                      <Icon name="clock-o" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                      <Text style={styles.footerMetaItem}>{item.timeSlot} • {item.date}</Text>
+                    </View>
+                    <View style={styles.footerItem}>
+                      <Icon name="phone" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                      <Text style={styles.footerMetaItem}>{item.phone}</Text>
+                    </View>
                   </View>
                 </TouchableOpacity>
               )}
@@ -552,7 +594,7 @@ export default function Scheduling() {
       {showDetailsModal && selectedAppointment && (
         <Modal transparent visible={showDetailsModal} animationType="fade" onRequestClose={closeDetailsModal} statusBarTranslucent>
           <TouchableOpacity style={styles.overlayGlass} activeOpacity={1} onPress={closeDetailsModal}>
-            <TouchableOpacity style={styles.modalBaseCard} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <TouchableOpacity style={[styles.modalBaseCard, isMobile && styles.modalMobileCard]} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalHeaderRow}>
                 <Text style={styles.modalHeadingText}>Booking Details</Text>
                 <Text style={styles.modalSubheadingText}>{selectedAppointment.id}</Text>
@@ -561,14 +603,32 @@ export default function Scheduling() {
               <ScrollView style={styles.modalScrollBody} showsVerticalScrollIndicator={false}>
                 <Text style={styles.fieldLabel}>Visitor</Text>
                 <Text style={styles.fieldValue}>{selectedAppointment.visitorName}</Text>
-                <Text style={styles.fieldLabel}>Purpose</Text>
-                <Text style={styles.fieldValue}>{selectedAppointment.purpose}</Text>
-                <Text style={styles.fieldLabel}>Contact</Text>
-                <Text style={styles.fieldValue}>{selectedAppointment.phone}</Text>
-                <Text style={styles.fieldLabel}>Assigned To</Text>
-                <Text style={styles.fieldValue}>{selectedAppointment.assignedTo}</Text>
+                
+                <View style={{ flexDirection: 'row', gap: 16 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Contact</Text>
+                    <Text style={styles.fieldValue}>{selectedAppointment.phone}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Email</Text>
+                    <Text style={styles.fieldValue}>{selectedAppointment.email || 'N/A'}</Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 16 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Purpose</Text>
+                    <Text style={styles.fieldValue}>{selectedAppointment.purpose}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Assigned To</Text>
+                    <Text style={styles.fieldValue}>{selectedAppointment.assignedTo}</Text>
+                  </View>
+                </View>
+
                 <Text style={styles.fieldLabel}>Scheduled Slot</Text>
                 <Text style={styles.fieldValue}>{selectedAppointment.date} • {selectedAppointment.timeSlot}</Text>
+                
                 <Text style={styles.fieldLabel}>Notes</Text>
                 <Text style={styles.fieldValueNotes}>{selectedAppointment.notes || 'No notes provided.'}</Text>
                 
@@ -628,34 +688,60 @@ export default function Scheduling() {
 
       {/* Scheduler Dynamic Action Processing Screen Form Sheet */}
       {isCreateModalOpen && (
-        <Modal transparent visible={isCreateModalOpen} animationType="slide" onRequestClose={() => setIsCreateModalOpen(false)} statusBarTranslucent>
+        <Modal transparent visible={isCreateModalOpen} animationType="slide" onRequestClose={() => {
+          setIsCreateModalOpen(false);
+          setFormErrors({});
+        }} statusBarTranslucent>
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.overlayGlass}>
-              <TouchableOpacity style={[styles.createModalContainer, isMobile && styles.createModalMobile]} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <View style={[styles.createModalContainer, isMobile && styles.createModalMobile, { flexShrink: 1 }]}>
                 <View style={styles.createModalHeader}>
                   <Text style={styles.modalHeadingText}>{isEditMode ? 'Update Appointment' : 'New Appointment'}</Text>
                   <Text style={styles.modalFormInstruction}>{isEditMode ? 'Edit appointment details securely' : 'Schedule a visitor meeting'}</Text>
                 </View>
 
-                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 30 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <ScrollView style={{ flexShrink: 1, width: '100%' }} contentContainerStyle={{ paddingBottom: 24, paddingTop: 10 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                   <Text style={styles.formInputLabel}>Visitor Name <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   <TextInput
-                    style={styles.formInputField}
+                    style={[styles.formInputField, formErrors.visitorName && styles.formInputErrorBorder]}
                     value={form.visitorName}
-                    onChangeText={(val) => setForm({ ...form, visitorName: val })}
+                    onChangeText={(val) => {
+                      setForm({ ...form, visitorName: val });
+                      if(formErrors.visitorName) setFormErrors(prev => ({...prev, visitorName: ''}));
+                    }}
                     placeholder="Full Name"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor="#B91C1C"
                   />
+                  {formErrors.visitorName && <Text style={styles.errorText}>{formErrors.visitorName}</Text>}
 
                   <Text style={styles.formInputLabel}>Phone Number <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   <TextInput
-                    style={styles.formInputField}
+                    style={[styles.formInputField, formErrors.phone && styles.formInputErrorBorder]}
                     value={form.phone}
-                    onChangeText={(val) => setForm({ ...form, phone: val })}
+                    onChangeText={(val) => {
+                      setForm({ ...form, phone: val });
+                      if(formErrors.phone) setFormErrors(prev => ({...prev, phone: ''}));
+                    }}
                     keyboardType="phone-pad"
                     placeholder="+91 XXXXX XXXXX"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor="#B91C1C"
                   />
+                  {formErrors.phone && <Text style={styles.errorText}>{formErrors.phone}</Text>}
+
+                  <Text style={styles.formInputLabel}>Email <Text style={{ color: '#EF4444' }}>*</Text></Text>
+                  <TextInput
+                    style={[styles.formInputField, formErrors.email && styles.formInputErrorBorder]}
+                    value={form.email}
+                    onChangeText={(val) => {
+                      setForm({ ...form, email: val });
+                      if(formErrors.email) setFormErrors(prev => ({...prev, email: ''}));
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholder="email@gmail.com"
+                    placeholderTextColor="#B91C1C"
+                  />
+                  {formErrors.email && <Text style={styles.errorText}>{formErrors.email}</Text>}
 
                   <Text style={styles.formInputLabel}>Purpose</Text>
                   <View style={styles.pickerAlternativeRow}>
@@ -672,12 +758,16 @@ export default function Scheduling() {
 
                   <Text style={styles.formInputLabel}>Assigned To <Text style={{ color: '#EF4444' }}>*</Text></Text>
                   <TextInput
-                    style={styles.formInputField}
+                    style={[styles.formInputField, formErrors.assignedTo && styles.formInputErrorBorder]}
                     value={form.assignedTo}
-                    onChangeText={(val) => setForm({ ...form, assignedTo: val })}
+                    onChangeText={(val) => {
+                      setForm({ ...form, assignedTo: val });
+                      if(formErrors.assignedTo) setFormErrors(prev => ({...prev, assignedTo: ''}));
+                    }}
                     placeholder="Staff / Department"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor="#B91C1C"
                   />
+                  {formErrors.assignedTo && <Text style={styles.errorText}>{formErrors.assignedTo}</Text>}
 
                   {/* Input Date Module Wrapper */}
                   <Text style={styles.formInputLabel}>Date <Text style={{ color: '#EF4444' }}>*</Text></Text>
@@ -686,19 +776,26 @@ export default function Scheduling() {
                       <input
                         type="date"
                         value={form.date}
-                        onChange={(e) => setForm({ ...form, date: e.target.value })}
-                        style={styles.webFormNativeDateTimePicker}
+                        onChange={(e) => {
+                          setForm({ ...form, date: e.target.value });
+                          if(formErrors.date) setFormErrors(prev => ({...prev, date: ''}));
+                        }}
+                        style={formErrors.date ? { ...styles.webFormNativeDateTimePicker, borderColor: '#DC2626', borderWidth: 1.5 } as any : styles.webFormNativeDateTimePicker as any}
                       />
                     ) : (
                       <TextInput
-                        style={styles.formInputField}
+                        style={[styles.formInputField, formErrors.date && styles.formInputErrorBorder]}
                         value={form.date}
-                        onChangeText={(val) => setForm({ ...form, date: val })}
+                        onChangeText={(val) => {
+                          setForm({ ...form, date: val });
+                          if(formErrors.date) setFormErrors(prev => ({...prev, date: ''}));
+                        }}
                         placeholder="YYYY-MM-DD"
-                        placeholderTextColor="#94A3B8"
+                        placeholderTextColor="#B91C1C"
                       />
                     )}
                   </View>
+                  {formErrors.date && <Text style={styles.errorText}>{formErrors.date}</Text>}
 
                   {/* Input Time Module Wrapper */}
                   <Text style={styles.formInputLabel}>Time Slot <Text style={{ color: '#EF4444' }}>*</Text></Text>
@@ -707,19 +804,26 @@ export default function Scheduling() {
                       <input
                         type="time"
                         value={form.timeSlot}
-                        onChange={(e) => setForm({ ...form, timeSlot: e.target.value })}
-                        style={styles.webFormNativeDateTimePicker}
+                        onChange={(e) => {
+                          setForm({ ...form, timeSlot: e.target.value });
+                          if(formErrors.timeSlot) setFormErrors(prev => ({...prev, timeSlot: ''}));
+                        }}
+                        style={formErrors.timeSlot ? { ...styles.webFormNativeDateTimePicker, borderColor: '#DC2626', borderWidth: 1.5 } as any : styles.webFormNativeDateTimePicker as any}
                       />
                     ) : (
                       <TextInput
-                        style={styles.formInputField}
+                        style={[styles.formInputField, formErrors.timeSlot && styles.formInputErrorBorder]}
                         value={form.timeSlot}
-                        onChangeText={(val) => setForm({ ...form, timeSlot: val })}
+                        onChangeText={(val) => {
+                          setForm({ ...form, timeSlot: val });
+                          if(formErrors.timeSlot) setFormErrors(prev => ({...prev, timeSlot: ''}));
+                        }}
                         placeholder="HH:MM (e.g. 14:30)"
-                        placeholderTextColor="#94A3B8"
+                        placeholderTextColor="#B91C1C"
                       />
                     )}
                   </View>
+                  {formErrors.timeSlot && <Text style={styles.errorText}>{formErrors.timeSlot}</Text>}
 
                   <Text style={styles.formInputLabel}>Notes</Text>
                   <TextInput
@@ -729,7 +833,7 @@ export default function Scheduling() {
                     multiline
                     textAlignVertical="top"
                     placeholder="Additional details regarding this check-in session..."
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor="#B91C1C"
                   />
                 </ScrollView>
 
@@ -749,17 +853,40 @@ export default function Scheduling() {
                     <Text style={styles.modalButtonTextSubmit}>{isEditMode ? 'Update Appointment' : 'Book Appointment'}</Text>
                   </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
           </KeyboardAvoidingView>
         </Modal>
       )}
+
+      {/* SUCCESS MODAL POPUP */}
+      <Modal transparent visible={successModal.visible} animationType="fade" onRequestClose={() => setSuccessModal((p) => ({...p, visible: false}))}>
+        <View style={styles.overlayGlass}>
+          <View style={[styles.confirmCard, isMobile && { margin: 12, width: '94%' }]}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 2, borderColor: '#A7F3D0' }}>
+              <Icon name="check" size={40} color="#16A34A" />
+            </View>
+            <Text style={styles.confirmTitle}>{successModal.title}</Text>
+            <Text style={styles.confirmText}>{successModal.message}</Text>
+            
+            <View style={styles.confirmButtonRow}>
+              <TouchableOpacity
+                style={[styles.confirmButton, { backgroundColor: '#16A34A' }]}
+                onPress={() => setSuccessModal((p) => ({...p, visible: false}))}
+              >
+                <Text style={styles.confirmDeleteText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screenContainer: { flex: 1, backgroundColor: '#F8FAFC' },
+  screenContainer: { flex: 1, backgroundColor: '#FFF1F2' },
   pageScrollContent: { flexGrow: 1 },
   pageShell: { maxWidth: 1400, width: '100%', alignSelf: 'center' },
   topNavbar: {
@@ -770,28 +897,28 @@ const styles = StyleSheet.create({
     paddingVertical: 22,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderColor: '#FECACA',
+    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  brandTitle: { fontSize: 26, fontWeight: '800', color: '#991B1B', letterSpacing: -0.75 },
-  brandSubtitle: { fontSize: 13, color: '#EA580C', marginTop: 4, fontWeight: '600', letterSpacing: 0.2 },
+  brandTitle: { fontSize: 26, fontWeight: '800', color: '#7F1D1D', letterSpacing: -0.75 },
+  brandSubtitle: { fontSize: 13, color: '#9F1239', marginTop: 4, fontWeight: '600', letterSpacing: 0.2 },
   primaryActionButton: {
-    backgroundColor: '#991B1B',
+    backgroundColor: '#DC2626',
     paddingVertical: 13,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
-    shadowColor: '#991B1B',
+    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
   primaryActionButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14, letterSpacing: 0.3 },
-  analyticsWrapper: { backgroundColor: '#F8FAFC' },
+  analyticsWrapper: { backgroundColor: '#FFF1F2' },
   analyticsScrollContainer: {
     paddingHorizontal: 24,
     paddingVertical: 24,
@@ -807,24 +934,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderColor: '#FECACA',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.02,
     shadowRadius: 6,
   },
-  totalNeoCard: { borderLeftWidth: 6, borderLeftColor: '#991B1B' },
-  scheduledNeoCard: { borderLeftWidth: 6, borderLeftColor: '#EA580C' },
+  totalNeoCard: { borderLeftWidth: 6, borderLeftColor: '#7F1D1D' },
+  scheduledNeoCard: { borderLeftWidth: 6, borderLeftColor: '#DC2626' },
   completedNeoCard: { borderLeftWidth: 6, borderLeftColor: '#16A34A' },
-  inactiveNeoCard: { borderLeftWidth: 6, borderLeftColor: '#64748B' },
-  dashboardTitle: { fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 },
-  dashboardValue: { fontSize: 36, fontWeight: '800', color: '#0F172A' },
+  inactiveNeoCard: { borderLeftWidth: 6, borderLeftColor: '#EF4444' },
+  dashboardTitle: { fontSize: 13, fontWeight: '700', color: '#9F1239', textTransform: 'uppercase', letterSpacing: 0.5 },
+  dashboardValue: { fontSize: 36, fontWeight: '800', color: '#7F1D1D' },
   controlContainer: {
     padding: 24,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#FECACA',
     zIndex: 20,
   },
   filterRowWeb: {
@@ -859,34 +986,32 @@ const styles = StyleSheet.create({
   searchMagnifyIcon: {
     position: 'absolute',
     left: 14,
-    fontSize: 15,
-    color: '#64748B',
     zIndex: 10,
     top: '50%',
-    transform: [{ translateY: -10 }],
+    marginTop: -7.5,
   },
   searchInputElement: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF1F2',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    color: '#0F172A',
+    borderColor: '#FECACA',
+    color: '#7F1D1D',
     width: '100%',
     height: 46,
   },
   searchInputElementIconification: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF1F2',
     borderRadius: 8,
     paddingLeft: 42,
     paddingRight: 40,
     paddingVertical: 12,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    color: '#0F172A',
+    borderColor: '#FECACA',
+    color: '#7F1D1D',
     width: '100%',
     height: 46,
   },
@@ -898,7 +1023,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#64748B',
+    backgroundColor: '#DC2626',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -913,23 +1038,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF1F2',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#FECACA',
     height: 46,
     width: '100%',
   },
   dropdownText: {
     fontSize: 14,
-    color: '#0F172A',
+    color: '#7F1D1D',
     fontWeight: '600',
   },
   dropdownArrow: {
     fontSize: 11,
-    color: '#64748B',
+    color: '#9A3412',
     marginLeft: 8,
   },
   floatingDropdownMenu: {
@@ -939,7 +1064,7 @@ const styles = StyleSheet.create({
     right: 0,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#FECACA',
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     zIndex: 9999,
@@ -952,16 +1077,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFF1F2',
   },
   inlineDropdownItemActive: {
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#FEF2F2',
   },
   inlineDropdownItemText: {
     fontSize: 14,
-    color: '#334155',
+    color: '#4B5563',
   },
   inlineDropdownItemTextActive: {
-    color: '#EA580C',
+    color: '#DC2626',
     fontWeight: '700',
   },
   datePickerFilterWrapper: {
@@ -974,12 +1101,12 @@ const styles = StyleSheet.create({
     height: '46px',
     padding: '0 16px',
     borderRadius: '8px',
-    border: '1px solid #CBD5E1',
+    border: '1px solid #FECACA',
     fontSize: '14px',
-    color: '#0F172A',
+    color: '#7F1D1D',
     fontWeight: '600',
     fontFamily: 'inherit',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF1F2',
     boxSizing: 'border-box',
   },
   clearDatePickerButton: {
@@ -990,7 +1117,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#64748B',
+    backgroundColor: '#DC2626',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -1000,23 +1127,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#FECACA',
     overflow: 'hidden',
-    shadowColor: '#0F172A',
+    shadowColor: '#000',
     shadowOpacity: 0.03,
     shadowRadius: 10,
     elevation: 2,
   },
   tableHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF1F2',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#FECACA',
     paddingVertical: 18,
     paddingHorizontal: 20,
   },
   tableHeaderCell: {
-    color: '#475569',
+    color: '#7F1D1D',
     fontWeight: '700',
     fontSize: 12,
     textTransform: 'uppercase',
@@ -1027,32 +1154,32 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#FDE8E8',
     alignItems: 'center',
   },
   tableDataCell: {
     paddingRight: 12,
   },
   primaryCellText: {
-    color: '#0F172A',
+    color: '#7F1D1D',
     fontSize: 14,
     fontWeight: '600',
   },
   mutedCellText: {
-    color: '#64748B',
+    color: '#B91C1C',
     fontSize: 13,
     marginTop: 4,
   },
   listContainerStyles: { padding: 24, gap: 16 },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 100 },
-  emptyStateText: { fontSize: 15, color: '#64748B', textAlign: 'center', fontWeight: '500' },
+  emptyStateText: { fontSize: 15, color: '#B91C1C', textAlign: 'center', fontWeight: '500' },
   dataCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderColor: '#FECACA',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -1066,27 +1193,28 @@ const styles = StyleSheet.create({
   cardIdBadge: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#991B1B',
+    color: '#DC2626',
     letterSpacing: 0.5,
   },
-  cardVisitorName: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginTop: 4 },
-  cardOfficerLabel: { fontSize: 13, color: '#64748B', marginTop: 4, fontWeight: '500' },
+  cardVisitorName: { fontSize: 18, fontWeight: '700', color: '#7F1D1D', marginTop: 4 },
+  cardOfficerLabel: { fontSize: 13, color: '#B91C1C', marginTop: 4, fontWeight: '500' },
   professionalStatusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
     borderWidth: 1,
   },
-  professionalScheduled: { backgroundColor: '#FFF7ED', borderColor: '#FFEDD5' },
-  professionalCompleted: { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7' },
-  professionalInactive: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' },
-  professionalStatusText: { fontWeight: '700', fontSize: 12, color: '#334155' },
-  cardDivider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 14 },
+  professionalScheduled: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
+  professionalCompleted: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
+  professionalInactive: { backgroundColor: '#FDE8E8', borderColor: '#FECACA' },
+  professionalStatusText: { fontWeight: '700', fontSize: 12, color: '#7F1D1D' },
+  cardDivider: { height: 1, backgroundColor: '#FDE8E8', marginVertical: 14 },
   dataCardFooter: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
-  footerMetaItem: { fontSize: 13, color: '#475569', fontWeight: '600' },
+  footerItem: { flexDirection: 'row', alignItems: 'center' },
+  footerMetaItem: { fontSize: 13, color: '#9F1239', fontWeight: '600' },
   overlayGlass: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(60, 33, 20, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -1102,35 +1230,41 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 24,
     elevation: 10,
+    borderColor: '#FECACA',
+    borderWidth: 1,
+  },
+  modalMobileCard: {
+    maxHeight: '90%',
+    width: '95%',
   },
   modalHeaderRow: {
     borderBottomWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#FECACA',
     paddingBottom: 14,
     marginBottom: 14,
   },
-  modalHeadingText: { fontSize: 22, fontWeight: '800', color: '#0F172A', letterSpacing: -0.5 },
-  modalSubheadingText: { fontSize: 13, color: '#991B1B', fontWeight: '800', marginTop: 4 },
-  modalFormInstruction: { fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 10 },
+  modalHeadingText: { fontSize: 22, fontWeight: '800', color: '#7F1D1D', letterSpacing: -0.5 },
+  modalSubheadingText: { fontSize: 13, color: '#DC2626', fontWeight: '800', marginTop: 4 },
+  modalFormInstruction: { fontSize: 13, color: '#B91C1C', marginTop: 4, marginBottom: 10 },
   modalScrollBody: { marginVertical: 4 },
   fieldLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: '#B91C1C',
     textTransform: 'uppercase',
     marginTop: 14,
     letterSpacing: 0.75,
   },
-  fieldValue: { fontSize: 15, color: '#0F172A', marginTop: 4, fontWeight: '600' },
+  fieldValue: { fontSize: 15, color: '#7F1D1D', marginTop: 4, fontWeight: '600' },
   fieldValueNotes: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#334155',
-    backgroundColor: '#F8FAFC',
+    color: '#7F1D1D',
+    backgroundColor: '#FFF1F2',
     padding: 14,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#FECACA',
     marginTop: 6,
   },
   statusDropdownBlock: {
@@ -1144,15 +1278,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#FECACA',
     backgroundColor: '#FFFFFF',
   },
   statusOptionButtonActive: {
-    backgroundColor: '#991B1B',
-    borderColor: '#991B1B',
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
   },
   statusOptionText: {
-    color: '#334155',
+    color: '#7F1D1D',
     fontWeight: '700',
     fontSize: 13,
   },
@@ -1166,15 +1300,15 @@ const styles = StyleSheet.create({
   },
   editRecordButton: {
     flex: 1,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: '#FFF1F2',
     paddingVertical: 13,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FFEDD5',
+    borderColor: '#FECACA',
   },
   editRecordButtonText: {
-    color: '#EA580C',
+    color: '#DC2626',
     fontWeight: '700',
     fontSize: 14,
   },
@@ -1185,15 +1319,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FEE2E2',
+    borderColor: '#FECACA',
   },
   deleteRecordButtonText: {
-    color: '#991B1B',
+    color: '#DC2626',
     fontWeight: '700',
     fontSize: 14,
   },
   dismissDetailsButton: {
-    backgroundColor: '#475569',
+    backgroundColor: '#7F1D1D',
     paddingVertical: 13,
     borderRadius: 8,
     alignItems: 'center',
@@ -1204,13 +1338,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     width: '100%',
     maxWidth: 560,
-    height: '85%',
+    maxHeight: '90%',
     borderRadius: 12,
     padding: 24,
+    borderColor: '#FECACA',
+    borderWidth: 1,
   },
   createModalMobile: {
-    width: '100%',
-    height: '92%',
+    width: '95%',
+    maxHeight: '90%',
   },
   createModalHeader: { marginBottom: 12 },
   modalActionButtonsGroup: {
@@ -1221,20 +1357,31 @@ const styles = StyleSheet.create({
   formInputLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#334155',
+    color: '#7F1D1D',
     marginTop: 14,
     marginBottom: 6,
   },
   formInputField: {
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: '#FECACA',
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
     backgroundColor: '#FFFFFF',
-    color: '#0F172A',
+    color: '#7F1D1D',
     height: 46,
+  },
+  formInputErrorBorder: {
+    borderColor: '#DC2626',
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+    fontWeight: '600',
   },
   pickerAlternativeRow: {
     flexDirection: 'row',
@@ -1247,17 +1394,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: '#FECACA',
+    backgroundColor: '#FFF1F2',
   },
-  pickerAlternativeActive: { backgroundColor: '#991B1B', borderColor: '#991B1B' },
-  pickerAlternativeText: { fontSize: 13, color: '#334155', fontWeight: '600' },
+  pickerAlternativeActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
+  pickerAlternativeText: { fontSize: 13, color: '#7F1D1D', fontWeight: '600' },
   pickerAlternativeTextActive: { color: '#FFFFFF', fontWeight: '700' },
-  formMultiLineTextArea: { height: 100, textAlignVertical: 'top' },
+  formMultiLineTextArea: { minHeight: 100, height: 'auto', textAlignVertical: 'top' },
   modalButtonBase: { flex: 1, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  modalButtonCancel: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1' },
-  modalButtonSubmit: { backgroundColor: '#991B1B' },
-  modalButtonTextCancel: { color: '#475569', fontWeight: '700', fontSize: 14 },
+  modalButtonCancel: { backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECACA' },
+  modalButtonSubmit: { backgroundColor: '#DC2626' },
+  modalButtonTextCancel: { color: '#7F1D1D', fontWeight: '700', fontSize: 14 },
   modalButtonTextSubmit: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   confirmCard: {
     backgroundColor: '#FFFFFF',
@@ -1269,14 +1416,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.16,
     shadowRadius: 16,
     elevation: 8,
+    alignItems: 'center',
+    borderColor: '#FECACA',
+    borderWidth: 1,
   },
-  confirmTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
-  confirmText: { fontSize: 14, color: '#475569', marginTop: 8, lineHeight: 22 },
+  confirmTitle: { fontSize: 18, fontWeight: '800', color: '#7F1D1D', textAlign: 'center' },
+  confirmText: { fontSize: 14, color: '#9F1239', marginTop: 8, lineHeight: 22, textAlign: 'center' },
   confirmButtonRow: { flexDirection: 'row', gap: 12, marginTop: 22 },
   confirmButton: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  confirmCancelButton: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#CBD5E1' },
-  confirmDeleteButton: { backgroundColor: '#991B1B' },
-  confirmCancelText: { color: '#475569', fontWeight: '700', fontSize: 14 },
+  confirmCancelButton: { backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECACA' },
+  confirmDeleteButton: { backgroundColor: '#DC2626' },
+  confirmCancelText: { color: '#7F1D1D', fontWeight: '700', fontSize: 14 },
   confirmDeleteText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   formInputWrapperRelative: {
     width: '100%',
@@ -1286,9 +1436,9 @@ const styles = StyleSheet.create({
     height: '46px',
     padding: '0 14px',
     borderRadius: '8px',
-    border: '1px solid #CBD5E1',
+    border: '1px solid #FECACA',
     fontSize: '14px',
-    color: '#0F172A',
+    color: '#7F1D1D',
     fontWeight: '600',
     fontFamily: 'inherit',
     backgroundColor: '#FFFFFF',

@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   StatusBar,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface CommunicationLog {
   id: string;
@@ -129,8 +130,12 @@ export default function CommunicationManagement() {
   const [isFormTargetDropdownOpen, setIsFormTargetDropdownOpen] = useState(false);
 
   const [selectedLog, setSelectedLog] = useState<CommunicationLog | null>(null);
+  const [staffToCall, setStaffToCall] = useState<StaffContact | null>(null);
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+  // Success Modal State
+  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
 
   const [form, setForm] = useState({
     channel: 'SMS' as CommunicationLog['channel'],
@@ -203,6 +208,9 @@ export default function CommunicationManagement() {
     setLogs([newLogItem, ...logs]);
     setForm({ channel: 'SMS', targetGroup: '', subject: '', body: '' });
     setIsDispatchModalOpen(false);
+
+    // Trigger Success Modal
+    setSuccessModal({ visible: true, title: 'Broadcast Sent!', message: 'The communication has been dispatched successfully.' });
   };
 
   const clearSearch = () => {
@@ -399,7 +407,7 @@ export default function CommunicationManagement() {
                   {isChannelDropdownOpen && (
                     <View style={styles.floatingDropdownList}>
                       <View>
-                        {['All', 'SMS', 'Email', 'App Push', 'PA System'].map((opt) => (
+                        {['All', 'SMS', 'Email', 'App Push'].map((opt) => (
                           <TouchableOpacity
                             key={opt}
                             style={[styles.dropdownListItem, channelFilter === opt && styles.dropdownListItemActive]}
@@ -426,7 +434,7 @@ export default function CommunicationManagement() {
                         type="date"
                         value={dateFilter}
                         onChange={(e) => setDateFilter(e.target.value)}
-                        style={styles.webNativeInputDatePicker}
+                        style={styles.webNativeInputDatePicker as any}
                       />
                     ) : (
                       <TextInput
@@ -604,7 +612,7 @@ export default function CommunicationManagement() {
                     <Text style={styles.extensionNumberCode}>Ext: {item.extension}</Text>
                     <TouchableOpacity
                       style={styles.directoryTriggerCallButton}
-                      onPress={() => Alert.alert('Calling', `Extension ${item.extension}`)}
+                      onPress={() => setStaffToCall(item)}
                     >
                       <Text style={styles.directoryTriggerCallButtonText}>Call</Text>
                     </TouchableOpacity>
@@ -651,6 +659,38 @@ export default function CommunicationManagement() {
         </Modal>
       )}
 
+      {/* Call Confirmation Modal */}
+      {staffToCall && (
+        <Modal transparent visible={!!staffToCall} animationType="fade" onRequestClose={() => setStaffToCall(null)}>
+          <View style={styles.glassviewModalOverlayContainer}>
+            <View style={[styles.modalViewportBaseCard, isMobile && styles.modalMobileCard, { maxWidth: 360, paddingVertical: 28 }]}>
+              <Text style={[styles.modalViewportHeaderTitle, { textAlign: 'center', fontSize: 20 }]}>Confirm Call</Text>
+              <Text style={{ fontSize: 15, color: THEME.textMuted, textAlign: 'center', marginTop: 12, lineHeight: 22 }}>
+                Are you sure you want to call <Text style={{fontWeight: '700', color: THEME.textStrong}}>{staffToCall.name}</Text> on extension <Text style={{fontWeight: '700', color: THEME.textStrong}}>{staffToCall.extension}</Text>?
+              </Text>
+
+              <View style={styles.formActionsLayoutGroup}>
+                <TouchableOpacity
+                  style={[styles.formActionButtonBase, styles.formCancelActionButton]}
+                  onPress={() => setStaffToCall(null)}
+                >
+                  <Text style={styles.formCancelActionButtonText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.formActionButtonBase, styles.formSubmitActionButton]}
+                  onPress={() => {
+                    setStaffToCall(null);
+                  }}
+                >
+                  <Text style={styles.formSubmitActionButtonText}>Call Now</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
       {/* New Dispatch Modal Form */}
       <Modal
         transparent
@@ -686,7 +726,7 @@ export default function CommunicationManagement() {
                 <Text style={styles.formInputLabelText}>Channel</Text>
 
                 <View style={styles.pickerSelectorRow}>
-                  {(['SMS', 'Email', 'App Push', 'PA System'] as const).map((mode) => (
+                  {(['SMS', 'Email', 'App Push'] as const).map((mode) => (
                     <TouchableOpacity
                       key={mode}
                       style={[
@@ -794,6 +834,28 @@ export default function CommunicationManagement() {
             </TouchableOpacity>
           </TouchableOpacity>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* SUCCESS MODAL POPUP */}
+      <Modal transparent visible={successModal.visible} animationType="fade" onRequestClose={() => setSuccessModal((p) => ({...p, visible: false}))}>
+        <View style={styles.glassviewModalOverlayContainer}>
+          <View style={[styles.modalViewportBaseCard, isMobile && styles.modalMobileCard, { alignItems: 'center', maxWidth: 400 }]}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 2, borderColor: '#A7F3D0' }}>
+              <Ionicons name="checkmark" size={40} color="#16A34A" />
+            </View>
+            <Text style={[styles.modalViewportHeaderTitle, { textAlign: 'center' }]}>{successModal.title}</Text>
+            <Text style={{ fontSize: 15, color: THEME.textMuted, textAlign: 'center', marginTop: 12, lineHeight: 22 }}>{successModal.message}</Text>
+            
+            <View style={[styles.formActionsLayoutGroup, { width: '100%' }]}>
+              <TouchableOpacity
+                style={[styles.formActionButtonBase, { backgroundColor: '#16A34A' }]}
+                onPress={() => setSuccessModal((p) => ({...p, visible: false}))}
+              >
+                <Text style={styles.formSubmitActionButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
     </SafeAreaView>

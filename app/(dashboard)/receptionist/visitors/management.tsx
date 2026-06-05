@@ -12,8 +12,8 @@ import {
   Platform,
   ActivityIndicator,
   useWindowDimensions,
-  Alert,
   KeyboardAvoidingView,
+  StatusBar,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
@@ -76,6 +76,25 @@ const MOCK_VISITORS: VisitorRecord[] = [
   },
 ];
 
+const THEME = {
+  background: '#FFF8F1',
+  surface: '#FFFFFF',
+  surfaceSoft: '#FFF3E8',
+  border: '#F5D7BF',
+  primary: '#DC2626', // Updated to match baby red theme primary
+  primaryDark: '#B91C1C',
+  primarySoft: '#FFF1F2',
+  text: '#431407',
+  textStrong: '#7F1D1D',
+  textMuted: '#9F1239',
+  success: '#16A34A',
+  warning: '#F59E0B',
+  danger: '#DC2626',
+  info: '#DC2626',
+  shadow: '#FECACA',
+  inputBg: '#FFFFFF',
+};
+
 export default function VisitorManagement() {
   const { width } = useWindowDimensions();
   const isMobile = width < 992; // Adjusted breakpoint for 4 columns
@@ -93,11 +112,16 @@ export default function VisitorManagement() {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPurposeDropdown, setShowPurposeDropdown] = useState(false);
 
+  // Modals & Action States
   const [selectedVisitor, setSelectedVisitor] = useState<VisitorRecord | null>(null);
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [visitorToDelete, setVisitorToDelete] = useState<VisitorRecord | null>(null);
+  
+  // Success Popup State
+  const [successModal, setSuccessModal] = useState({ visible: false, message: '', title: 'Success!' });
 
+  // Form States & Validation Errors
   const [form, setForm] = useState({
     name: '',
     purpose: 'Parent-Teacher Meeting' as VisitorRecord['purpose'],
@@ -106,6 +130,7 @@ export default function VisitorManagement() {
     contactNumber: '',
     remarks: '',
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [updateForm, setUpdateForm] = useState({
     name: '',
@@ -115,6 +140,7 @@ export default function VisitorManagement() {
     contactNumber: '',
     remarks: '',
   });
+  const [updateFormErrors, setUpdateFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setIsMounted(true);
@@ -152,11 +178,22 @@ export default function VisitorManagement() {
     });
   }, [visitorLog, searchQuery, filterMode, purposeFilter, dateFilter]);
 
-  const handleCheckInSubmit = () => {
-    if (!form.name.trim() || !form.hostStaff.trim() || !form.badgeNumber.trim()) {
-      Alert.alert('Validation Warning', 'Visitor Name, Host Staff, and Badge Number are required.');
-      return;
+  // Validation Logic
+  const validateForm = (data: typeof form, setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>) => {
+    const errors: Record<string, string> = {};
+    if (!data.name.trim()) errors.name = 'Visitor Name is required.';
+    if (!data.badgeNumber.trim()) errors.badgeNumber = 'Badge Number is required.';
+    if (!data.hostStaff.trim()) errors.hostStaff = 'Host Staff is required.';
+    if (data.contactNumber.trim() && !/^\+?[0-9\s\-]{7,15}$/.test(data.contactNumber.trim())) {
+      errors.contactNumber = 'Enter a valid phone number.';
     }
+    
+    setErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCheckInSubmit = () => {
+    if (!validateForm(form, setFormErrors)) return;
 
     const currentTimeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const currentDateString = new Date().toISOString().split('T')[0];
@@ -183,15 +220,15 @@ export default function VisitorManagement() {
       contactNumber: '',
       remarks: '',
     });
+    setFormErrors({});
     setIsCheckInModalOpen(false);
+    
+    // Trigger Custom Success Alert
+    setSuccessModal({ visible: true, title: 'Check-In Successful', message: 'New visitor has been logged and badge assigned.' });
   };
 
   const handleUpdateSubmit = () => {
-    if (!updateForm.name.trim() || !updateForm.hostStaff.trim() || !updateForm.badgeNumber.trim()) {
-      Alert.alert('Validation Warning', 'Visitor Name, Host Staff, and Badge Number are required.');
-      return;
-    }
-
+    if (!validateForm(updateForm, setUpdateFormErrors)) return;
     if (!selectedVisitor) return;
 
     const updatedLog = visitorLog.map((visitor) =>
@@ -217,26 +254,19 @@ export default function VisitorManagement() {
       contactNumber: '',
       remarks: '',
     });
+    setUpdateFormErrors({});
     setSelectedVisitor(null);
     setIsUpdateModalOpen(false);
-    showSuccessAlert('Visitor record updated successfully.');
+    
+    // Trigger Custom Success Alert
+    setSuccessModal({ visible: true, title: 'Update Successful', message: 'Visitor record has been updated successfully.' });
   };
 
   const handleDeleteVisitor = () => {
     if (!visitorToDelete) return;
     setVisitorLog(visitorLog.filter((visitor) => visitor.id !== visitorToDelete.id));
     setVisitorToDelete(null);
-    showSuccessAlert('Visitor record deleted successfully.');
-  };
-
-  const showSuccessAlert = (message: string) => {
-    if (Platform.OS === 'web') {
-      setTimeout(() => {
-        window.alert(message);
-      }, 300);
-    } else {
-      Alert.alert('Success', message);
-    }
+    setSuccessModal({ visible: true, title: 'Record Deleted', message: 'Visitor record has been permanently removed.' });
   };
 
   const openUpdateModal = (visitor: VisitorRecord) => {
@@ -249,6 +279,7 @@ export default function VisitorManagement() {
       contactNumber: visitor.contactNumber,
       remarks: visitor.remarks || '',
     });
+    setUpdateFormErrors({});
     setIsUpdateModalOpen(true);
   };
 
@@ -268,6 +299,7 @@ export default function VisitorManagement() {
       )
     );
     setSelectedVisitor(null);
+    setSuccessModal({ visible: true, title: 'Check-Out Complete', message: 'Visitor has been successfully checked out.' });
   };
 
   const filterLabel = filterMode === 'All' ? 'All Visitors' : filterMode === 'Active' ? 'On Campus' : 'Checked Out';
@@ -357,7 +389,6 @@ export default function VisitorManagement() {
                 </TouchableOpacity>
                 {showPurposeDropdown && (
                   <View style={styles.dropdownMenuBelow}>
-                    {/* Replaced nested ScrollView with View to prevent Android scrolling/clipping bugs */}
                     <View>
                       <TouchableOpacity
                         style={[styles.dropdownMenuItem, purposeFilter === 'All' && styles.dropdownMenuItemActive]}
@@ -757,8 +788,11 @@ export default function VisitorManagement() {
         </Modal>
       )}
 
-      {/* CHECK-IN MODAL */}
-      <Modal transparent visible={isCheckInModalOpen} animationType="slide" onRequestClose={() => setIsCheckInModalOpen(false)}>
+      {/* CHECK-IN MODAL WITH INLINE VALIDATIONS */}
+      <Modal transparent visible={isCheckInModalOpen} animationType="slide" onRequestClose={() => {
+        setIsCheckInModalOpen(false);
+        setFormErrors({});
+      }}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.glassviewOverlayScreen}>
             <View style={[styles.modalBodyCardLayout, { width: '95%', maxHeight: '95%' }]}>
@@ -782,12 +816,16 @@ export default function VisitorManagement() {
                 <View style={styles.inputWrapper}>
                   <Icon name="user" size={18} color="#B91C1C" style={styles.inputIcon} />
                   <TextInput
-                    style={styles.formInputBoxControl}
+                    style={[styles.formInputBoxControl, formErrors.name && styles.formInputErrorBorder]}
                     placeholder="Full Name"
                     value={form.name}
-                    onChangeText={(text) => setForm((prev) => ({ ...prev, name: text }))}
+                    onChangeText={(text) => {
+                      setForm((prev) => ({ ...prev, name: text }));
+                      if(formErrors.name) setFormErrors(prev => ({...prev, name: ''}));
+                    }}
                   />
                 </View>
+                {formErrors.name && <Text style={styles.errorText}>{formErrors.name}</Text>}
 
                 <Text style={styles.formFieldLabelText}>
                   Badge Number <Text style={{ color: '#EF4444' }}>*</Text>
@@ -795,24 +833,32 @@ export default function VisitorManagement() {
                 <View style={styles.inputWrapper}>
                   <Icon name="id-badge" size={18} color="#B91C1C" style={styles.inputIcon} />
                   <TextInput
-                    style={styles.formInputBoxControl}
+                    style={[styles.formInputBoxControl, formErrors.badgeNumber && styles.formInputErrorBorder]}
                     placeholder="BADGE-001"
                     value={form.badgeNumber}
-                    onChangeText={(text) => setForm((prev) => ({ ...prev, badgeNumber: text.toUpperCase() }))}
+                    onChangeText={(text) => {
+                      setForm((prev) => ({ ...prev, badgeNumber: text.toUpperCase() }));
+                      if(formErrors.badgeNumber) setFormErrors(prev => ({...prev, badgeNumber: ''}));
+                    }}
                   />
                 </View>
+                {formErrors.badgeNumber && <Text style={styles.errorText}>{formErrors.badgeNumber}</Text>}
 
                 <Text style={styles.formFieldLabelText}>Contact Number</Text>
                 <View style={styles.inputWrapper}>
                   <Icon name="phone" size={18} color="#B91C1C" style={styles.inputIcon} />
                   <TextInput
-                    style={styles.formInputBoxControl}
+                    style={[styles.formInputBoxControl, formErrors.contactNumber && styles.formInputErrorBorder]}
                     placeholder="+91 XXXXXXXXXX"
                     keyboardType="phone-pad"
                     value={form.contactNumber}
-                    onChangeText={(text) => setForm((prev) => ({ ...prev, contactNumber: text }))}
+                    onChangeText={(text) => {
+                      setForm((prev) => ({ ...prev, contactNumber: text }));
+                      if(formErrors.contactNumber) setFormErrors(prev => ({...prev, contactNumber: ''}));
+                    }}
                   />
                 </View>
+                {formErrors.contactNumber && <Text style={styles.errorText}>{formErrors.contactNumber}</Text>}
 
                 <Text style={styles.formFieldLabelText}>
                   Host Staff <Text style={{ color: '#EF4444' }}>*</Text>
@@ -820,12 +866,16 @@ export default function VisitorManagement() {
                 <View style={styles.inputWrapper}>
                   <Icon name="user-tie" size={18} color="#B91C1C" style={styles.inputIcon} />
                   <TextInput
-                    style={styles.formInputBoxControl}
+                    style={[styles.formInputBoxControl, formErrors.hostStaff && styles.formInputErrorBorder]}
                     placeholder="Host Staff Name & Designation"
                     value={form.hostStaff}
-                    onChangeText={(text) => setForm((prev) => ({ ...prev, hostStaff: text }))}
+                    onChangeText={(text) => {
+                      setForm((prev) => ({ ...prev, hostStaff: text }));
+                      if(formErrors.hostStaff) setFormErrors(prev => ({...prev, hostStaff: ''}));
+                    }}
                   />
                 </View>
+                {formErrors.hostStaff && <Text style={styles.errorText}>{formErrors.hostStaff}</Text>}
 
                 <Text style={styles.formFieldLabelText}>Purpose</Text>
                 <View style={styles.customPickerRowLayout}>
@@ -863,13 +913,16 @@ export default function VisitorManagement() {
               </ScrollView>
 
               <View style={styles.formActionLayoutButtonsGroup}>
-                <TouchableOpacity style={[styles.formActionBtnBase, styles.formActionBtnCancel]} onPress={() => setIsCheckInModalOpen(false)}>
-                  <Icon name="times" size={16} color="#7F1D1D" style={{ marginRight: 6 }} />
+                <TouchableOpacity style={[styles.formActionBtnBase, styles.formActionBtnCancel]} onPress={() => {
+                  setIsCheckInModalOpen(false);
+                  setFormErrors({});
+                }}>
+                  {/* <Icon name="times" size={16} color="#7F1D1D" style={{ marginRight: 6 }} /> */}
                   <Text style={styles.formActionBtnTextCancel}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[styles.formActionBtnBase, styles.formActionBtnSubmit]} onPress={handleCheckInSubmit}>
-                  <Icon name="check" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  {/* <Icon name="check" size={16} color="#FFFFFF" style={{ marginRight: 6 }} /> */}
                   <Text style={styles.formActionBtnTextSubmit}>Check In Visitor</Text>
                 </TouchableOpacity>
               </View>
@@ -878,11 +931,12 @@ export default function VisitorManagement() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* UPDATE MODAL */}
+      {/* UPDATE MODAL WITH INLINE VALIDATIONS */}
       {isUpdateModalOpen && selectedVisitor && (
         <Modal transparent visible={isUpdateModalOpen} animationType="slide" onRequestClose={() => {
           setIsUpdateModalOpen(false);
           setSelectedVisitor(null);
+          setUpdateFormErrors({});
         }}>
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.glassviewOverlayScreen}>
@@ -907,12 +961,16 @@ export default function VisitorManagement() {
                   <View style={styles.inputWrapper}>
                     <Icon name="user" size={18} color="#B91C1C" style={styles.inputIcon} />
                     <TextInput
-                      style={styles.formInputBoxControl}
+                      style={[styles.formInputBoxControl, updateFormErrors.name && styles.formInputErrorBorder]}
                       placeholder="Full Name"
                       value={updateForm.name}
-                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, name: text }))}
+                      onChangeText={(text) => {
+                        setUpdateForm((prev) => ({ ...prev, name: text }));
+                        if(updateFormErrors.name) setUpdateFormErrors(prev => ({...prev, name: ''}));
+                      }}
                     />
                   </View>
+                  {updateFormErrors.name && <Text style={styles.errorText}>{updateFormErrors.name}</Text>}
 
                   <Text style={styles.formFieldLabelText}>
                     Badge Number <Text style={{ color: '#EF4444' }}>*</Text>
@@ -920,24 +978,32 @@ export default function VisitorManagement() {
                   <View style={styles.inputWrapper}>
                     <Icon name="id-badge" size={18} color="#B91C1C" style={styles.inputIcon} />
                     <TextInput
-                      style={styles.formInputBoxControl}
+                      style={[styles.formInputBoxControl, updateFormErrors.badgeNumber && styles.formInputErrorBorder]}
                       placeholder="BADGE-001"
                       value={updateForm.badgeNumber}
-                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, badgeNumber: text.toUpperCase() }))}
+                      onChangeText={(text) => {
+                        setUpdateForm((prev) => ({ ...prev, badgeNumber: text.toUpperCase() }));
+                        if(updateFormErrors.badgeNumber) setUpdateFormErrors(prev => ({...prev, badgeNumber: ''}));
+                      }}
                     />
                   </View>
+                  {updateFormErrors.badgeNumber && <Text style={styles.errorText}>{updateFormErrors.badgeNumber}</Text>}
 
                   <Text style={styles.formFieldLabelText}>Contact Number</Text>
                   <View style={styles.inputWrapper}>
                     <Icon name="phone" size={18} color="#B91C1C" style={styles.inputIcon} />
                     <TextInput
-                      style={styles.formInputBoxControl}
+                      style={[styles.formInputBoxControl, updateFormErrors.contactNumber && styles.formInputErrorBorder]}
                       placeholder="+91 XXXXXXXXXX"
                       keyboardType="phone-pad"
                       value={updateForm.contactNumber}
-                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, contactNumber: text }))}
+                      onChangeText={(text) => {
+                        setUpdateForm((prev) => ({ ...prev, contactNumber: text }));
+                        if(updateFormErrors.contactNumber) setUpdateFormErrors(prev => ({...prev, contactNumber: ''}));
+                      }}
                     />
                   </View>
+                  {updateFormErrors.contactNumber && <Text style={styles.errorText}>{updateFormErrors.contactNumber}</Text>}
 
                   <Text style={styles.formFieldLabelText}>
                     Host Staff <Text style={{ color: '#EF4444' }}>*</Text>
@@ -945,12 +1011,16 @@ export default function VisitorManagement() {
                   <View style={styles.inputWrapper}>
                     <Icon name="user-tie" size={18} color="#B91C1C" style={styles.inputIcon} />
                     <TextInput
-                      style={styles.formInputBoxControl}
+                      style={[styles.formInputBoxControl, updateFormErrors.hostStaff && styles.formInputErrorBorder]}
                       placeholder="Host Staff Name & Designation"
                       value={updateForm.hostStaff}
-                      onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, hostStaff: text }))}
+                      onChangeText={(text) => {
+                        setUpdateForm((prev) => ({ ...prev, hostStaff: text }));
+                        if(updateFormErrors.hostStaff) setUpdateFormErrors(prev => ({...prev, hostStaff: ''}));
+                      }}
                     />
                   </View>
+                  {updateFormErrors.hostStaff && <Text style={styles.errorText}>{updateFormErrors.hostStaff}</Text>}
 
                   <Text style={styles.formFieldLabelText}>Purpose</Text>
                   <View style={styles.customPickerRowLayout}>
@@ -993,6 +1063,7 @@ export default function VisitorManagement() {
                     onPress={() => {
                       setIsUpdateModalOpen(false);
                       setSelectedVisitor(null);
+                      setUpdateFormErrors({});
                     }}
                   >
                     <Icon name="times" size={16} color="#7F1D1D" style={{ marginRight: 6 }} />
@@ -1048,6 +1119,29 @@ export default function VisitorManagement() {
           </View>
         </Modal>
       )}
+
+      {/* SUCCESS MODAL POPUP */}
+      <Modal transparent visible={successModal.visible} animationType="fade" onRequestClose={() => setSuccessModal((p) => ({...p, visible: false}))}>
+        <View style={styles.glassviewOverlayScreen}>
+          <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%' }, styles.deleteConfirmCard]}>
+            <View style={[styles.deleteIconWrapper, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+              <Icon name="check" size={40} color="#16A34A" />
+            </View>
+            <Text style={styles.deleteConfirmTitle}>{successModal.title}</Text>
+            <Text style={styles.deleteConfirmSubtitle}>{successModal.message}</Text>
+            
+            <View style={styles.deleteConfirmActions}>
+              <TouchableOpacity
+                style={[styles.formActionBtnBase, styles.formActionBtnSubmit]}
+                onPress={() => setSuccessModal((p) => ({...p, visible: false}))}
+              >
+                <Text style={styles.formActionBtnTextSubmit}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -1326,6 +1420,8 @@ const styles = StyleSheet.create({
   inputWrapper: { position: 'relative' },
   inputIcon: { position: 'absolute', left: 14, top: 13, zIndex: 1 },
   formInputBoxControl: { borderWidth: 1, borderColor: '#FECACA', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 13, fontSize: 15.5, backgroundColor: '#FFFFFF', paddingLeft: 42 },
+  formInputErrorBorder: { borderColor: '#DC2626', borderWidth: 1.5 },
+  errorText: { color: '#DC2626', fontSize: 12, marginTop: 4, marginLeft: 4, fontWeight: '600' },
   customPickerRowLayout: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 10 },
   customPickerItemBadge: { paddingVertical: 9, paddingHorizontal: 18, borderRadius: 12, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF1F2', flexDirection: 'row', alignItems: 'center' },
   customPickerItemActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
