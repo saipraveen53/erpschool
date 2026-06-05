@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus, StatusBar as RNStatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { DashboardGuard } from './components/common/DashboardGuard';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -132,6 +133,7 @@ export default function RootLayout() {
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
+               <DashboardGuard>
               <WebNavigationGuard>
                 <StatusBar 
                   style="light" 
@@ -150,6 +152,7 @@ export default function RootLayout() {
                   <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
                 </Stack>
               </WebNavigationGuard>
+              </DashboardGuard>
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
