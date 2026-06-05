@@ -135,7 +135,7 @@ const OPS_ITEMS: MenuItem[] = [
   {
     name: "Alerts",
     icon: Bell,
-    path: "housekeeping/_components/Alerts",
+    path: "/housekeeping/_components/Alerts",
     badge: 2,
   },
 ];
@@ -144,17 +144,14 @@ const SYSTEM_ITEMS: MenuItem[] = [
   {
     name: "Settings",
     icon: Settings,
-    path: "housekeeping/_components/settings",
+    path: "/housekeeping/_components/settings",
   },
   {
     name: "Help & Support",
     icon: HelpCircle,
-    path: "housekeeping/_components/supportpage",
+    path: "/housekeeping/_components/supportpage",
   },
 ];
-
-// ─── Reusable Logout Prompt Popup ─────────────────────────────────────────────
-
 interface LogoutPopupProps {
   visible: boolean;
   onClose: () => void;
@@ -634,10 +631,10 @@ const Sidebar = ({
 
   const mainItems: MenuItem[] = menuItems ?? DEFAULT_ITEMS;
   const allItems = [...mainItems, ...OPS_ITEMS, ...SYSTEM_ITEMS];
-  const activeItem =
-    allItems.find((i) => pathname === i.path) ??
-    allItems.flatMap((i) => i.subItems ?? []).find((s) => pathname === s.path);
-
+  const activeItem = allItems.find(
+    (item) =>
+      item.path && pathname.toLowerCase().includes(item.path.toLowerCase()),
+  );
   const handleConfirmLogout = () => {
     setLogoutPopupVisible(false);
     setIsDrawerOpen(false);

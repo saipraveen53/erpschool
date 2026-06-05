@@ -500,7 +500,6 @@ const Navbar = ({
                 )}
               </Pressable>
 
-              {/* ─── Profile Dropdown ─── */}
               {showProfile && (
                 <View style={[S.dropdown, { right: 0, minWidth: 220 }]}>
                   <View style={S.dropHead}>

@@ -1,10 +1,11 @@
+import * as ImagePicker from "expo-image-picker";
 import {
   AlertOctagon,
   CheckCircle2,
   Clock,
   CornerUpLeft,
+  Image as ImageIcon,
   LayoutGrid,
-  ListTodo,
   MapPin,
   Play,
   Plus,
@@ -56,8 +57,6 @@ const C = {
   classroom: "#E35336",
   washroom: "#2D8A4E",
   laboratory: "#7C3AED",
-  library: "#2563EB",
-  playground: "#059669",
   office: "#D97706",
 };
 
@@ -91,7 +90,7 @@ const FadeInUp = ({
       ]).start();
     }, delay);
     return () => clearTimeout(timer);
-  }, []);
+  }, [delay, op, sl]);
 
   return (
     <Animated.View
@@ -132,6 +131,7 @@ const STATUS_CONFIG: Record<
     icon: AlertOctagon,
   },
 };
+
 interface CleaningTask {
   id: string;
   title: string;
@@ -145,12 +145,13 @@ interface CleaningTask {
   assignee: string;
   image: string;
 }
-const INITIAL_TASKS = [
+
+const INITIAL_TASKS: CleaningTask[] = [
   {
     id: "TSK-8092",
     title: "Sanitize all high-touch surface counters",
     area: "Washroom Complex B (Floor 2)",
-    zoneKey: "washroom" as const,
+    zoneKey: "washroom",
     shift: "Morning Shift",
     status: "Assigned",
     priority: "High",
@@ -164,7 +165,21 @@ const INITIAL_TASKS = [
     id: "TSK-8075",
     title: "Emergency Spill Cleanup: Chemical residue leak",
     area: "Advanced Physics Lab 3",
-    zoneKey: "laboratory" as const,
+    zoneKey: "laboratory",
+    shift: "Morning Shift",
+    status: "Escalated",
+    priority: "Critical",
+    type: "Emergency Request",
+    timing: "Immediate Action",
+    assignee: "Tom Baker",
+    image:
+      "https://images.unsplash.com/photo-1617155093730-a8bf47be792d?w=400&q=80",
+  },
+  {
+    id: "TSK-8075",
+    title: "Emergency Spill Cleanup: Chemical residue leak",
+    area: "Advanced Physics Lab 3",
+    zoneKey: "laboratory",
     shift: "Morning Shift",
     status: "Escalated",
     priority: "Critical",
@@ -178,7 +193,7 @@ const INITIAL_TASKS = [
     id: "TSK-7994",
     title: "Deep scrub and vacuum carpet runner lines",
     area: "Lecture Hall Suite 102",
-    zoneKey: "classroom" as const,
+    zoneKey: "classroom",
     shift: "Afternoon Shift",
     status: "In Progress",
     priority: "Medium",
@@ -189,28 +204,42 @@ const INITIAL_TASKS = [
       "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80",
   },
   {
-    id: "TSK-8095",
-    title: "Sanitize all high-touch surface counters",
-    area: "Washroom Complex B (Floor 2)",
-    zoneKey: "washroom" as const,
-    shift: "Morning Shift",
-    status: "Assigned",
-    priority: "High",
-    type: "Daily Cleaning",
-    timing: "08:30 AM",
-    assignee: "Maria Santos",
+    id: "TSK-7994",
+    title: "Deep scrub and vacuum carpet runner lines",
+    area: "Lecture Hall Suite 102",
+    zoneKey: "classroom",
+    shift: "Afternoon Shift",
+    status: "In Progress",
+    priority: "Medium",
+    type: "Recurring Scheduled",
+    timing: "02:00 PM",
+    assignee: "James Kimani",
     image:
-      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&q=80",
+      "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80",
   },
 ];
 
 export default function TaskManagementScreen() {
   const [tasks, setTasks] = useState<CleaningTask[]>(INITIAL_TASKS);
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [viewMode, setViewMode] = useState<"card" | "table">(
+    isWide ? "table" : "card",
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
 
-  // New Form Fields State
+  // Parent Dashboard Alerts
+  const [dashboardAlert, setDashboardAlert] = useState<{
+    visible: boolean;
+    text: string;
+  } | null>(null);
+
+  // Form Field Validation Banner State Engine
+  const [modalAlert, setModalAlert] = useState<{
+    text: string;
+    type: "error" | "warning";
+  } | null>(null);
+
+  // Form Field Tracking States
   const [newTitle, setNewTitle] = useState("");
   const [newArea, setNewArea] = useState("");
   const [newZone, setNewZone] = useState<
@@ -218,32 +247,91 @@ export default function TaskManagementScreen() {
   >("washroom");
   const [newShift, setNewShift] = useState("Morning Shift");
   const [newAssignee, setNewAssignee] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const triggerDashboardSuccess = (id: string) => {
+    setDashboardAlert({
+      visible: true,
+      text: `Success: Order ${id} added to the operations ledger.`,
+    });
+    setTimeout(() => setDashboardAlert(null), 4000);
+  };
+
+  // Image Picker Logic Handler
+  const handlePickImage = async () => {
+    if (modalAlert) setModalAlert(null);
+
+    // Request device library permissions explicitly
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      setModalAlert({
+        text: "Permission Denied: Access to device photo storage is required.",
+        type: "error",
+      });
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
 
   const handleCreateTask = () => {
-    if (!newTitle || !newArea) return;
+    // Validation Layer 1: Empty Required String Elements
+    if (!newTitle.trim() || !newArea.trim()) {
+      setModalAlert({
+        text: "Missing Fields: Title and Area target are required.",
+        type: "error",
+      });
+      return;
+    }
 
-    const newTask = {
-      id: `TSK-${Math.floor(1000 + Math.random() * 9000)}`,
-      title: newTitle,
-      area: newArea,
+    // Validation Layer 2: Requiring an Image Attachment
+    if (!selectedImage) {
+      setModalAlert({
+        text: "Missing Attachment: An operational area reference image is required.",
+        type: "error",
+      });
+      return;
+    }
+
+    const assignedIdNumber = Math.floor(1000 + Math.random() * 9000);
+    const generatedIdString = `TSK-${assignedIdNumber}`;
+
+    const newTask: CleaningTask = {
+      id: generatedIdString,
+      title: newTitle.trim(),
+      area: newArea.trim(),
       zoneKey: newZone,
       shift: newShift,
       status: "Assigned",
       priority: "Medium",
       type: "Daily Cleaning",
       timing: "As Scheduled",
-      assignee: newAssignee || "Unassigned",
-      image:
-        "https://images.unsplash.com/photo-1563453392212-326f5e854473?w=400&q=80", // Fallback clean image token
+      assignee: newAssignee.trim() || "Unassigned",
+      image: selectedImage, // Attaches local image URI path
     };
 
     setTasks([newTask, ...tasks]);
     setModalVisible(false);
 
-    // Reset Form Fields
+    // Context Field Form Clear
     setNewTitle("");
     setNewArea("");
     setNewAssignee("");
+    setSelectedImage(null);
+    setModalAlert(null);
+
+    triggerDashboardSuccess(generatedIdString);
   };
 
   const filteredTasks = tasks.filter(
@@ -255,24 +343,37 @@ export default function TaskManagementScreen() {
 
   return (
     <View style={S.screen}>
+      {dashboardAlert && (
+        <View style={S.dashAlertLayout}>
+          <View style={S.alertTextCluster}>
+            <CheckCircle2 size={16} color={C.green} />
+            <Text style={S.dashAlertTextString}>{dashboardAlert.text}</Text>
+          </View>
+          <TouchableOpacity onPress={() => setDashboardAlert(null)}>
+            <X size={14} color={C.green} />
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView
         contentContainerStyle={S.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Billboard Header Banner */}
         <FadeInUp delay={0}>
           <View style={S.heroMeta}>
             <View>
               <Text style={S.heroTitle}>Operations Console</Text>
               <Text style={S.heroSubtitle}>
-                Deploy site allocations, view audit logs, and schedule daily
-                tasks.
+                Deploy site allocations and attach audit visual streams.
               </Text>
             </View>
             <TouchableOpacity
               style={S.addTaskBtn}
               activeOpacity={0.85}
-              onPress={() => setModalVisible(true)}
+              onPress={() => {
+                setModalAlert(null);
+                setModalVisible(true);
+              }}
             >
               <Plus size={14} color={C.dark} strokeWidth={3} />
               <Text style={S.addTaskBtnText}>Create Task</Text>
@@ -286,15 +387,14 @@ export default function TaskManagementScreen() {
             <View style={S.searchBarContainer}>
               <Search size={16} color={C.textTer} style={S.searchIcon} />
               <TextInput
-                placeholder="Search allocations, operational tokens, operators..."
+                placeholder="Search allocations..."
                 placeholderTextColor={C.textTer}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                style={[S.searchInputField, { outline: "none" }]}
+                style={[S.searchInputField, { outline: "none" } as any]}
               />
             </View>
 
-            {/* Layout Presentation Toggle Controls */}
             <View style={S.toggleWrapper}>
               <TouchableOpacity
                 style={[S.toggleBtn, viewMode === "card" && S.toggleBtnActive]}
@@ -319,23 +419,25 @@ export default function TaskManagementScreen() {
         </FadeInUp>
 
         {viewMode === "card" ? (
-          /* Cards Grid Array Layout Matrix */
           <View style={S.ledgerGridContainer}>
             {filteredTasks.map((task, index) => {
               const status =
                 STATUS_CONFIG[task.status] || STATUS_CONFIG["Assigned"];
               const StatusIcon = status.icon;
-              const areaColor = C[task.zoneKey as keyof typeof C] || C.indigo;
+              const areaColor = C[task.zoneKey] || C.indigo;
 
               return (
-                <FadeInUp key={task.id} delay={120 + index * 40}>
+                <FadeInUp
+                  key={task.id}
+                  delay={120 + index * 40}
+                  style={S.gridCardWrapper}
+                >
                   <View style={S.taskCard}>
                     <View style={S.cardInnerHorizontalRow}>
                       <Image
                         source={{ uri: task.image }}
                         style={S.cardMediaThumbnail}
                       />
-
                       <View style={S.cardContentTextFrame}>
                         <View style={S.taskCardHeader}>
                           <Text style={S.taskIdString}>{task.id}</Text>
@@ -360,11 +462,9 @@ export default function TaskManagementScreen() {
                             </Text>
                           </View>
                         </View>
-
                         <Text style={S.taskMainTitle} numberOfLines={2}>
                           {task.title}
                         </Text>
-
                         <View style={S.spatialTargetLine}>
                           <MapPin size={11} color={areaColor} />
                           <Text
@@ -376,9 +476,7 @@ export default function TaskManagementScreen() {
                         </View>
                       </View>
                     </View>
-
                     <View style={S.dividerLine} />
-
                     <View style={S.taskCardFooter}>
                       <Text style={S.footerParamText}>
                         {task.timing} • {task.shift}
@@ -403,11 +501,18 @@ export default function TaskManagementScreen() {
               style={S.tableOuterScroll}
             >
               <View style={S.tableContainerBlock}>
-                {/* Header */}
-                <View style={S.tableHeaderRow}>
-                  <Text style={[S.tableHeadCell, { width: 90 }]}>Image</Text>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    minHeight: 52,
+                    borderBottom: `1px solid ${C.border}`,
+                  }}
+                >
+                  <Text style={[S.tableHeadCell, { width: 100 }]}>Image</Text>
                   <Text style={[S.tableHeadCell, { width: 120 }]}>Task ID</Text>
-                  <Text style={[S.tableHeadCell, { width: 280 }]}>
+                  <Text style={[S.tableHeadCell, { width: 300 }]}>
                     Allocation Title
                   </Text>
                   <Text style={[S.tableHeadCell, { width: 220 }]}>
@@ -417,83 +522,53 @@ export default function TaskManagementScreen() {
                   <Text style={[S.tableHeadCell, { width: 150 }]}>
                     Assignee
                   </Text>
-                  <Text style={[S.tableHeadCell, { width: 150 }]}>
-                    Shift & Timing
-                  </Text>
-                </View>
+                  <Text style={[S.tableHeadCell, { width: 180 }]}>Shift</Text>
+                </div>
 
                 {filteredTasks.map((task, index) => {
                   const status =
                     STATUS_CONFIG[task.status] || STATUS_CONFIG["Assigned"];
-
                   return (
                     <View
                       key={task.id}
                       style={[
                         S.tableBodyRow,
-                        {
-                          flexDirection: "row",
-                          alignItems: "center",
-                        },
-                        index % 2 === 1 && {
-                          backgroundColor: C.bg,
-                        },
+                        index % 2 === 1 && { backgroundColor: C.bg },
                       ]}
                     >
-                      <View
-                        style={{
-                          width: 90,
-
-                          justifyContent: "center",
-                        }}
-                      >
+                      <View style={{ width: 90, justifyContent: "center" }}>
                         <Image
                           source={{ uri: task.image }}
                           style={S.tableRowThumbnail}
                         />
                       </View>
-
                       <Text
                         style={[
                           S.tableCellText,
-                          {
-                            width: 120,
-                            fontWeight: "700",
-                          },
+                          { width: 120, fontWeight: "700" },
                         ]}
                       >
                         {task.id}
                       </Text>
-
                       <Text
-                        style={[S.tableCellText, { width: 280 }]}
+                        style={[S.tableCellText, { width: 300 }]}
                         numberOfLines={2}
                       >
                         {task.title}
                       </Text>
-
                       <Text
                         style={[
                           S.tableCellText,
                           {
                             width: 220,
-                            color:
-                              C[task.zoneKey as keyof typeof C] ||
-                              C.textPrimary,
+                            color: C[task.zoneKey] || C.textPrimary,
                           },
                         ]}
                         numberOfLines={1}
                       >
                         {task.area}
                       </Text>
-
-                      {/* Status */}
-                      <View
-                        style={{
-                          width: 130,
-                          justifyContent: "center",
-                        }}
-                      >
+                      <View style={{ width: 130, justifyContent: "center" }}>
                         <View
                           style={[
                             S.statusBadge,
@@ -504,40 +579,17 @@ export default function TaskManagementScreen() {
                           ]}
                         >
                           <Text
-                            style={[
-                              S.statusBadgeText,
-                              {
-                                color: status.color,
-                                fontSize: 10,
-                              },
-                            ]}
+                            style={[S.statusBadgeText, { color: status.color }]}
                           >
                             {status.label}
                           </Text>
                         </View>
                       </View>
-
-                      <Text
-                        style={[
-                          S.tableCellText,
-                          {
-                            width: 150,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
+                      <Text style={[S.tableCellText, { width: 150 }]}>
                         {task.assignee}
                       </Text>
-                      <Text
-                        style={[
-                          S.tableCellText,
-                          {
-                            width: 200,
-                          },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {task.shift} • {task.timing}
+                      <Text style={[S.tableCellText, { width: 180 }]}>
+                        {task.shift}
                       </Text>
                     </View>
                   );
@@ -546,16 +598,9 @@ export default function TaskManagementScreen() {
             </ScrollView>
           </FadeInUp>
         )}
-        {/* Empty Search Fallback Template */}
-        {filteredTasks.length === 0 && (
-          <View style={S.emptyBoxContainer}>
-            <ListTodo size={32} color={C.textTer} />
-            <Text style={S.emptyTitleText}>No Allocations Listed</Text>
-          </View>
-        )}
       </ScrollView>
 
-      {/* ─── FORM MODAL POPUP SHEET ENGINE ─── */}
+      {/* Form Action Sheet Modal Layer */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -574,30 +619,95 @@ export default function TaskManagementScreen() {
               </TouchableOpacity>
             </View>
 
+            {modalAlert && (
+              <View
+                style={[
+                  S.modalAlertWrapper,
+                  modalAlert.type === "error"
+                    ? { backgroundColor: C.redLight, borderColor: C.red }
+                    : { backgroundColor: C.amberLight, borderColor: C.amber },
+                ]}
+              >
+                <AlertOctagon
+                  size={14}
+                  color={modalAlert.type === "error" ? C.red : C.amber}
+                />
+                <Text
+                  style={[
+                    S.modalAlertText,
+                    modalAlert.type === "error"
+                      ? { color: C.red }
+                      : { color: C.amber },
+                  ]}
+                >
+                  {modalAlert.text}
+                </Text>
+              </View>
+            )}
+
             <ScrollView
               style={S.modalFormScrollFrame}
               showsVerticalScrollIndicator={false}
             >
+              {/* Image Picker Trigger Component Slot */}
               <View style={S.formGroup}>
                 <Text style={S.formFieldLabel}>
-                  Task Title / Cleaning Objective
+                  Reference Image Attachment *
+                </Text>
+                <TouchableOpacity
+                  style={S.imageUploadBox}
+                  activeOpacity={0.8}
+                  onPress={handlePickImage}
+                >
+                  {selectedImage ? (
+                    <View style={S.selectedImageContainer}>
+                      <Image
+                        source={{ uri: selectedImage }}
+                        style={S.uploadedPreviewImage}
+                      />
+                      <View style={S.imageChangeBadge}>
+                        <Text style={S.imageChangeText}>Change Photo</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={S.uploadPlaceholderContainer}>
+                      <ImageIcon size={24} color={C.textTer} />
+                      <Text style={S.uploadPlaceholderText}>
+                        Click to upload reference attachment photo
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={S.formGroup}>
+                <Text style={S.formFieldLabel}>
+                  Task Title / Cleaning Objective *
                 </Text>
                 <TextInput
                   placeholder="e.g., Deep clean layout partitions and glass mirrors"
                   placeholderTextColor={C.textTer}
                   value={newTitle}
-                  onChangeText={setNewTitle}
+                  onChangeText={(val) => {
+                    setNewTitle(val);
+                    if (modalAlert) setModalAlert(null);
+                  }}
                   style={S.formInputField}
                 />
               </View>
 
               <View style={S.formGroup}>
-                <Text style={S.formFieldLabel}>Area Location Location</Text>
+                <Text style={S.formFieldLabel}>
+                  Area Location Matrix Target *
+                </Text>
                 <TextInput
                   placeholder="e.g., Washroom Block A Level 3"
                   placeholderTextColor={C.textTer}
                   value={newArea}
-                  onChangeText={setNewArea}
+                  onChangeText={(val) => {
+                    setNewArea(val);
+                    if (modalAlert) setModalAlert(null);
+                  }}
                   style={S.formInputField}
                 />
               </View>
@@ -667,10 +777,34 @@ export default function TaskManagementScreen() {
 const S = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fbececb5" },
   content: { padding: isWide ? 24 : 16, paddingBottom: 40 },
-  heroContainer: {
-    padding: isWide ? 28 : 20,
-    borderRadius: 24,
-    marginBottom: 20,
+  dashAlertLayout: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: C.greenLight,
+    borderWidth: 1,
+    borderColor: C.green,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    elevation: 4,
+  },
+  alertTextCluster: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 8,
+  },
+  dashAlertTextString: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.green,
+    flex: 1,
   },
   heroMeta: {
     flexDirection: "row",
@@ -678,51 +812,31 @@ const S = StyleSheet.create({
     alignItems: "center",
     flexWrap: "wrap",
     gap: 12,
-    marginBottom: 20,
-    marginVertical: 10,
+    marginBottom: 24,
+    marginTop: 10,
   },
   heroTitle: {
     fontSize: isWide ? 26 : 22,
     fontWeight: "800",
     color: "#5C2E14",
   },
-  heroSubtitle: {
-    color: "#5C2E14",
-    fontSize: isWide ? 14 : 12,
-    marginTop: 4,
-    opacity: 0.8,
-  },
+  heroSubtitle: { color: "#5C2E14", fontSize: isWide ? 14 : 12, marginTop: 4 },
   addTaskBtn: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: C.white,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 12,
-    gap: 4,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: C.border,
   },
   addTaskBtnText: { color: C.dark, fontSize: 13, fontWeight: "700" },
-  metricsStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.08)",
-  },
-  metricBlock: { alignItems: "center" },
-  metricNumber: { fontSize: 18, fontWeight: "800", color: C.white },
-  metricLabel: { fontSize: 11, color: C.textTer, marginTop: 2 },
-  stripDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-  },
   toolbarRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 20,
     alignItems: "center",
   },
   searchBarContainer: {
@@ -734,36 +848,47 @@ const S = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
     paddingHorizontal: 12,
-    height: 42,
+    height: 44,
   },
-  searchIcon: { marginRight: 6 },
+  searchIcon: { marginRight: 8 },
   searchInputField: {
     flex: 1,
     color: C.textPrimary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
   },
   toggleWrapper: {
     flexDirection: "row",
     backgroundColor: C.border,
-    borderRadius: 10,
-    padding: 3,
+    borderRadius: 12,
+    padding: 4,
     gap: 2,
   },
-  toggleBtn: { padding: 6, borderRadius: 8 },
+  toggleBtn: { padding: 8, borderRadius: 8 },
   toggleBtnActive: { backgroundColor: C.dark2 },
-  ledgerGridContainer: { gap: 12 },
+  ledgerGridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: -6,
+  },
+  gridCardWrapper: {
+    width: isWide ? "33.33%" : isMid ? "50%" : "100%",
+    paddingHorizontal: 6,
+    marginBottom: 12,
+  },
   taskCard: {
     backgroundColor: C.white,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: C.border,
-    padding: 14,
+    padding: 16,
+    height: "100%",
+    justifyContent: "space-between",
   },
   cardInnerHorizontalRow: { flexDirection: "row", gap: 12 },
   cardMediaThumbnail: {
-    width: 75,
-    height: 75,
+    width: 70,
+    height: 70,
     borderRadius: 12,
     backgroundColor: C.bg,
   },
@@ -773,29 +898,29 @@ const S = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  taskIdString: { fontSize: 11, fontWeight: "700", color: C.textPrimary },
+  taskIdString: { fontSize: 11, fontWeight: "700", color: C.textTer },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 5,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
   },
   statusBadgeText: { fontSize: 10, fontWeight: "700" },
   taskMainTitle: {
     fontSize: 13,
     fontWeight: "700",
     color: C.textPrimary,
-    marginTop: 3,
+    marginTop: 4,
   },
   spatialTargetLine: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 2,
+    marginTop: 6,
   },
   spatialAreaText: { fontSize: 11, fontWeight: "600" },
-  dividerLine: { height: 1, backgroundColor: C.border, marginVertical: 10 },
+  dividerLine: { height: 1, backgroundColor: C.border, marginVertical: 12 },
   taskCardFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -807,7 +932,7 @@ const S = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: C.textPrimary,
-    maxWidth: 90,
+    maxWidth: 100,
   },
   tableOuterScroll: {
     backgroundColor: C.white,
@@ -815,47 +940,32 @@ const S = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  tableContainerBlock: { padding: 14 },
-  tableHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    minHeight: 52,
-  },
-
+  tableContainerBlock: { padding: 8 },
   tableBodyRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     minHeight: 64,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    borderBottomColor: C.border,
   },
-
-  tableHeadCell: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#64748b",
-  },
-
-  tableCellText: {
-    fontSize: 13,
-    color: "#1e293b",
-  },
+  tableHeadCell: { fontSize: 12, fontWeight: "700", color: C.textSec },
+  tableCellText: { fontSize: 13, color: C.textPrimary },
   tableRowThumbnail: {
-    width: 50,
-    height: 50,
-    borderRadius: 6,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     backgroundColor: C.bg,
   },
-
-  emptyBoxContainer: { alignItems: "center", padding: 36 },
+  emptyBoxContainer: { alignItems: "center", padding: 48 },
   emptyTitleText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     color: C.textSec,
     marginTop: 8,
   },
+
+  // Modal layout configurations
   modalOverlayFrame: {
     flex: 1,
     backgroundColor: "rgba(15,23,42,0.4)",
@@ -865,10 +975,9 @@ const S = StyleSheet.create({
   modalContentSheet: {
     backgroundColor: C.white,
     borderRadius: 24,
-
-    padding: 20,
+    padding: 24,
     maxHeight: "85%",
-    width: isWide ? 500 : "90%",
+    width: isWide ? 500 : "92%",
   },
   modalFormHeaderRow: {
     flexDirection: "row",
@@ -876,47 +985,89 @@ const S = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  modalTitleString: { fontSize: 16, fontWeight: "800", color: C.textPrimary },
-  modalCloseCircle: {
-    backgroundColor: C.bg,
-    padding: 6,
-    borderRadius: 100,
+  modalTitleString: { fontSize: 18, fontWeight: "800", color: C.textPrimary },
+  modalCloseCircle: { backgroundColor: C.bg, padding: 6, borderRadius: 100 },
+  modalAlertWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
   },
+  modalAlertText: { fontSize: 12, fontWeight: "600", flex: 1 },
   modalFormScrollFrame: { marginBottom: 10 },
-  formGroup: { marginBottom: 14 },
+  formGroup: { marginBottom: 16 },
   formFieldLabel: {
     fontSize: 12,
     fontWeight: "700",
     color: C.textPrimary,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   formInputField: {
     backgroundColor: C.bg,
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 12,
-    height: 42,
-    paddingHorizontal: 12,
+    height: 44,
+    paddingHorizontal: 14,
     fontSize: 13,
     color: C.textPrimary,
   },
   inlineSelectorRibbon: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   selectorPillItem: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.white,
   },
-  selectorPillText: { fontSize: 10, fontWeight: "700", color: C.textSec },
+  selectorPillText: { fontSize: 11, fontWeight: "700", color: C.textSec },
   modalSubmitActionButton: {
     backgroundColor: C.classroom,
-    height: 46,
+    height: 48,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
+    marginTop: 12,
   },
-  modalSubmitButtonText: { color: C.white, fontSize: 13, fontWeight: "700" },
+  modalSubmitButtonText: { color: C.white, fontSize: 14, fontWeight: "700" },
+
+  // New Image Upload Box Styling Block
+  imageUploadBox: {
+    backgroundColor: C.bg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 14,
+    height: 120,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    borderStyle: "dashed",
+  },
+  uploadPlaceholderContainer: { alignItems: "center", gap: 6, padding: 16 },
+  uploadPlaceholderText: {
+    fontSize: 11,
+    color: C.textSec,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  selectedImageContainer: {
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  uploadedPreviewImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  imageChangeBadge: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  imageChangeText: { color: C.white, fontSize: 10, fontWeight: "700" },
 });

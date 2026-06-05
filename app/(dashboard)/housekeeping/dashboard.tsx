@@ -21,6 +21,7 @@ import {
   Users,
   Wrench,
   X,
+  XCircle,
   Zap,
 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -49,6 +50,82 @@ type StatusKey = "done" | "in-progress" | "pending" | "active" | "break";
 type AlertLevel = "critical" | "warning" | "info";
 type ChartMode = "bar" | "line";
 type ModalKey = "assign" | "alert" | "report" | "call" | "reportDetail" | null;
+
+// ─── Validation Types ──────────────────────────────────────────────────────────
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
+interface FeedbackState {
+  type: "success" | "error" | null;
+  message: string;
+}
+
+// ─── Validation Utilities ──────────────────────────────────────────────────────
+
+const ROOM_REGEX = /^[a-zA-Z0-9\s\-\/,\.#]+$/;
+const MIN_DESC_LENGTH = 10;
+const MAX_DESC_LENGTH = 500;
+const MAX_ROOM_LENGTH = 60;
+const MAX_NAME_LENGTH = 80;
+
+function validateRoom(room: string): string | null {
+  const trimmed = room.trim();
+  if (!trimmed) return "Room / Area is required.";
+  if (trimmed.length < 2) return "Room / Area must be at least 2 characters.";
+  if (trimmed.length > MAX_ROOM_LENGTH)
+    return `Room / Area must be at most ${MAX_ROOM_LENGTH} characters.`;
+  if (!ROOM_REGEX.test(trimmed))
+    return "Room / Area contains invalid characters.";
+  return null;
+}
+
+function validateLocation(loc: string): string | null {
+  const trimmed = loc.trim();
+  if (!trimmed) return "Location is required.";
+  if (trimmed.length < 2) return "Location must be at least 2 characters.";
+  if (trimmed.length > MAX_ROOM_LENGTH)
+    return `Location must be at most ${MAX_ROOM_LENGTH} characters.`;
+  if (!ROOM_REGEX.test(trimmed)) return "Location contains invalid characters.";
+  return null;
+}
+
+function validateDescription(desc: string): string | null {
+  const trimmed = desc.trim();
+  if (!trimmed) return "Description is required.";
+  if (trimmed.length < MIN_DESC_LENGTH)
+    return `Description must be at least ${MIN_DESC_LENGTH} characters.`;
+  if (trimmed.length > MAX_DESC_LENGTH)
+    return `Description must be at most ${MAX_DESC_LENGTH} characters.`;
+  return null;
+}
+
+function validateName(name: string): string | null {
+  const trimmed = name.trim();
+  if (!trimmed) return "Name(s) is required.";
+  if (trimmed.length < 2) return "Name must be at least 2 characters.";
+  if (trimmed.length > MAX_NAME_LENGTH)
+    return `Name must be at most ${MAX_NAME_LENGTH} characters.`;
+  return null;
+}
+
+function validateReportLocation(loc: string): string | null {
+  const trimmed = loc.trim();
+  if (!trimmed) return "Location is required.";
+  if (trimmed.length < 2) return "Location must be at least 2 characters.";
+  return null;
+}
+
+function validateReportDetails(details: string): string | null {
+  const trimmed = details.trim();
+  if (!trimmed) return "Details are required.";
+  if (trimmed.length < MIN_DESC_LENGTH)
+    return `Details must be at least ${MIN_DESC_LENGTH} characters.`;
+  if (trimmed.length > MAX_DESC_LENGTH)
+    return `Details must be at most ${MAX_DESC_LENGTH} characters.`;
+  return null;
+}
 
 interface StatItem {
   label: string;
@@ -148,6 +225,7 @@ const FadeIn = ({
     </Animated.View>
   );
 };
+
 const INITIAL_STATS: StatItem[] = [
   {
     label: "Total Staff",
@@ -746,16 +824,77 @@ const ViewAllBtn: React.FC<{ label?: string }> = ({ label = "View all" }) => (
   </TouchableOpacity>
 );
 
-const SuccessBanner: React.FC<{ show: boolean; msg: string }> = ({
-  show,
-  msg,
-}) => {
-  if (!show) return null;
+// ─── Feedback Banner (Success + Error) ───────────────────────────────────────
+
+const FeedbackBanner: React.FC<{
+  feedback: FeedbackState;
+  onDismiss?: () => void;
+}> = ({ feedback, onDismiss }) => {
+  if (!feedback.type) return null;
+
+  const isSuccess = feedback.type === "success";
+
   return (
-    <View style={S.successBanner}>
-      <Check size={14} color="#065f46" />
-      <Text style={S.successText}>{msg}</Text>
+    <View
+      style={[
+        S.feedbackBanner,
+        isSuccess ? S.feedbackSuccess : S.feedbackError,
+      ]}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+    >
+      <View style={S.feedbackIconRow}>
+        {isSuccess ? (
+          <CheckCircle2 size={15} color={isSuccess ? "#065f46" : "#991b1b"} />
+        ) : (
+          <XCircle size={15} color="#991b1b" />
+        )}
+        <Text
+          style={[S.feedbackText, { color: isSuccess ? "#065f46" : "#991b1b" }]}
+        >
+          {feedback.message}
+        </Text>
+      </View>
+      {onDismiss && (
+        <TouchableOpacity onPress={onDismiss} style={S.feedbackDismiss}>
+          <X size={12} color={isSuccess ? "#065f46" : "#991b1b"} />
+        </TouchableOpacity>
+      )}
     </View>
+  );
+};
+
+// ─── Field Error ──────────────────────────────────────────────────────────────
+
+const FieldError: React.FC<{ error?: string }> = ({ error }) => {
+  if (!error) return null;
+  return (
+    <View style={S.fieldErrorRow}>
+      <AlertTriangle size={11} color="#dc2626" />
+      <Text style={S.fieldErrorText}>{error}</Text>
+    </View>
+  );
+};
+
+// ─── Character Counter ────────────────────────────────────────────────────────
+
+const CharCounter: React.FC<{
+  current: number;
+  max: number;
+  min?: number;
+}> = ({ current, max, min }) => {
+  const remaining = max - current;
+  const tooShort = min !== undefined && current > 0 && current < min;
+  const tooLong = current > max;
+  const color = tooLong ? "#dc2626" : tooShort ? "#d97706" : "#94a3b8";
+  return (
+    <Text style={[S.charCounter, { color }]}>
+      {tooLong
+        ? `${remaining} over limit`
+        : tooShort
+          ? `${min - current} more chars needed`
+          : `${remaining} remaining`}
+    </Text>
   );
 };
 
@@ -793,13 +932,17 @@ const ModalShell: React.FC<{
 
 // ─── Form helpers ─────────────────────────────────────────────────────────────
 
-const FormField: React.FC<{ label: string; children: React.ReactNode }> = ({
-  label,
-  children,
-}) => (
+const FormField: React.FC<{
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+  hint?: string;
+}> = ({ label, children, error, hint }) => (
   <View style={S.formGroup}>
     <Text style={S.formLabel}>{label}</Text>
     {children}
+    {hint && !error && <Text style={S.fieldHint}>{hint}</Text>}
+    <FieldError error={error} />
   </View>
 );
 
@@ -808,11 +951,15 @@ const CyclePicker: React.FC<{
   options: string[];
   value: string;
   onChange: (v: string) => void;
-}> = ({ options, value, onChange }) => {
+  hasError?: boolean;
+}> = ({ options, value, onChange, hasError }) => {
   const idx = options.indexOf(value);
   const next = () => onChange(options[(idx + 1) % options.length]);
   return (
-    <TouchableOpacity style={S.cyclePicker} onPress={next}>
+    <TouchableOpacity
+      style={[S.cyclePicker, hasError && S.inputError]}
+      onPress={next}
+    >
       <Text style={S.cyclePickerText} numberOfLines={1}>
         {value}
       </Text>
@@ -826,11 +973,13 @@ const PrimaryButton: React.FC<{
   icon?: React.ReactNode;
   color?: string;
   onPress: () => void;
-}> = ({ label, icon, color = "#6366f1", onPress }) => (
+  disabled?: boolean;
+}> = ({ label, icon, color = "#6366f1", onPress, disabled }) => (
   <TouchableOpacity
     onPress={onPress}
-    activeOpacity={0.85}
-    style={[S.primaryBtn, { backgroundColor: color }]}
+    activeOpacity={disabled ? 1 : 0.85}
+    style={[S.primaryBtn, { backgroundColor: disabled ? "#94a3b8" : color }]}
+    disabled={disabled}
   >
     {icon}
     <Text style={S.primaryBtnText}>{label}</Text>
@@ -848,32 +997,98 @@ const AssignTaskModal: React.FC<{
   const [staff, setStaff] = useState(STAFF_OPTIONS[0]);
   const [type, setType] = useState(TASK_TYPES[0]);
   const [priority, setPriority] = useState("Normal");
-  const [success, setSuccess] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackState>({
+    type: null,
+    message: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (visible) {
+      setRoom("");
+      setStaff(STAFF_OPTIONS[0]);
+      setType(TASK_TYPES[0]);
+      setPriority("Normal");
+      setFeedback({ type: null, message: "" });
+      setErrors({});
+      setTouched({});
+    }
+  }, [visible]);
+
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    const roomErr = validateRoom(room);
+    if (roomErr) errs.room = roomErr;
+    return errs;
+  };
+
+  const handleRoomBlur = () => {
+    setTouched((t) => ({ ...t, room: true }));
+    const errs = validate();
+    setErrors(errs);
+  };
 
   const submit = () => {
-    if (!room.trim()) return;
-    onSubmit({ room, staff, type });
-    setSuccess(true);
-    setRoom("");
+    const allTouched = { room: true };
+    setTouched(allTouched);
+    const errs = validate();
+    setErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      setFeedback({
+        type: "error",
+        message: "Please fix the errors below before submitting.",
+      });
+      return;
+    }
+
+    onSubmit({ room: room.trim(), staff, type });
+    setFeedback({ type: "success", message: "Task assigned successfully!" });
     setTimeout(() => {
-      setSuccess(false);
+      setFeedback({ type: null, message: "" });
       onClose();
-    }, 1600);
+    }, 1800);
   };
 
   return (
     <ModalShell visible={visible} onClose={onClose}>
       <Text style={S.modalTitle}>Assign Task</Text>
       <Text style={S.modalSub}>Create and assign a new housekeeping task</Text>
-      <FormField label="Room / Area">
+
+      <FeedbackBanner
+        feedback={feedback}
+        onDismiss={() => setFeedback({ type: null, message: "" })}
+      />
+
+      <FormField
+        label="Room / Area *"
+        error={touched.room ? errors.room : undefined}
+        hint="e.g. Room 301, Lobby, Conference A"
+      >
         <TextInput
-          style={S.input}
+          style={[
+            S.input,
+            touched.room && errors.room ? S.inputError : undefined,
+          ]}
           value={room}
-          onChangeText={setRoom}
+          onChangeText={(v) => {
+            setRoom(v);
+            if (touched.room) {
+              const err = validateRoom(v);
+              setErrors((e) => ({ ...e, room: err ?? "" }));
+            }
+          }}
+          onBlur={handleRoomBlur}
           placeholder="e.g. Room 301, Lobby..."
           placeholderTextColor="#94a3b8"
+          maxLength={MAX_ROOM_LENGTH + 10}
+          returnKeyType="done"
         />
+        <CharCounter current={room.length} max={MAX_ROOM_LENGTH} min={2} />
       </FormField>
+
       <FormField label="Assign to">
         <CyclePicker
           options={STAFF_OPTIONS}
@@ -881,9 +1096,11 @@ const AssignTaskModal: React.FC<{
           onChange={setStaff}
         />
       </FormField>
+
       <FormField label="Task type">
         <CyclePicker options={TASK_TYPES} value={type} onChange={setType} />
       </FormField>
+
       <FormField label="Priority">
         <CyclePicker
           options={["Normal", "High", "Urgent"]}
@@ -891,12 +1108,13 @@ const AssignTaskModal: React.FC<{
           onChange={setPriority}
         />
       </FormField>
+
       <PrimaryButton
         label="Assign Task"
         icon={<Check size={15} color="#fff" />}
         onPress={submit}
+        disabled={feedback.type === "success"}
       />
-      <SuccessBanner show={success} msg="Task assigned successfully!" />
       <View style={{ height: 16 }} />
     </ModalShell>
   );
@@ -913,23 +1131,64 @@ const RaiseAlertModal: React.FC<{
   const [loc, setLoc] = useState("");
   const [sev, setSev] = useState<AlertLevel>("critical");
   const [desc, setDesc] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackState>({
+    type: null,
+    message: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (visible) {
+      setAlertType(ALERT_TYPES[0]);
+      setLoc("");
+      setSev("critical");
+      setDesc("");
+      setFeedback({ type: null, message: "" });
+      setErrors({});
+      setTouched({});
+    }
+  }, [visible]);
+
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    const locErr = validateLocation(loc);
+    if (locErr) errs.loc = locErr;
+    const descErr = validateDescription(desc);
+    if (descErr) errs.desc = descErr;
+    return errs;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched((t) => ({ ...t, [field]: true }));
+    const errs = validate();
+    setErrors(errs);
+  };
 
   const submit = () => {
-    if (!loc.trim() || !desc.trim()) return;
+    setTouched({ loc: true, desc: true });
+    const errs = validate();
+    setErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      setFeedback({
+        type: "error",
+        message: `${Object.keys(errs).length} field(s) need attention before submitting.`,
+      });
+      return;
+    }
+
     onSubmit({
       level: sev,
-      msg: `${alertType} — ${loc} · ${desc}`,
+      msg: `${alertType} — ${loc.trim()} · ${desc.trim()}`,
       time: "Just now",
       icon: ShieldAlert,
     });
-    setSuccess(true);
-    setLoc("");
-    setDesc("");
+    setFeedback({ type: "success", message: "Alert raised successfully!" });
     setTimeout(() => {
-      setSuccess(false);
+      setFeedback({ type: null, message: "" });
       onClose();
-    }, 1600);
+    }, 1800);
   };
 
   return (
@@ -938,6 +1197,12 @@ const RaiseAlertModal: React.FC<{
       <Text style={S.modalSub}>
         Report an issue requiring immediate attention
       </Text>
+
+      <FeedbackBanner
+        feedback={feedback}
+        onDismiss={() => setFeedback({ type: null, message: "" })}
+      />
+
       <FormField label="Alert type">
         <CyclePicker
           options={ALERT_TYPES}
@@ -945,15 +1210,34 @@ const RaiseAlertModal: React.FC<{
           onChange={setAlertType}
         />
       </FormField>
-      <FormField label="Location">
+
+      <FormField
+        label="Location *"
+        error={touched.loc ? errors.loc : undefined}
+        hint="e.g. Room 304, Floor 2"
+      >
         <TextInput
-          style={S.input}
+          style={[
+            S.input,
+            touched.loc && errors.loc ? S.inputError : undefined,
+          ]}
           value={loc}
-          onChangeText={setLoc}
+          onChangeText={(v) => {
+            setLoc(v);
+            if (touched.loc) {
+              const err = validateLocation(v);
+              setErrors((e) => ({ ...e, loc: err ?? "" }));
+            }
+          }}
+          onBlur={() => handleBlur("loc")}
           placeholder="e.g. Room 304, Floor 2..."
           placeholderTextColor="#94a3b8"
+          maxLength={MAX_ROOM_LENGTH + 10}
+          returnKeyType="next"
         />
+        <CharCounter current={loc.length} max={MAX_ROOM_LENGTH} min={2} />
       </FormField>
+
       <FormField label="Severity">
         <CyclePicker
           options={["critical", "warning", "info"]}
@@ -961,23 +1245,46 @@ const RaiseAlertModal: React.FC<{
           onChange={(v) => setSev(v as AlertLevel)}
         />
       </FormField>
-      <FormField label="Description">
+
+      <FormField
+        label="Description *"
+        error={touched.desc ? errors.desc : undefined}
+        hint={`Minimum ${MIN_DESC_LENGTH} characters — describe the issue clearly`}
+      >
         <TextInput
-          style={[S.input, { height: 80, textAlignVertical: "top" }]}
+          style={[
+            S.input,
+            { height: 88, textAlignVertical: "top" },
+            touched.desc && errors.desc ? S.inputError : undefined,
+          ]}
           value={desc}
-          onChangeText={setDesc}
-          placeholder="Describe the issue..."
+          onChangeText={(v) => {
+            setDesc(v);
+            if (touched.desc) {
+              const err = validateDescription(v);
+              setErrors((e) => ({ ...e, desc: err ?? "" }));
+            }
+          }}
+          onBlur={() => handleBlur("desc")}
+          placeholder="Describe the issue in detail..."
           placeholderTextColor="#94a3b8"
           multiline
+          maxLength={MAX_DESC_LENGTH + 20}
+        />
+        <CharCounter
+          current={desc.length}
+          max={MAX_DESC_LENGTH}
+          min={MIN_DESC_LENGTH}
         />
       </FormField>
+
       <PrimaryButton
         label="Raise Alert"
         icon={<AlertTriangle size={15} color="#fff" />}
         color="#ef4444"
         onPress={submit}
+        disabled={feedback.type === "success"}
       />
-      <SuccessBanner show={success} msg="Alert raised successfully!" />
       <View style={{ height: 16 }} />
     </ModalShell>
   );
@@ -994,59 +1301,167 @@ const LogReportModal: React.FC<{
   const [loc, setLoc] = useState("");
   const [details, setDetails] = useState("");
   const [involved, setInvolved] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackState>({
+    type: null,
+    message: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (visible) {
+      setType(REPORT_TYPES[0]);
+      setLoc("");
+      setDetails("");
+      setInvolved("");
+      setFeedback({ type: null, message: "" });
+      setErrors({});
+      setTouched({});
+    }
+  }, [visible]);
+
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    const locErr = validateReportLocation(loc);
+    if (locErr) errs.loc = locErr;
+    const detailsErr = validateReportDetails(details);
+    if (detailsErr) errs.details = detailsErr;
+    const nameErr = validateName(involved);
+    if (nameErr) errs.involved = nameErr;
+    return errs;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched((t) => ({ ...t, [field]: true }));
+    const errs = validate();
+    setErrors(errs);
+  };
 
   const submit = () => {
+    setTouched({ loc: true, details: true, involved: true });
+    const errs = validate();
+    setErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      const count = Object.keys(errs).length;
+      setFeedback({
+        type: "error",
+        message: `${count} required field${count > 1 ? "s are" : " is"} missing or invalid.`,
+      });
+      return;
+    }
+
     onSubmit();
-    setSuccess(true);
+    setFeedback({ type: "success", message: "Report logged successfully!" });
     setTimeout(() => {
-      setSuccess(false);
+      setFeedback({ type: null, message: "" });
       onClose();
-    }, 1600);
+    }, 1800);
   };
 
   return (
     <ModalShell visible={visible} onClose={onClose}>
       <Text style={S.modalTitle}>Log Report</Text>
       <Text style={S.modalSub}>Document an incident or activity report</Text>
+
+      <FeedbackBanner
+        feedback={feedback}
+        onDismiss={() => setFeedback({ type: null, message: "" })}
+      />
+
       <FormField label="Report type">
         <CyclePicker options={REPORT_TYPES} value={type} onChange={setType} />
       </FormField>
-      <FormField label="Location">
+
+      <FormField
+        label="Location *"
+        error={touched.loc ? errors.loc : undefined}
+        hint="Room number or area name"
+      >
         <TextInput
-          style={S.input}
+          style={[
+            S.input,
+            touched.loc && errors.loc ? S.inputError : undefined,
+          ]}
           value={loc}
-          onChangeText={setLoc}
+          onChangeText={(v) => {
+            setLoc(v);
+            if (touched.loc) {
+              const err = validateReportLocation(v);
+              setErrors((e) => ({ ...e, loc: err ?? "" }));
+            }
+          }}
+          onBlur={() => handleBlur("loc")}
           placeholder="Room / Area"
           placeholderTextColor="#94a3b8"
+          returnKeyType="next"
         />
       </FormField>
-      <FormField label="Details">
+
+      <FormField
+        label="Details *"
+        error={touched.details ? errors.details : undefined}
+        hint={`Minimum ${MIN_DESC_LENGTH} characters`}
+      >
         <TextInput
-          style={[S.input, { height: 80, textAlignVertical: "top" }]}
+          style={[
+            S.input,
+            { height: 88, textAlignVertical: "top" },
+            touched.details && errors.details ? S.inputError : undefined,
+          ]}
           value={details}
-          onChangeText={setDetails}
+          onChangeText={(v) => {
+            setDetails(v);
+            if (touched.details) {
+              const err = validateReportDetails(v);
+              setErrors((e) => ({ ...e, details: err ?? "" }));
+            }
+          }}
+          onBlur={() => handleBlur("details")}
           placeholder="Describe what happened..."
           placeholderTextColor="#94a3b8"
           multiline
+          maxLength={MAX_DESC_LENGTH + 20}
+        />
+        <CharCounter
+          current={details.length}
+          max={MAX_DESC_LENGTH}
+          min={MIN_DESC_LENGTH}
         />
       </FormField>
-      <FormField label="Staff involved">
+
+      <FormField
+        label="Staff involved *"
+        error={touched.involved ? errors.involved : undefined}
+        hint="Full name(s) of staff involved"
+      >
         <TextInput
-          style={S.input}
+          style={[
+            S.input,
+            touched.involved && errors.involved ? S.inputError : undefined,
+          ]}
           value={involved}
-          onChangeText={setInvolved}
+          onChangeText={(v) => {
+            setInvolved(v);
+            if (touched.involved) {
+              const err = validateName(v);
+              setErrors((e) => ({ ...e, involved: err ?? "" }));
+            }
+          }}
+          onBlur={() => handleBlur("involved")}
           placeholder="Name(s)..."
           placeholderTextColor="#94a3b8"
+          returnKeyType="done"
         />
       </FormField>
+
       <PrimaryButton
         label="Submit Report"
         icon={<FileText size={15} color="#fff" />}
         color="#10b981"
         onPress={submit}
+        disabled={feedback.type === "success"}
       />
-      <SuccessBanner show={success} msg="Report logged successfully!" />
       <View style={{ height: 16 }} />
     </ModalShell>
   );
@@ -1059,22 +1474,44 @@ const CallStaffModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
   onClose,
 }) => {
   const [callingName, setCallingName] = useState<string | null>(null);
+  const [callFeedback, setCallFeedback] = useState<FeedbackState>({
+    type: null,
+    message: "",
+  });
+
+  useEffect(() => {
+    if (!visible) {
+      setCallingName(null);
+      setCallFeedback({ type: null, message: "" });
+    }
+  }, [visible]);
 
   const call = (name: string) => {
     setCallingName(name);
-    setTimeout(() => setCallingName(null), 2500);
+    setCallFeedback({ type: "success", message: `Calling ${name}...` });
+    setTimeout(() => {
+      setCallingName(null);
+      setCallFeedback({ type: null, message: "" });
+    }, 2500);
   };
 
   return (
     <ModalShell visible={visible} onClose={onClose}>
       <Text style={S.modalTitle}>Call Staff</Text>
       <Text style={S.modalSub}>Contact a staff member directly</Text>
+
+      <FeedbackBanner
+        feedback={callFeedback}
+        onDismiss={() => setCallFeedback({ type: null, message: "" })}
+      />
+
       {STAFF.map((s, i) => {
         const ini = s.name
           .split(" ")
           .map((n) => n[0])
           .join("");
         const st = STATUS_MAP[s.status];
+        const isBeingCalled = callingName === s.name;
         return (
           <View
             key={i}
@@ -1088,16 +1525,28 @@ const CallStaffModal: React.FC<{ visible: boolean; onClose: () => void }> = ({
               <Text style={S.staffRoleText}>{s.role}</Text>
             </View>
             <Pill label={st.label} color={st.color} bg={st.bg} />
-            <TouchableOpacity onPress={() => call(s.name)} style={[S.callBtn]}>
-              <Phone size={12} color="#fff" />
-              <Text style={S.callBtnText}>Call</Text>
+            <TouchableOpacity
+              onPress={() => call(s.name)}
+              disabled={!!callingName}
+              style={[
+                S.callBtn,
+                isBeingCalled && { backgroundColor: "#10b981" },
+                !!callingName &&
+                  !isBeingCalled && { backgroundColor: "#94a3b8" },
+              ]}
+            >
+              {isBeingCalled ? (
+                <Check size={12} color="#fff" />
+              ) : (
+                <Phone size={12} color="#fff" />
+              )}
+              <Text style={S.callBtnText}>
+                {isBeingCalled ? "Calling" : "Call"}
+              </Text>
             </TouchableOpacity>
           </View>
         );
       })}
-      {callingName && (
-        <SuccessBanner show={true} msg={`Calling ${callingName}...`} />
-      )}
       <View style={{ height: 16 }} />
     </ModalShell>
   );
@@ -1110,7 +1559,6 @@ const ReportDetailModal: React.FC<{
   visible: boolean;
   onClose: () => void;
 }> = ({ report, visible, onClose }) => {
-  const [exported, setExported] = useState(false);
   if (!report) return null;
 
   return (
@@ -1124,15 +1572,6 @@ const ReportDetailModal: React.FC<{
           <Text style={S.detailVal}>{String(v)}</Text>
         </View>
       ))}
-      {/* <PrimaryButton
-        label="Export Report"
-        icon={<FileText size={15} color="#fff" />}
-        onPress={() => {
-          setExported(true);
-          setTimeout(() => setExported(false), 2000);
-        }}
-      /> */}
-      <SuccessBanner show={exported} msg="Report exported!" />
       <View style={{ height: 16 }} />
     </ModalShell>
   );
@@ -1159,15 +1598,7 @@ export default function HousekeepingDashboard() {
   const hour = now.getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = now
-    .toLocaleDateString("en-IN", {
-      weekday: isMobile ? "short" : "long",
-      day: "numeric",
-      month: isMobile ? "short" : "long",
-    })
-    .toUpperCase();
 
-  // ── Live state ───────────────────────────────────────────────────────────────
   const [stats, setStats] = useState<StatItem[]>(INITIAL_STATS);
   const [alerts, setAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
   const [schedule, setSchedule] = useState<ScheduleItem[]>(INITIAL_SCHEDULE);
@@ -1175,12 +1606,6 @@ export default function HousekeepingDashboard() {
   const [chartMode, setChartMode] = useState<ChartMode>("bar");
   const [modal, setModal] = useState<ModalKey>(null);
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
-
-  const pendingCount =
-    stats.find((s) => s.label === "Pending Tasks")?.value ?? 12;
-  const doneCount = stats.find((s) => s.label === "Completed")?.value ?? 87;
-
-  // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleAssign = (d: { room: string; staff: string; type: string }) => {
     const staffShort =
@@ -1236,7 +1661,6 @@ export default function HousekeepingDashboard() {
     setModal("reportDetail");
   };
 
-  // ── Chart datasets ────────────────────────────────────────────────────────────
   const weekChartData = {
     labels: WEEK_DATA.map((d) => d.day),
     datasets: [
@@ -1253,9 +1677,8 @@ export default function HousekeepingDashboard() {
     datasets: [{ data: SUPPLY.map((s) => Math.round((s.used / s.max) * 100)) }],
   };
 
-  const chartW = SW - (isMobile ? 24 : 32) - 32; // card padding
+  const chartW = SW - (isMobile ? 24 : 32) - 32;
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
       <ScrollView
@@ -1280,7 +1703,6 @@ export default function HousekeepingDashboard() {
                 borderRadius: 22,
               }}
             />
-
             <View style={S.heroInner}>
               <View style={{ flex: 1 }}>
                 <View style={S.liveRow}>
@@ -1296,14 +1718,12 @@ export default function HousekeepingDashboard() {
                       .toUpperCase()}
                   </Text>
                 </View>
-
                 <Text style={S.heroTitle}>{greeting}, Housekeeping 👋</Text>
                 <Text style={S.heroSub}>
                   {isMobile
                     ? "18 staff on duty · 4 floors active"
                     : "Property status is active — 18 staff on duty across 4 floors."}
                 </Text>
-
                 <View style={S.heroChips}>
                   <View style={S.heroChip}>
                     <Sparkles size={11} color="#a5f3fc" />
@@ -1315,7 +1735,6 @@ export default function HousekeepingDashboard() {
                   </View>
                 </View>
               </View>
-
               <View style={S.heroRight}>
                 <Text style={S.heroStat}>73%</Text>
                 <Text style={S.heroStatLabel}>Occupancy</Text>
@@ -1674,10 +2093,7 @@ export default function HousekeepingDashboard() {
         <FadeSlideIn delay={540}>
           <SectionLabel>SUPPLY CONSUMPTION</SectionLabel>
           <Card>
-            <CardHeader
-              title="Inventory & Supply Usage"
-              // right={<ViewAllBtn label="Full inventory" />}
-            />
+            <CardHeader title="Inventory & Supply Usage" />
             {SUPPLY.map((s, i) => {
               const pct = Math.round((s.used / s.max) * 100);
               const isLow = pct > 85;
@@ -1719,7 +2135,6 @@ export default function HousekeepingDashboard() {
                 </View>
               );
             })}
-            {/* Supply bar chart */}
             <View style={{ marginTop: 16 }}>
               <Text style={S.chartSubLabel}>USAGE %</Text>
               <BarChart
@@ -1772,8 +2187,6 @@ export default function HousekeepingDashboard() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const S = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fbececb5" },
   content: { padding: isMobile ? 12 : 16, gap: 10 },
@@ -1784,24 +2197,6 @@ const S = StyleSheet.create({
     padding: isMobile ? 16 : 24,
     minHeight: isMobile ? 190 : 240,
     overflow: "hidden",
-  },
-  bubble1: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    top: -55,
-    right: -35,
-  },
-  bubble2: {
-    position: "absolute",
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    bottom: -25,
-    left: 70,
   },
   heroInner: { flexDirection: "row", alignItems: "center" },
   liveRow: {
@@ -2021,56 +2416,6 @@ const S = StyleSheet.create({
     textAlign: "center",
   },
 
-  // ── Schedule ──────────────────────────────────────────────────────
-  schedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: isMobile ? 8 : 10,
-  },
-  schedBorder: { borderBottomWidth: 1, borderBottomColor: "#f8fafc" },
-  schedTimeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    backgroundColor: "#eef2ff",
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 8,
-    width: isMobile ? 68 : 76,
-    flexShrink: 0,
-  },
-  schedTime: {
-    fontSize: isMobile ? 9 : 10,
-    fontWeight: "700",
-    color: "#6366f1",
-  },
-  schedRoom: {
-    fontSize: isMobile ? 12 : 13,
-    fontWeight: "600",
-    color: "#1e293b",
-  },
-  schedMeta: { fontSize: 10, color: "#94a3b8", marginTop: 1 },
-
-  // ── Activity ──────────────────────────────────────────────────────
-  actRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 9,
-    paddingVertical: 7,
-  },
-  actBorder: { borderBottomWidth: 1, borderBottomColor: "#f8fafc" },
-  actIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    flexShrink: 0,
-  },
-  actMsg: { fontSize: 12, fontWeight: "500", color: "#1e293b", lineHeight: 16 },
-  actSub: { fontSize: 10, color: "#94a3b8", marginTop: 2 },
-
   // ── Staff ─────────────────────────────────────────────────────────
   staffMobileRow: { paddingVertical: 10, gap: 8 },
   staffMobileTop: {
@@ -2249,7 +2594,7 @@ const S = StyleSheet.create({
     marginBottom: 4,
     paddingRight: 30,
   },
-  modalSub: { fontSize: 13, color: "#64748b", marginBottom: 18 },
+  modalSub: { fontSize: 13, color: "#64748b", marginBottom: 14 },
   divider: { height: 0.5, backgroundColor: "#e2e8f0", marginVertical: 14 },
   detailRow: {
     flexDirection: "row",
@@ -2263,27 +2608,101 @@ const S = StyleSheet.create({
 
   // ── Form ──────────────────────────────────────────────────────────
   formGroup: { marginBottom: 12 },
-  formLabel: { fontSize: 12, color: "#64748b", marginBottom: 5 },
+  formLabel: {
+    fontSize: 12,
+    color: "#475569",
+    marginBottom: 5,
+    fontWeight: "600",
+  },
   input: {
     fontSize: 13,
     padding: 10,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderColor: "#cbd5e1",
     borderRadius: 8,
     backgroundColor: "#f8fafc",
     color: "#0f172a",
+  },
+  inputError: {
+    borderColor: "#ef4444",
+    backgroundColor: "#fff5f5",
   },
   cyclePicker: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 10,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderColor: "#cbd5e1",
     borderRadius: 8,
     backgroundColor: "#f8fafc",
   },
   cyclePickerText: { fontSize: 13, color: "#0f172a", flex: 1 },
+
+  // ── Feedback Banner ───────────────────────────────────────────────
+  feedbackBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  feedbackSuccess: {
+    backgroundColor: "#d1fae5",
+    borderWidth: 1,
+    borderColor: "#6ee7b7",
+  },
+  feedbackError: {
+    backgroundColor: "#fee2e2",
+    borderWidth: 1,
+    borderColor: "#fca5a5",
+  },
+  feedbackIconRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 7,
+    flex: 1,
+  },
+  feedbackText: {
+    fontSize: 13,
+    fontWeight: "500",
+    flex: 1,
+    lineHeight: 18,
+  },
+  feedbackDismiss: {
+    padding: 3,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+
+  // ── Field error ───────────────────────────────────────────────────
+  fieldErrorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 4,
+  },
+  fieldErrorText: {
+    fontSize: 11,
+    color: "#dc2626",
+    fontWeight: "500",
+    flex: 1,
+  },
+  fieldHint: {
+    fontSize: 11,
+    color: "#94a3b8",
+    marginTop: 3,
+  },
+
+  // ── Char counter ──────────────────────────────────────────────────
+  charCounter: {
+    fontSize: 10,
+    textAlign: "right",
+    marginTop: 3,
+    fontWeight: "500",
+  },
 
   // ── Buttons ───────────────────────────────────────────────────────
   primaryBtn: {
@@ -2306,16 +2725,4 @@ const S = StyleSheet.create({
     borderRadius: 8,
   },
   callBtnText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-
-  successBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#d1fae5",
-    padding: 10,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  successText: { fontSize: 13, color: "#065f46", fontWeight: "500" },
-  scheduleActivityContainerStyle: {},
 });

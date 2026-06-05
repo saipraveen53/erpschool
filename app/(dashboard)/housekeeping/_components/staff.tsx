@@ -94,7 +94,6 @@ const FadeInUp = ({
 const AnimatedProgressBar = ({
   percent,
   color,
-  delay = 100,
 }: {
   percent: number;
   color: string;
@@ -166,7 +165,7 @@ const INITIAL_STAFF: StaffMember[] = [
     done: 11,
     rating: 4.6,
     status: "active",
-    phone: "+91 98765 43211",
+    phone: "9876543211",
     shift: "Morning (07:00 AM - 03:30 PM)",
     avatar:
       "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&q=80",
@@ -181,7 +180,7 @@ const INITIAL_STAFF: StaffMember[] = [
     done: 8,
     rating: 4.8,
     status: "break",
-    phone: "+91 98765 43212",
+    phone: "9876543212",
     shift: "General (09:00 AM - 05:30 PM)",
     avatar:
       "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&q=80",
@@ -189,68 +188,67 @@ const INITIAL_STAFF: StaffMember[] = [
   },
   {
     id: "3",
-    name: "Maria Santos",
-    role: "Senior HK",
-    department: "Housekeeping",
-    tasks: 12,
-    done: 11,
-    rating: 4.9,
+    name: "Liam O'Connor",
+    role: "Maintenance Lead",
+    department: "Engineering",
+    tasks: 5,
+    done: 4,
+    rating: 4.2,
     status: "active",
-    phone: "+91 98765 43210",
-    shift: "Morning (07:00 AM - 03:30 PM)",
+    phone: "9876543213",
+    shift: "Evening (03:00 PM - 11:30 PM)",
     avatar:
-      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&q=80",
-    efficiency: 96,
+      "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&q=80",
+    efficiency: 80,
   },
   {
     id: "4",
-    name: "James Kimani",
-    role: "HK Attendant",
-    department: "Housekeeping",
-    tasks: 9,
-    done: 6,
-    rating: 4.6,
-    status: "active",
-    phone: "+91 98765 43211",
-    shift: "Morning (07:00 AM - 03:30 PM)",
+    name: "Sophie Dubois",
+    role: "General Manager",
+    department: "Management",
+    tasks: 3,
+    done: 3,
+    rating: 4.9,
+    status: "off-duty",
+    phone: "9876543214",
+    shift: "Morning (08:00 AM - 04:30 PM)",
     avatar:
-      "https://t4.ftcdn.net/jpg/04/31/64/75/360_F_431647519_usrbQ8Z983hTYe8zgA7t1XVc5fEtqcpa.jpg",
-    efficiency: 84,
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&q=80",
+    efficiency: 100,
   },
   {
     id: "5",
-    name: "Anna Petrov",
-    role: "HK Attendant",
-    department: "Housekeeping",
-    tasks: 8,
-    done: 8,
-    rating: 4.8,
-    status: "break",
-    phone: "+91 98765 43212",
-    shift: "General (09:00 AM - 05:30 PM)",
-    avatar:
-      "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&q=80",
-    efficiency: 92,
-  },
-  {
-    id: "6",
-    name: "John Doe",
-    role: "HK Attendant",
+    name: "Carlos Ramirez",
+    role: "HK Supervisor",
     department: "Housekeeping",
     tasks: 10,
     done: 5,
     rating: 4.5,
     status: "active",
-    phone: "+91 98765 43213",
-    shift: "Evening (03:30 PM - 11:00 PM)",
+    phone: "9876543215",
+    shift: "General (09:00 AM - 05:30 PM)",
     avatar:
-      "https://img.magnific.com/free-photo/horizontal-portrait-smiling-happy-young-pleasant-looking-female-wears-denim-shirt-stylish-glasses-with-straight-blonde-hair-expresses-positiveness-poses_176420-13176.jpg?semt=ais_hybrid&w=740&q=80",
-    efficiency: 75,
+      "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&q=80",
+    efficiency: 90,
+  },
+  {
+    id: "6",
+    name: "Emily Chen",
+    role: "Maintenance Technician",
+    department: "Engineering",
+    tasks: 6,
+    done: 5,
+    rating: 4.3,
+    status: "break",
+    phone: "9876543216",
+    shift: "Evening (03:00 PM - 11:30 PM)",
+    avatar:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&q=80",
+    efficiency: 85,
   },
 ];
 
 export default function StaffManagementScreen() {
-  // ✅ useWindowDimensions re-renders on orientation/resize changes
   const { width: SW } = useWindowDimensions();
   const isWide = SW > 900;
   const isMid = SW > 600;
@@ -263,6 +261,7 @@ export default function StaffManagementScreen() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
 
+  // Form Fields State
   const [formName, setFormName] = useState("");
   const [formRole, setFormRole] = useState("");
   const [formDept, setFormDept] = useState("Housekeeping");
@@ -271,6 +270,18 @@ export default function StaffManagementScreen() {
   const [formTasks, setFormTasks] = useState("10");
   const [formDone, setFormDone] = useState("0");
   const [formStatus, setFormStatus] = useState<StaffMember["status"]>("active");
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const showNotification = (type: "success" | "error", message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => {
+      setNotification(null);
+    }, 3500);
+  };
 
   const filteredStaff = staffList.filter((member) => {
     const matchesSearch =
@@ -281,8 +292,13 @@ export default function StaffManagementScreen() {
     return matchesSearch && matchesCategory;
   });
 
+  const triggerSuccessBanner = (msg: string) => {
+    showNotification("success", msg);
+  };
+
   const openAddModal = () => {
     setEditingMember(null);
+    setFormErrors({});
     setFormName("");
     setFormRole("");
     setFormDept("Housekeeping");
@@ -296,6 +312,7 @@ export default function StaffManagementScreen() {
 
   const openEditModal = (member: StaffMember) => {
     setEditingMember(member);
+    setFormErrors({});
     setFormName(member.name);
     setFormRole(member.role);
     setFormDept(member.department);
@@ -307,8 +324,57 @@ export default function StaffManagementScreen() {
     setIsFormModalOpen(true);
   };
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formName.trim()) {
+      errors.name = "Employee name is required";
+    } else if (formName.trim().length < 3) {
+      errors.name = "Minimum 3 characters required";
+    }
+
+    if (!formRole.trim()) {
+      errors.role = "Role designation is required";
+    }
+
+    const cleanPhone = formPhone.replace(/\D/g, "");
+    if (!formPhone.trim()) {
+      errors.phone = "Phone number is required";
+    } else if (cleanPhone.length !== 10) {
+      errors.phone = "Enter a valid 10-digit mobile number";
+    }
+
+    if (!formShift.trim()) {
+      errors.shift = "Shift description parameter is required";
+    }
+
+    const tasks = Number(formTasks);
+    const done = Number(formDone);
+
+    if (formTasks.trim() === "" || isNaN(tasks) || tasks < 0) {
+      errors.tasks = "Enter valid task load";
+    }
+
+    if (formDone.trim() === "" || isNaN(done) || done < 0) {
+      errors.done = "Enter valid metric values";
+    }
+
+    if (!isNaN(tasks) && !isNaN(done) && done > tasks) {
+      errors.done = "Completed tasks cannot exceed total quota";
+    }
+
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      showNotification("error", "Validation failed. Please correct fields.");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSaveStaff = () => {
-    if (!formName.trim() || !formRole.trim()) return;
+    if (!validateForm()) return;
 
     const parsedTasks = parseInt(formTasks, 10) || 0;
     const parsedDone = parseInt(formDone, 10) || 0;
@@ -321,11 +387,11 @@ export default function StaffManagementScreen() {
           item.id === editingMember.id
             ? {
                 ...item,
-                name: formName,
-                role: formRole,
+                name: formName.trim(),
+                role: formRole.trim(),
                 department: formDept,
-                phone: formPhone,
-                shift: formShift,
+                phone: formPhone.trim(),
+                shift: formShift.trim(),
                 tasks: parsedTasks,
                 done: parsedDone,
                 status: formStatus,
@@ -334,46 +400,57 @@ export default function StaffManagementScreen() {
             : item,
         ),
       );
+      triggerSuccessBanner(`Updated details for: ${formName.trim()}`);
     } else {
       const newStaff: StaffMember = {
         id: String(Date.now()),
-        name: formName,
-        role: formRole,
+        name: formName.trim(),
+        role: formRole.trim(),
         department: formDept,
         tasks: parsedTasks,
         done: parsedDone,
         rating: 5.0,
         status: formStatus,
-        phone: formPhone || "+91 98765 00000",
-        shift: formShift || "General (09:00 AM - 05:30 PM)",
+        phone: formPhone.trim(),
+        shift: formShift.trim(),
         avatar:
           "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80",
         efficiency: Math.min(computedEfficiency, 100),
       };
       setStaffList((prev) => [newStaff, ...prev]);
+      triggerSuccessBanner(`Successfully onboarded: ${formName.trim()}`);
     }
     setIsFormModalOpen(false);
   };
 
   const handleDeleteStaff = (id: string) => {
+    const targetMember = staffList.find((item) => item.id === id);
     setStaffList((prev) => prev.filter((item) => item.id !== id));
     if (expandedStaff === id) setExpandedStaff(null);
+    if (targetMember) {
+      triggerSuccessBanner(`Purged personnel profile: ${targetMember.name}`);
+    }
   };
 
-  const totalStaffCount = staffList.length;
-  const onDutyCount = staffList.filter((s) => s.status === "active").length;
-
-  // ✅ Compute responsive values derived from live window width
   const padding = isWide ? 24 : 16;
   const heroTitleSize = isWide ? 26 : isMid ? 22 : 20;
   const heroSubSize = isWide ? 14 : 12;
   const cardColWidth = isWide ? "33.33%" : isMid ? "50%" : "100%";
   const modalWidth = isWide ? 550 : isMid ? Math.min(SW * 0.85, 480) : "100%";
-  const heroFlex = isWide || isMid ? "row" : "column";
-  const heroBtnAlign = isWide || isMid ? "flex-start" : "stretch";
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      {notification && (
+        <View
+          style={[
+            S.toastBannerContainer,
+            notification.type === "success" ? S.successToast : S.errorToast,
+          ]}
+        >
+          <Text style={S.toastBannerText}>{notification.message}</Text>
+        </View>
+      )}
+
       <ScrollView
         style={S.screen}
         contentContainerStyle={[S.content, { padding, paddingBottom: 40 }]}
@@ -383,13 +460,13 @@ export default function StaffManagementScreen() {
           style={[
             S.heroMeta,
             {
-              flexDirection: heroFlex as any,
-              alignItems: heroFlex === "row" ? "center" : "stretch",
+              flexDirection: isWide || isMid ? "row" : "column",
+              alignItems: isWide || isMid ? "center" : "stretch",
               gap: 12,
             },
           ]}
         >
-          <View style={{ flex: heroFlex === "row" ? 1 : undefined }}>
+          <View style={{ flex: isWide || isMid ? 1 : undefined }}>
             <Text style={[S.heroTitle, { fontSize: heroTitleSize }]}>
               Team Configuration Matrix
             </Text>
@@ -401,7 +478,7 @@ export default function StaffManagementScreen() {
           <TouchableOpacity
             style={[
               S.addBtn,
-              heroFlex === "column" && { alignSelf: "flex-start" },
+              !(isWide || isMid) && { alignSelf: "flex-start" },
             ]}
             onPress={openAddModal}
             activeOpacity={0.8}
@@ -453,7 +530,6 @@ export default function StaffManagementScreen() {
         </FadeInUp>
 
         {/* ─── Directory Grid ─── */}
-        {/* ✅ flexWrap grid with dynamic per-card width */}
         <View style={S.directoryGrid}>
           {filteredStaff.map((member, index) => {
             const isCurrentExpanded = expandedStaff === member.id;
@@ -544,7 +620,6 @@ export default function StaffManagementScreen() {
                             ? C.amber
                             : C.red
                       }
-                      delay={200}
                     />
                   </View>
 
@@ -616,7 +691,6 @@ export default function StaffManagementScreen() {
           })}
         </View>
 
-        {/* ─── Empty State ─── */}
         {filteredStaff.length === 0 && (
           <FadeInUp delay={100}>
             <View style={S.emptyBox}>
@@ -631,7 +705,7 @@ export default function StaffManagementScreen() {
         )}
       </ScrollView>
 
-      {/* ─── Modal ─── */}
+      {/* ─── Modal Form Configuration Panel ─── */}
       <Modal
         visible={isFormModalOpen}
         animationType="slide"
@@ -639,7 +713,6 @@ export default function StaffManagementScreen() {
         onRequestClose={() => setIsFormModalOpen(false)}
       >
         <View style={S.modalOverlay}>
-          {/* ✅ Modal width adapts to live SW */}
           <View style={[S.modalSurface, { width: modalWidth as any }]}>
             <View style={S.modalHeader}>
               <Text style={[S.modalTitle, { fontSize: isWide ? 18 : 16 }]}>
@@ -659,24 +732,41 @@ export default function StaffManagementScreen() {
               contentContainerStyle={S.modalFormScroll}
               showsVerticalScrollIndicator={false}
             >
+              {/* Field: Name */}
               <Text style={S.fieldLabel}>Employee Name *</Text>
               <TextInput
-                style={S.formInput}
+                style={[S.formInput, formErrors.name ? S.formInputError : null]}
                 value={formName}
-                onChangeText={setFormName}
-                placeholder="E.g., Shanmukhi"
+                onChangeText={(text) => {
+                  setFormName(text);
+                  if (formErrors.name)
+                    setFormErrors((p) => ({ ...p, name: "" }));
+                }}
+                placeholder="E.g., Maria Santos"
                 placeholderTextColor={C.textTer}
               />
+              {formErrors.name && (
+                <Text style={S.errorTextHint}>{formErrors.name}</Text>
+              )}
 
+              {/* Field: Role */}
               <Text style={S.fieldLabel}>Designation / Role *</Text>
               <TextInput
-                style={S.formInput}
+                style={[S.formInput, formErrors.role ? S.formInputError : null]}
                 value={formRole}
-                onChangeText={setFormRole}
-                placeholder="E.g., Full-Stack Engineer"
+                onChangeText={(text) => {
+                  setFormRole(text);
+                  if (formErrors.role)
+                    setFormErrors((p) => ({ ...p, role: "" }));
+                }}
+                placeholder="E.g., Senior HK"
                 placeholderTextColor={C.textTer}
               />
+              {formErrors.role && (
+                <Text style={S.errorTextHint}>{formErrors.role}</Text>
+              )}
 
+              {/* Field: Department */}
               <Text style={S.fieldLabel}>Department Assignment</Text>
               <View style={S.formPillRow}>
                 {["Housekeeping", "Engineering", "Management"].map((d) => (
@@ -686,7 +776,7 @@ export default function StaffManagementScreen() {
                       S.formSelectPill,
                       formDept === d && S.formSelectPillActive,
                     ]}
-                    onPress={() => formDept !== d && setFormDept(d)}
+                    onPress={() => setFormDept(d)}
                   >
                     <Text
                       style={[
@@ -700,6 +790,7 @@ export default function StaffManagementScreen() {
                 ))}
               </View>
 
+              {/* Field: Deployment State */}
               <Text style={S.fieldLabel}>Deployment State</Text>
               <View style={S.formPillRow}>
                 {(["active", "break", "off-duty"] as const).map((st) => (
@@ -723,45 +814,87 @@ export default function StaffManagementScreen() {
                 ))}
               </View>
 
+              {/* Fields: Tasks Analytics Block */}
               <View style={S.formSplitRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={S.fieldLabel}>Assigned Tasks</Text>
                   <TextInput
-                    style={S.formInput}
+                    style={[
+                      S.formInput,
+                      formErrors.tasks ? S.formInputError : null,
+                    ]}
                     value={formTasks}
-                    onChangeText={setFormTasks}
+                    onChangeText={(text) => {
+                      setFormTasks(text);
+                      setFormErrors((p) => ({ ...p, tasks: "", done: "" }));
+                    }}
                     keyboardType="numeric"
                   />
+                  {formErrors.tasks && (
+                    <Text style={S.errorTextHint}>{formErrors.tasks}</Text>
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={S.fieldLabel}>Completed Tasks</Text>
                   <TextInput
-                    style={S.formInput}
+                    style={[
+                      S.formInput,
+                      formErrors.done ? S.formInputError : null,
+                    ]}
                     value={formDone}
-                    onChangeText={setFormDone}
+                    onChangeText={(text) => {
+                      setFormDone(text);
+                      setFormErrors((p) => ({ ...p, done: "" }));
+                    }}
                     keyboardType="numeric"
                   />
+                  {formErrors.done && (
+                    <Text style={S.errorTextHint}>{formErrors.done}</Text>
+                  )}
                 </View>
               </View>
 
-              <Text style={S.fieldLabel}>Contact Mobile Number</Text>
+              {/* Field: Phone */}
+              <Text style={S.fieldLabel}>Contact Mobile Number *</Text>
               <TextInput
-                style={S.formInput}
+                style={[
+                  S.formInput,
+                  formErrors.phone ? S.formInputError : null,
+                ]}
                 value={formPhone}
-                onChangeText={setFormPhone}
-                placeholder="+91 98765 43210"
+                onChangeText={(text) => {
+                  setFormPhone(text);
+                  if (formErrors.phone)
+                    setFormErrors((p) => ({ ...p, phone: "" }));
+                }}
+                placeholder="E.g., 9876543210"
                 placeholderTextColor={C.textTer}
                 keyboardType="phone-pad"
+                maxLength={10}
               />
+              {formErrors.phone && (
+                <Text style={S.errorTextHint}>{formErrors.phone}</Text>
+              )}
 
-              <Text style={S.fieldLabel}>Shift Timing Parameters</Text>
+              {/* Field: Shift */}
+              <Text style={S.fieldLabel}>Shift Timing Parameters *</Text>
               <TextInput
-                style={S.formInput}
+                style={[
+                  S.formInput,
+                  formErrors.shift ? S.formInputError : null,
+                ]}
                 value={formShift}
-                onChangeText={setFormShift}
+                onChangeText={(text) => {
+                  setFormShift(text);
+                  if (formErrors.shift)
+                    setFormErrors((p) => ({ ...p, shift: "" }));
+                }}
                 placeholder="Morning (07:00 AM - 03:30 PM)"
                 placeholderTextColor={C.textTer}
               />
+              {formErrors.shift && (
+                <Text style={S.errorTextHint}>{formErrors.shift}</Text>
+              )}
             </ScrollView>
 
             <View style={S.modalFooter}>
@@ -772,7 +905,7 @@ export default function StaffManagementScreen() {
                 <Text style={S.cancelBtnText}>Discard</Text>
               </TouchableOpacity>
               <TouchableOpacity style={S.saveBtn} onPress={handleSaveStaff}>
-                <Text style={S.saveBtnText}>Commit Changes</Text>
+                <Text style={S.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -782,23 +915,16 @@ export default function StaffManagementScreen() {
   );
 }
 
-// ─── Static Stylesheet (layout-independent values only) ─────────────────────
-// All values that depend on screen width are applied inline above.
+// ─── Stylesheet Interface & Definition ───────────────────────────────────────
 
 interface StylesheetInterface {
   screen: ViewStyle;
   content: ViewStyle;
-  headerHero: ViewStyle;
   heroMeta: ViewStyle;
   heroTitle: TextStyle;
   heroSubtext: TextStyle;
   addBtn: ViewStyle;
   addBtnText: TextStyle;
-  summaryStrip: ViewStyle;
-  summaryItem: ViewStyle;
-  summaryText: TextStyle;
-  boldText: TextStyle;
-  verticalDivider: ViewStyle;
   searchContainer: ViewStyle;
   searchIcon: ViewStyle;
   searchInput: TextStyle;
@@ -850,6 +976,8 @@ interface StylesheetInterface {
   modalFormScroll: ViewStyle;
   fieldLabel: TextStyle;
   formInput: TextStyle;
+  formInputError: TextStyle;
+  errorTextHint: TextStyle;
   formPillRow: ViewStyle;
   formSelectPill: ViewStyle;
   formSelectPillActive: ViewStyle;
@@ -861,34 +989,27 @@ interface StylesheetInterface {
   cancelBtnText: TextStyle;
   saveBtn: ViewStyle;
   saveBtnText: TextStyle;
+  toastBannerContainer: ViewStyle;
+  toastBannerText: TextStyle;
+  successToast: ViewStyle;
+  errorToast: ViewStyle;
 }
 
 const S = StyleSheet.create<StylesheetInterface>({
   screen: { flex: 1, backgroundColor: C.bg },
-  // padding applied inline
   content: { paddingBottom: 40 },
-  headerHero: {
-    backgroundColor: "#1e1135",
-    borderRadius: 24,
-    marginBottom: 20,
-  },
   heroMeta: {
-    flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     flexWrap: "wrap",
-    gap: 12,
     marginBottom: 20,
     marginVertical: 10,
   },
   heroTitle: {
-    fontSize: 22,
     fontWeight: "800",
     color: "#5C2E14",
   },
   heroSubtext: {
     color: "#5C2E14",
-    fontSize: 12,
     marginTop: 4,
     opacity: 0.8,
   },
@@ -902,23 +1023,6 @@ const S = StyleSheet.create<StylesheetInterface>({
     gap: 6,
   },
   addBtnText: { color: C.white, fontSize: 13, fontWeight: "700" },
-  summaryStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.15)",
-    gap: 16,
-  },
-  summaryItem: { flexDirection: "row", alignItems: "center" },
-  summaryText: { color: C.white, fontSize: 13 },
-  boldText: { fontWeight: "800" },
-  verticalDivider: {
-    width: 1,
-    height: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -954,13 +1058,11 @@ const S = StyleSheet.create<StylesheetInterface>({
   filterChipActive: { backgroundColor: C.primary, borderColor: C.primary },
   filterChipText: { fontSize: 13, fontWeight: "600", color: C.textSec },
   filterChipTextActive: { color: C.white },
-  // ✅ directoryGrid uses flexWrap; per-card width is applied inline
   directoryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginHorizontal: -6,
   },
-  // ✅ width applied inline so it reacts to live SW
   gridFlexItem: {
     paddingHorizontal: 6,
     marginBottom: 12,
@@ -982,134 +1084,175 @@ const S = StyleSheet.create<StylesheetInterface>({
   iconActionBtn: {
     borderWidth: 1,
     borderColor: C.border,
-    padding: 6,
     borderRadius: 8,
-    backgroundColor: "#fafafa",
+    padding: 6,
   },
-  cardMainInfo: { flexDirection: "row", gap: 12, alignItems: "center" },
+  cardMainInfo: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+  },
   avatarImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: "#cbd5e1",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
-  textMetaBlock: { flex: 1 },
+  textMetaBlock: {
+    flex: 1,
+  },
   nameRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 6,
   },
   staffNameText: {
     fontSize: 15,
     fontWeight: "700",
     color: C.textPrimary,
     flex: 1,
+    marginRight: 8,
   },
-  statusBadge: { paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 },
-  statusText: { fontSize: 10, fontWeight: "700" },
-  roleText: { fontSize: 12, color: C.textSec, fontWeight: "500", marginTop: 2 },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  roleText: {
+    fontSize: 13,
+    color: C.textSec,
+    marginTop: 2,
+  },
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 4,
-    gap: 4,
   },
-  ratingVal: { fontSize: 11, fontWeight: "700", color: C.textPrimary },
-  dotDivider: { color: C.textTer, fontSize: 11 },
-  deptText: { fontSize: 11, color: C.textSec, fontWeight: "500" },
+  ratingVal: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.textPrimary,
+    marginLeft: 4,
+  },
+  dotDivider: {
+    marginHorizontal: 6,
+    color: C.textTer,
+  },
+  deptText: {
+    fontSize: 12,
+    color: C.textSec,
+    marginLeft: 4,
+  },
   metricSection: {
     marginTop: 14,
-    backgroundColor: "#f8fafc",
-    padding: 10,
-    borderRadius: 12,
   },
   metricHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  metricLabel: { fontSize: 11, fontWeight: "600", color: "#475569" },
-  metricValue: { fontSize: 11, fontWeight: "700", color: "#334155" },
+  metricLabel: {
+    fontSize: 12,
+    color: C.textSec,
+  },
+  metricValue: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.textPrimary,
+  },
   barTrack: {
     height: 6,
-    backgroundColor: C.border,
-    borderRadius: 10,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 100,
     overflow: "hidden",
   },
-  barFill: { height: "100%", borderRadius: 10 },
-  expandedContent: { marginTop: 12 },
-  dividerLine: { height: 1, backgroundColor: "#f1f5f9", marginBottom: 12 },
+  barFill: {
+    height: "100%",
+    borderRadius: 100,
+  },
+  expandedContent: {
+    marginTop: 12,
+  },
+  dividerLine: {
+    height: 1,
+    backgroundColor: C.border,
+    marginBottom: 12,
+  },
   detailRow: {
     flexDirection: "row",
     gap: 10,
-    alignItems: "flex-start",
     marginBottom: 10,
   },
-  detailTexts: { flex: 1 },
+  detailTexts: {
+    flex: 1,
+  },
   detailLabelTitle: {
-    fontSize: 10,
+    fontSize: 11,
     color: C.textTer,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
   },
   detailValueText: {
-    fontSize: 12,
-    color: "#334155",
-    fontWeight: "600",
+    fontSize: 13,
+    color: C.textPrimary,
+    fontWeight: "500",
     marginTop: 1,
   },
   expandToggleButton: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     gap: 4,
-    marginTop: 12,
-    paddingTop: 10,
+    marginTop: 14,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "#f1f5f9",
   },
-  expandActionText: { fontSize: 11, fontWeight: "700", color: C.primary },
+  expandActionText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.primary,
+  },
   emptyBox: {
     alignItems: "center",
     justifyContent: "center",
     padding: 32,
     backgroundColor: C.white,
     borderRadius: 20,
+    marginTop: 20,
     borderWidth: 1,
     borderColor: C.border,
-    marginTop: 10,
   },
   emptyTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#475569",
+    color: C.textPrimary,
     marginTop: 12,
   },
   emptySubtitle: {
-    fontSize: 12,
-    color: C.textTer,
+    fontSize: 13,
+    color: C.textSec,
     textAlign: "center",
     marginTop: 4,
-    lineHeight: 16,
-    maxWidth: 280,
+    lineHeight: 18,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    backgroundColor: "rgba(15, 23, 42, 0.3)",
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
   },
-  // width applied inline
   modalSurface: {
     backgroundColor: C.white,
     borderRadius: 24,
     maxHeight: "85%",
-    overflow: "hidden",
-    elevation: 24,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1119,60 +1262,128 @@ const S = StyleSheet.create<StylesheetInterface>({
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
-  modalTitle: { fontWeight: "800", color: C.textPrimary },
-  closeModalBtn: { padding: 4 },
-  modalFormScroll: { padding: 20, gap: 14 },
+  modalTitle: {
+    fontWeight: "800",
+    color: C.textPrimary,
+  },
+  closeModalBtn: {
+    padding: 4,
+  },
+  modalFormScroll: {
+    padding: 20,
+  },
   fieldLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: C.textSec,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: -4,
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.textPrimary,
+    marginBottom: 6,
+    marginTop: 12,
   },
   formInput: {
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: 12,
-    height: 46,
     paddingHorizontal: 14,
-    color: C.textPrimary,
+    height: 44,
     fontSize: 14,
-    fontWeight: "500",
-    backgroundColor: "#fcfcfd",
+    color: C.textPrimary,
+    backgroundColor: "#f8fafc",
   },
-  formPillRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginTop: 4 },
+  formInputError: {
+    borderColor: C.red,
+    backgroundColor: "#fef2f2",
+  },
+  errorTextHint: {
+    fontSize: 12,
+    color: C.red,
+    marginTop: 4,
+    fontWeight: "500",
+  },
+  formPillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 4,
+  },
   formSelectPill: {
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 100,
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.white,
   },
   formSelectPillActive: {
-    backgroundColor: C.primaryLight,
+    backgroundColor: C.primary,
     borderColor: C.primary,
   },
-  formPillText: { fontSize: 13, fontWeight: "600", color: C.textSec },
-  formPillTextActive: { color: C.primary, fontWeight: "700" },
-  formSplitRow: { flexDirection: "row", gap: 12 },
+  formPillText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.textSec,
+  },
+  formPillTextActive: {
+    color: C.white,
+  },
+  formSplitRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
   modalFooter: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    gap: 12,
+    gap: 10,
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: C.border,
-    backgroundColor: "#f8fafc",
   },
-  cancelBtn: { paddingVertical: 12, paddingHorizontal: 18, borderRadius: 12 },
-  cancelBtnText: { color: C.textSec, fontSize: 14, fontWeight: "600" },
+  cancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  cancelBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.textSec,
+  },
   saveBtn: {
-    backgroundColor: C.primary,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
+    backgroundColor: C.primary,
   },
-  saveBtnText: { color: C.white, fontSize: 14, fontWeight: "700" },
+  saveBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.white,
+  },
+  toastBannerContainer: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    right: 20,
+    zIndex: 9999,
+    padding: 14,
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  toastBannerText: {
+    color: C.white,
+    fontWeight: "600",
+    fontSize: 13,
+    textAlign: "center",
+  },
+  successToast: {
+    backgroundColor: C.green,
+  },
+  errorToast: {
+    backgroundColor: C.red,
+  },
 });
