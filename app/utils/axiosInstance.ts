@@ -171,6 +171,42 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
   return instance;
 };
 
+
+export const subjectApi: AxiosInstance = createAxiosInstance(
+  "http://192.168.88.20:8081",
+);
+export const sectionApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+);
+export const teachersApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+);
+export const classApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+);
+export const studentApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+);
+export const staffApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+);
+export const studentAttendanceApi: AxiosInstance = createAxiosInstance("http://192.168.88.9:8081",
+);
+export const staffAttendanceApi: AxiosInstance = createAxiosInstance("http://192.168.88.9:8081",
+);
+export const createExamApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
+);
+export const addSubjectApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
+);
+export const hallticket192Api: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
+);
+export const addRouteApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
+);
+export const holidayApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083",
+);
+export const getHolidaysApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083",
+);
+export const noticeApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+);
+export const createTimetableApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083",
+);
+export const transportApi: AxiosInstance = createAxiosInstance("http://192.168.88.19.8081",
+);
 export const root2Api: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083");
 export const rootApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081");
 export const studentdashboardApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081");

@@ -48,6 +48,7 @@
     "expo-web-browser": "~15.0.10",
     "gifted-charts-core": "^0.0.21",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^1.17.0",
     "lucide-react-native": "^1.17.0",
     "nativewind": "^4.2.4",
     "prettier-plugin-tailwindcss": "^0.5.11",
