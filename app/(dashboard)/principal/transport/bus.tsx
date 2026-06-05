@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert, Modal, TextInput, ScrollView, useWindowDimensions, RefreshControl, Platform } from 'react-native';
-import { 
-  Truck, 
-  AlertCircle, 
-  CheckCircle, 
-  Clock, 
-  Search, 
-  Filter, 
-  X, 
+import {
+  Truck,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Search,
+  Filter,
+  X,
   Calendar,
   Wrench,
   Fuel,
@@ -57,7 +57,7 @@ export default function TransportIssues() {
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
-  
+
   // New states for missing features
   const [assignDriverModalVisible, setAssignDriverModalVisible] = useState(false);
   const [selectedRouteForAssign, setSelectedRouteForAssign] = useState(null);
@@ -66,7 +66,7 @@ export default function TransportIssues() {
   const [driversList, setDriversList] = useState([]);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [driverDropdownOpen, setDriverDropdownOpen] = useState(false);
-  
+
   const [assignStudentModalVisible, setAssignStudentModalVisible] = useState(false);
   const [studentId, setStudentId] = useState('');
   const [studentsList, setStudentsList] = useState([]);
@@ -81,16 +81,16 @@ export default function TransportIssues() {
     feeStatus: 'PAID'
   });
   const [assigningStudent, setAssigningStudent] = useState(false);
-  
+
   const [routeStudentsModalVisible, setRouteStudentsModalVisible] = useState(false);
   const [selectedRouteForStudents, setSelectedRouteForStudents] = useState(null);
   const [routeStudents, setRouteStudents] = useState([]);
   const [loadingRouteStudents, setLoadingRouteStudents] = useState(false);
-  
+
   const [attendanceSummary, setAttendanceSummary] = useState({ present: 0, absent: 0, total: 0 });
   const [attendanceDate, setAttendanceDate] = useState(new Date());
   const [showAttendanceDatePicker, setShowAttendanceDatePicker] = useState(false);
-  
+
   // Time picker states
   const [showPickupTimePicker, setShowPickupTimePicker] = useState(false);
   const [showDropTimePicker, setShowDropTimePicker] = useState(false);
@@ -158,13 +158,13 @@ export default function TransportIssues() {
 
   const validateForm = () => {
     const errors = {};
-    
+
     errors.routeName = validateRouteName(routeForm.routeName);
     errors.vehicleName = validateVehicleName(routeForm.vehicleName);
     errors.vehicleNumber = validateVehicleNumber(routeForm.vehicleNumber);
     errors.pickupStartTime = validateTime(routeForm.pickupStartTime, 'Pickup time');
     errors.dropStartTime = validateTime(routeForm.dropStartTime, 'Drop time');
-    
+
     setValidationErrors(errors);
     return !errors.routeName && !errors.vehicleName && !errors.vehicleNumber && !errors.pickupStartTime && !errors.dropStartTime;
   };
@@ -182,9 +182,9 @@ export default function TransportIssues() {
   const handleFieldChange = (field, value) => {
     setRouteForm({ ...routeForm, [field]: value });
     setTouchedFields({ ...touchedFields, [field]: true });
-    
+
     let error = null;
-    switch(field) {
+    switch (field) {
       case 'routeName':
         error = validateRouteName(value);
         break;
@@ -475,7 +475,7 @@ export default function TransportIssues() {
     let filtered = [...issues];
 
     if (searchQuery) {
-      filtered = filtered.filter(issue => 
+      filtered = filtered.filter(issue =>
         issue.issueId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         issue.issueType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         issue.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -533,7 +533,7 @@ export default function TransportIssues() {
   };
 
   const getStatusColor = (status) => {
-    switch(status?.toUpperCase()) {
+    switch (status?.toUpperCase()) {
       case 'RESOLVED': return '#4caf50';
       case 'PENDING': return '#ff9800';
       default: return '#9e9e9e';
@@ -541,7 +541,7 @@ export default function TransportIssues() {
   };
 
   const getStatusBgColor = (status) => {
-    switch(status?.toUpperCase()) {
+    switch (status?.toUpperCase()) {
       case 'RESOLVED': return '#e8f5e9';
       case 'PENDING': return '#fff3e0';
       default: return '#f5f5f5';
@@ -549,7 +549,7 @@ export default function TransportIssues() {
   };
 
   const getTypeIcon = (type) => {
-    switch(type?.toLowerCase()) {
+    switch (type?.toLowerCase()) {
       case 'mechanical': return <Wrench size={16} color="#f44336" />;
       case 'fuel': return <Fuel size={16} color="#ff9800" />;
       case 'accident': return <Car size={16} color="#f44336" />;
@@ -565,11 +565,11 @@ export default function TransportIssues() {
   const CustomDropdown = ({ options, value, onSelect, placeholder, loading, labelKey, valueKey }) => {
     const [open, setOpen] = useState(false);
     const selected = options.find(opt => opt[valueKey] === value);
-    
+
     return (
       <View style={styles.dropdownContainer}>
-        <TouchableOpacity 
-          style={[styles.dropdownButton, open && styles.dropdownButtonOpen]} 
+        <TouchableOpacity
+          style={[styles.dropdownButton, open && styles.dropdownButtonOpen]}
           onPress={() => setOpen(!open)}
         >
           <Text style={[styles.dropdownButtonText, !selected && { color: '#bc9e82' }]}>
@@ -577,7 +577,7 @@ export default function TransportIssues() {
           </Text>
           {open ? <ChevronUp size={18} color="#8c7664" /> : <ChevronDown size={18} color="#8c7664" />}
         </TouchableOpacity>
-        
+
         {open && (
           <View style={styles.dropdownList}>
             <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
@@ -615,7 +615,7 @@ export default function TransportIssues() {
   // ==================== RENDER COMPONENTS ====================
   const renderDesktopRouteRow = ({ item }) => {
     const isExpanded = expandedRows[item.routeId];
-    
+
     return (
       <View style={styles.tableRowWrapper}>
         <View style={styles.tableRow}>
@@ -625,15 +625,15 @@ export default function TransportIssues() {
           <Text style={[styles.tableCell, styles.cellTime]} numberOfLines={1}>{item.pickupStartTime || '-'}</Text>
           <Text style={[styles.tableCell, styles.cellTime]} numberOfLines={1}>{item.dropStartTime || '-'}</Text>
           <View style={[styles.tableCell, styles.cellAction]}>
-            <TouchableOpacity 
-              style={styles.viewRouteBtn} 
+            <TouchableOpacity
+              style={styles.viewRouteBtn}
               onPress={() => toggleExpand(item.routeId)}
             >
               <Eye size={14} color="#A0522D" />
               <Text style={styles.viewRouteBtnText}>View</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.assignDriverBtn} 
+            <TouchableOpacity
+              style={styles.assignDriverBtn}
               onPress={() => {
                 setSelectedRouteForAssign(item);
                 fetchDrivers();
@@ -643,8 +643,8 @@ export default function TransportIssues() {
               <UserPlus size={14} color="#fff" />
               <Text style={styles.assignDriverBtnText}>Assign Driver</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.assignStudentBtn} 
+            <TouchableOpacity
+              style={styles.assignStudentBtn}
               onPress={() => {
                 setStudentForm({ ...studentForm, routeId: item.routeId });
                 fetchStudents();
@@ -654,8 +654,8 @@ export default function TransportIssues() {
               <Users size={14} color="#fff" />
               <Text style={styles.assignStudentBtnText}>Assign Student</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.viewStudentsBtn} 
+            <TouchableOpacity
+              style={styles.viewStudentsBtn}
               onPress={() => fetchStudentsByRoute(item)}
             >
               <UserCheck size={14} color="#fff" />
@@ -663,7 +663,7 @@ export default function TransportIssues() {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {isExpanded && (
           <View style={styles.expandedRow}>
             <View style={styles.expandedContent}>
@@ -741,7 +741,7 @@ export default function TransportIssues() {
       </View>
 
       <View style={styles.routeActionButtons}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.mobileAssignDriverBtn}
           onPress={() => {
             setSelectedRouteForAssign(item);
@@ -752,7 +752,7 @@ export default function TransportIssues() {
           <UserPlus size={16} color="#fff" />
           <Text style={styles.mobileBtnText}>Assign Driver</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.mobileAssignStudentBtn}
           onPress={() => {
             setStudentForm({ ...studentForm, routeId: item.routeId });
@@ -763,7 +763,7 @@ export default function TransportIssues() {
           <Users size={16} color="#fff" />
           <Text style={styles.mobileBtnText}>Assign Student</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.mobileViewStudentsBtn}
           onPress={() => fetchStudentsByRoute(item)}
         >
@@ -879,15 +879,15 @@ export default function TransportIssues() {
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'issues' && styles.activeTab]} 
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'issues' && styles.activeTab]}
           onPress={() => setActiveTab('issues')}
         >
           <AlertCircle size={18} color={activeTab === 'issues' ? "#fff" : "#A0522D"} />
           <Text style={[styles.tabText, activeTab === 'issues' && styles.activeTabText]}>Issues ({issues.length})</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'routes' && styles.activeTab]} 
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'routes' && styles.activeTab]}
           onPress={() => setActiveTab('routes')}
         >
           <Bus size={18} color={activeTab === 'routes' ? "#fff" : "#A0522D"} />
@@ -896,7 +896,7 @@ export default function TransportIssues() {
       </View>
 
       {/* Main ScrollView for all content */}
-      <ScrollView 
+      <ScrollView
         style={styles.mainScrollView}
         contentContainerStyle={styles.scrollContentContainer}
         showsVerticalScrollIndicator={true}
@@ -1176,11 +1176,11 @@ export default function TransportIssues() {
                 <Text style={styles.inputLabel}>
                   Route Name <Text style={styles.requiredStar}>*</Text>
                 </Text>
-                <TextInput 
-                  style={[styles.input, validationErrors.routeName && touchedFields.routeName && styles.inputError]} 
-                  placeholder="e.g., North Campus Route" 
+                <TextInput
+                  style={[styles.input, validationErrors.routeName && touchedFields.routeName && styles.inputError]}
+                  placeholder="e.g., North Campus Route"
                   placeholderTextColor="#bc9e82"
-                  value={routeForm.routeName} 
+                  value={routeForm.routeName}
                   onChangeText={(t) => handleFieldChange('routeName', t)}
                   onBlur={() => setTouchedFields({ ...touchedFields, routeName: true })}
                 />
@@ -1189,16 +1189,16 @@ export default function TransportIssues() {
                 )}
                 <Text style={styles.helperText}>Minimum 3 characters, only letters, numbers, spaces, hyphens and underscores</Text>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
                   Vehicle Name <Text style={styles.requiredStar}>*</Text>
                 </Text>
-                <TextInput 
-                  style={[styles.input, validationErrors.vehicleName && touchedFields.vehicleName && styles.inputError]} 
-                  placeholder="e.g., Toyota Bus, Volvo Bus" 
+                <TextInput
+                  style={[styles.input, validationErrors.vehicleName && touchedFields.vehicleName && styles.inputError]}
+                  placeholder="e.g., Toyota Bus, Volvo Bus"
                   placeholderTextColor="#bc9e82"
-                  value={routeForm.vehicleName} 
+                  value={routeForm.vehicleName}
                   onChangeText={(t) => handleFieldChange('vehicleName', t)}
                   onBlur={() => setTouchedFields({ ...touchedFields, vehicleName: true })}
                 />
@@ -1206,16 +1206,16 @@ export default function TransportIssues() {
                   <Text style={styles.errorText}>{validationErrors.vehicleName}</Text>
                 )}
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
                   Vehicle Number <Text style={styles.requiredStar}>*</Text>
                 </Text>
-                <TextInput 
-                  style={[styles.input, validationErrors.vehicleNumber && touchedFields.vehicleNumber && styles.inputError]} 
-                  placeholder="e.g., TS09AB1234" 
+                <TextInput
+                  style={[styles.input, validationErrors.vehicleNumber && touchedFields.vehicleNumber && styles.inputError]}
+                  placeholder="e.g., TS09AB1234"
                   placeholderTextColor="#bc9e82"
-                  value={routeForm.vehicleNumber} 
+                  value={routeForm.vehicleNumber}
                   onChangeText={(t) => handleFieldChange('vehicleNumber', t.toUpperCase())}
                   onBlur={() => setTouchedFields({ ...touchedFields, vehicleNumber: true })}
                   autoCapitalize="characters"
@@ -1225,11 +1225,11 @@ export default function TransportIssues() {
                 )}
                 <Text style={styles.helperText}>Format: 2 letters + 1-2 numbers + 1-2 letters + 1-4 numbers</Text>
               </View>
-              
+
               <View style={styles.rowInputGroup}>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.inputLabel}>Pickup Start Time</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.timePickerButton}
                     onPress={() => setShowPickupTimePicker(true)}
                   >
@@ -1250,7 +1250,7 @@ export default function TransportIssues() {
                 </View>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.inputLabel}>Drop Start Time</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.timePickerButton}
                     onPress={() => setShowDropTimePicker(true)}
                   >
@@ -1270,7 +1270,7 @@ export default function TransportIssues() {
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => { setRouteModalVisible(false); resetRouteForm(); }}>
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -1373,7 +1373,7 @@ export default function TransportIssues() {
               <View style={styles.rowInputGroup}>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.inputLabel}>Pickup Time *</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.timePickerButton}
                     onPress={() => setShowStudentPickupTimePicker(true)}
                   >
@@ -1394,7 +1394,7 @@ export default function TransportIssues() {
                 </View>
                 <View style={[styles.inputGroup, { flex: 1 }]}>
                   <Text style={styles.inputLabel}>Drop Time *</Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.timePickerButton}
                     onPress={() => setShowStudentDropTimePicker(true)}
                   >
@@ -1484,17 +1484,17 @@ const styles = StyleSheet.create({
   header: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#eaddcc' },
   title: { fontSize: 24, fontWeight: '700', color: '#A0522D' },
   subtitle: { fontSize: 13, color: '#8c7664', marginTop: 4 },
-  
+
   mainScrollView: { flex: 1 },
   scrollContentContainer: { flexGrow: 1, paddingBottom: 30 },
   tabContent: { flex: 1 },
-  
+
   tabContainer: { flexDirection: 'row', marginHorizontal: 16, marginTop: 12, marginBottom: 12, backgroundColor: '#fff', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: '#eaddcc' },
   tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10, borderRadius: 8 },
   activeTab: { backgroundColor: '#A0522D' },
   tabText: { fontSize: 14, fontWeight: '600', color: '#A0522D' },
   activeTabText: { color: '#fff' },
-  
+
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', margin: 16, marginBottom: 8, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#eaddcc', gap: 10 },
   searchInput: { flex: 1, fontSize: 14, color: '#2e2520' },
   filterBtn: { padding: 4 },
@@ -1507,18 +1507,18 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: '#fff' },
   resetBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: '#A0522D', paddingVertical: 8, borderRadius: 8, marginTop: 8 },
   resetBtnText: { color: '#fff', fontWeight: '600', fontSize: 12 },
-  
+
   statsContainer: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, marginBottom: 16 },
   statCard: { flex: 1, backgroundColor: '#fff', padding: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#eaddcc' },
   statNumber: { fontSize: 22, fontWeight: '700', color: '#A0522D' },
   statLabel: { fontSize: 11, color: '#8c7664', marginTop: 4 },
-  
+
   routeHeaderBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 16, marginTop: 16, marginBottom: 12 },
   routeListTitle: { fontSize: 18, fontWeight: '700', color: '#2e2520' },
   routeListSubtitle: { fontSize: 12, color: '#8c7664', marginTop: 2 },
   addRouteBtn: { backgroundColor: '#8b5cf6', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, shadowColor: '#8b5cf6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 },
   addRouteBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  
+
   attendanceContainer: { backgroundColor: '#fff', margin: 16, marginTop: 0, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#eaddcc' },
   attendanceTitle: { fontSize: 14, fontWeight: '700', color: '#2e2520', marginBottom: 12 },
   attendanceDateBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf0e6', padding: 10, borderRadius: 8, marginBottom: 12, alignSelf: 'flex-start' },
@@ -1527,14 +1527,14 @@ const styles = StyleSheet.create({
   attendanceStatCard: { flex: 1, alignItems: 'center', padding: 10, backgroundColor: '#faf8f5', borderRadius: 10, gap: 6 },
   attendanceStatNumber: { fontSize: 20, fontWeight: '700' },
   attendanceStatLabel: { fontSize: 11, color: '#8c7664' },
-  
+
   mobileListContainer: { padding: 16, paddingTop: 0 },
   webTableWrapper: { marginHorizontal: 16, marginTop: 0 },
   webTableContent: { minWidth: 1100, flexGrow: 1, paddingBottom: 8 },
   tableContainer: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#eaddcc', overflow: 'hidden', width: '100%' },
   tableHeader: { flexDirection: 'row', backgroundColor: '#fdf0e6', paddingVertical: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#eaddcc', width: '100%' },
   tableHeaderCell: { fontSize: 12, fontWeight: '700', color: '#A0522D', flex: 1 },
-  
+
   routeCard: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 16, padding: 16, borderWidth: 1, borderColor: '#f0e6dc', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 3 },
   routeCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   routeIconContainer: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#f3e8ff', alignItems: 'center', justifyContent: 'center', marginRight: 14 },
@@ -1556,7 +1556,7 @@ const styles = StyleSheet.create({
   mobileAssignStudentBtn: { flex: 1, backgroundColor: '#8b5cf6', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8 },
   mobileViewStudentsBtn: { flex: 1, backgroundColor: '#4caf50', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 8 },
   mobileBtnText: { color: '#fff', fontSize: 11, fontWeight: '600' },
-  
+
   tableRowWrapper: { borderBottomWidth: 1, borderBottomColor: '#f0e6dc', width: '100%' },
   tableRow: { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center', backgroundColor: '#fff', width: '100%' },
   tableCell: { fontSize: 13, color: '#2e2520', flex: 1 },
@@ -1568,7 +1568,7 @@ const styles = StyleSheet.create({
   detailItem: { flex: 1, minWidth: 200 },
   detailLabel: { fontSize: 11, fontWeight: '600', color: '#bc9e82', marginBottom: 4, textTransform: 'uppercase' },
   detailValue: { fontSize: 14, color: '#2e2520', fontWeight: '500' },
-  
+
   viewRouteBtn: { backgroundColor: '#fdf0e6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 6 },
   viewRouteBtnText: { fontSize: 10, fontWeight: '600', color: '#A0522D' },
   assignDriverBtn: { backgroundColor: '#A0522D', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -1577,7 +1577,7 @@ const styles = StyleSheet.create({
   assignStudentBtnText: { fontSize: 10, fontWeight: '600', color: '#fff' },
   viewStudentsBtn: { backgroundColor: '#4caf50', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
   viewStudentsBtnText: { fontSize: 10, fontWeight: '600', color: '#fff' },
-  
+
   card: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 12, padding: 14, borderWidth: 1, borderColor: '#f0e6dc', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   issueIdContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -1592,7 +1592,7 @@ const styles = StyleSheet.create({
   cardFooter: { flexDirection: 'row', gap: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f0e6dc' },
   footerItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   footerText: { fontSize: 10, color: '#bc9e82' },
-  
+
   studentCard: { backgroundColor: '#faf8f5', borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#eaddcc' },
   studentHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   studentAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fdf0e6', alignItems: 'center', justifyContent: 'center' },
@@ -1609,7 +1609,7 @@ const styles = StyleSheet.create({
   driverInfo: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#eaddcc' },
   driverText: { fontSize: 11, color: '#8b5cf6' },
   driverPhoneText: { fontSize: 11, color: '#8c7664' },
-  
+
   // Dropdown Styles
   dropdownContainer: { position: 'relative', zIndex: 1000, marginBottom: 16 },
   dropdownButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#eaddcc', borderRadius: 12, padding: 12, backgroundColor: '#fafafa' },
@@ -1623,7 +1623,7 @@ const styles = StyleSheet.create({
   dropdownItemActive: { backgroundColor: '#fdf0e6' },
   dropdownItemText: { fontSize: 13, color: '#2e2520', flex: 1 },
   dropdownItemTextActive: { color: '#A0522D', fontWeight: '600' },
-  
+
   cellId: { flex: 0.8, paddingRight: 8 },
   cellType: { flex: 0.8, flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 8 },
   cellDesc: { flex: 2, paddingRight: 8 },
@@ -1634,13 +1634,13 @@ const styles = StyleSheet.create({
   cellVehicle: { flex: 1, paddingRight: 8 },
   cellVehicleNum: { flex: 1, paddingRight: 8 },
   cellTime: { flex: 0.9, paddingRight: 8 },
-  
+
   typeText: { fontSize: 13, color: '#2e2520' },
   statusBadgeSmall: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, alignSelf: 'flex-start' },
   statusTextSmall: { fontSize: 10, fontWeight: '600' },
   viewBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#fdf0e6' },
   viewBtnText: { fontSize: 11, fontWeight: '600', color: '#A0522D' },
-  
+
   loaderContainer: { padding: 40, justifyContent: 'center', alignItems: 'center', gap: 12 },
   loaderText: { fontSize: 14, color: '#8c7664' },
   emptyState: { padding: 60, justifyContent: 'center', alignItems: 'center', gap: 12 },
@@ -1648,7 +1648,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, color: '#b0a090', textAlign: 'center' },
   noStudentsContainer: { padding: 40, alignItems: 'center', gap: 12 },
   noStudentsText: { fontSize: 14, color: '#b0a090', textAlign: 'center' },
-  
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: '#fff', borderRadius: 20, padding: 24, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
@@ -1664,7 +1664,7 @@ const styles = StyleSheet.create({
   statusTextLarge: { fontSize: 13, fontWeight: '600' },
   resolveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#4caf50', paddingVertical: 14, borderRadius: 12, marginTop: 8 },
   resolveBtnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  
+
   inputGroup: { marginBottom: 20 },
   rowInputGroup: { flexDirection: 'row', gap: 12 },
   inputLabel: { fontSize: 14, fontWeight: '600', color: '#2e2520', marginBottom: 8 },
@@ -1673,17 +1673,17 @@ const styles = StyleSheet.create({
   inputError: { borderColor: '#f44336', borderWidth: 2, backgroundColor: '#fff5f5' },
   errorText: { fontSize: 11, color: '#f44336', marginTop: 4, marginLeft: 4 },
   helperText: { fontSize: 10, color: '#bc9e82', marginTop: 4, marginLeft: 4 },
-  
+
   timePickerButton: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#eaddcc', borderRadius: 12, padding: 12, backgroundColor: '#fafafa' },
   timePickerText: { flex: 1, fontSize: 14, color: '#bc9e82' },
   timePickerTextFilled: { color: '#2e2520' },
-  
+
   feeStatusOptions: { flexDirection: 'row', gap: 12 },
   feeStatusOption: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#f5f0ea', alignItems: 'center', borderWidth: 1, borderColor: '#eaddcc' },
   feeStatusOptionActive: { backgroundColor: '#fdf0e6', borderColor: '#A0522D' },
   feeStatusOptionText: { fontSize: 13, fontWeight: '600', color: '#8c7664' },
   feeStatusOptionTextActive: { color: '#A0522D' },
-  
+
   modalButtons: { flexDirection: 'row', gap: 12, marginTop: 8 },
   modalButton: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   cancelButton: { backgroundColor: '#f5f0ea', borderWidth: 1, borderColor: '#eaddcc' },

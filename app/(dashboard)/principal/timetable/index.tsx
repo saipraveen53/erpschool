@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Modal, TextInput, ScrollView, useWindowDimensions, Alert } from 'react-native';
-import { 
-  Plus, 
-  X, 
-  BookOpen, 
-  Tag, 
-  User, 
-  UserCheck, 
-  GraduationCap, 
-  Phone, 
-  Mail, 
-  Calendar, 
-  Hash, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Plus,
+  X,
+  BookOpen,
+  Tag,
+  User,
+  UserCheck,
+  GraduationCap,
+  Phone,
+  Mail,
+  Calendar,
+  Hash,
+  CheckCircle,
+  XCircle,
   Save,
   Book,
   Clock,
@@ -64,9 +64,9 @@ export default function SubjectManagement() {
   const [selectedClassForEdit, setSelectedClassForEdit] = useState(null);
   const [selectedTeacherForEdit, setSelectedTeacherForEdit] = useState(null);
   const [newSubject, setNewSubject] = useState({ subjectName: '', subjectCode: '', active: true });
-  const [newClass, setNewClass] = useState({ 
-    className: '', 
-    section: '', 
+  const [newClass, setNewClass] = useState({
+    className: '',
+    section: '',
     academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
     capacity: '',
     currentStrength: '',
@@ -78,7 +78,7 @@ export default function SubjectManagement() {
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   // Subject-Teacher Allocation states
   const [allocationForm, setAllocationForm] = useState({
     classSectionId: '',
@@ -91,13 +91,13 @@ export default function SubjectManagement() {
   const [isAllocClassDropdownOpen, setIsAllocClassDropdownOpen] = useState(false);
   const [isAllocSubjectDropdownOpen, setIsAllocSubjectDropdownOpen] = useState(false);
   const [isAllocTeacherDropdownOpen, setIsAllocTeacherDropdownOpen] = useState(false);
-  
+
   // View Allocations states
   const [selectedClassForView, setSelectedClassForView] = useState(null);
   const [classSubjectTeachers, setClassSubjectTeachers] = useState([]);
   const [loadingAllocations, setLoadingAllocations] = useState(false);
   const [isViewClassDropdownOpen, setIsViewClassDropdownOpen] = useState(false);
-  
+
   // Assign class teacher states
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -111,11 +111,13 @@ export default function SubjectManagement() {
   const [timetableClassObj, setTimetableClassObj] = useState(null);
   const [isTTClassDropdownOpen, setIsTTClassDropdownOpen] = useState(false);
   const [periods, setPeriods] = useState([
-    { day: '', subjectId: '', teacherId: '', startTime: '', endTime: '', 
-      subjectObj: null, teacherObj: null, isDayOpen: false, isSubjectOpen: false, isTeacherOpen: false }
+    {
+      day: '', subjectId: '', teacherId: '', startTime: '', endTime: '',
+      subjectObj: null, teacherObj: null, isDayOpen: false, isSubjectOpen: false, isTeacherOpen: false
+    }
   ]);
   const [timetableErrors, setTimetableErrors] = useState({});
-  
+
   // View Timetable states
   const [viewTimetableClassId, setViewTimetableClassId] = useState(null);
   const [viewTimetableClassObj, setViewTimetableClassObj] = useState(null);
@@ -368,13 +370,13 @@ export default function SubjectManagement() {
     try {
       const res = await rootApi.get(`/api/student/class-sections/${classSectionId}/timetable`);
       const timetableData = res.data;
-      
+
       // Organize timetable by day
       const organizedData = DAYS.map(day => ({
         day: day,
         periods: timetableData.filter(period => period.day === day).sort((a, b) => a.startTime.localeCompare(b.startTime))
       }));
-      
+
       setViewTimetableData(organizedData);
     } catch (err) {
       console.error("Error fetching timetable", err);
@@ -531,8 +533,8 @@ export default function SubjectManagement() {
   };
 
   const resetClassForm = () => {
-    setNewClass({ 
-      className: '', section: '', 
+    setNewClass({
+      className: '', section: '',
       academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
       capacity: '', currentStrength: '', subjectIds: []
     });
@@ -651,7 +653,7 @@ export default function SubjectManagement() {
         )}
       </View>
       <View style={styles.classCardActions}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.classActionBtn, { backgroundColor: '#f59e0b' }]}
           onPress={() => openViewTimetable(item)}
         >
@@ -893,13 +895,13 @@ export default function SubjectManagement() {
                     <Text style={styles.timeBadgeText}>{period.startTime} - {period.endTime}</Text>
                   </View>
                   <View style={styles.timetableActions}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.timetableEditBtn}
                       onPress={() => setEditingPeriod(editingPeriod === period.periodId ? null : period.periodId)}
                     >
                       <Edit2 size={16} color="#f59e0b" />
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.timetableDeleteBtn}
                       onPress={() => deleteTimetablePeriod(period.periodId)}
                     >
@@ -930,14 +932,14 @@ export default function SubjectManagement() {
 
                     {/* Time Edit */}
                     <View style={styles.editTimeRow}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.editTimeBtn}
                         onPress={() => setViewPicker({ show: true, periodId: period.periodId, field: 'startTime' })}
                       >
                         <Text style={styles.editTimeLabel}>Start Time</Text>
                         <Text style={styles.editTimeValue}>{period.startTime}</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.editTimeBtn}
                         onPress={() => setViewPicker({ show: true, periodId: period.periodId, field: 'endTime' })}
                       >
@@ -946,7 +948,7 @@ export default function SubjectManagement() {
                       </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.saveEditBtn}
                       onPress={() => setEditingPeriod(null)}
                     >
@@ -993,7 +995,7 @@ export default function SubjectManagement() {
             )}
           />
         );
-      
+
       case 'Classes':
         return (
           <FlatList
@@ -1011,22 +1013,22 @@ export default function SubjectManagement() {
             )}
           />
         );
-      
+
       case 'Allocations':
         return (
           <View style={{ flex: 1 }}>
             {/* Class Selection */}
             <View style={styles.allocationClassSelector}>
               <Text style={styles.allocationSelectorLabel}>Select Class to View Allocations</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.allocationDropdownButton}
                 onPress={() => setIsViewClassDropdownOpen(!isViewClassDropdownOpen)}
               >
                 <View style={styles.dropdownButtonContent}>
                   <School size={18} color="#16a34a" />
                   <Text style={styles.dropdownButtonText}>
-                    {selectedClassForView 
-                      ? `Class ${selectedClassForView.className}-${selectedClassForView.section}` 
+                    {selectedClassForView
+                      ? `Class ${selectedClassForView.className}-${selectedClassForView.section}`
                       : 'Choose a class to view allocations'}
                   </Text>
                 </View>
@@ -1110,7 +1112,7 @@ export default function SubjectManagement() {
                 <UserCheck size={64} color="#e0d4c8" />
                 <Text style={styles.emptyTitle}>No Allocations Found</Text>
                 <Text style={styles.emptyText}>No subject teachers assigned for Class {selectedClassForView.className}-{selectedClassForView.section} yet.</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.emptyAddBtn}
                   onPress={() => { fetchClasses(); fetchSubjects(); fetchTeachers(); setAllocationModalVisible(true); }}
                 >
@@ -1127,7 +1129,7 @@ export default function SubjectManagement() {
             ) : null}
           </View>
         );
-      
+
       case 'ClassTeachers':
         return (
           <FlatList
@@ -1145,7 +1147,7 @@ export default function SubjectManagement() {
             )}
           />
         );
-      
+
       case 'Timetable':
         return (
           <View style={styles.timetableLandingContainer}>
@@ -1163,7 +1165,7 @@ export default function SubjectManagement() {
                 <Text style={styles.timetableCreateBtnText}>Create New Timetable</Text>
               </TouchableOpacity>
             </View>
-            
+
             {/* Existing Timetables List */}
             {classes.filter(c => c.hasTimetable).length > 0 && (
               <View style={styles.existingTimetables}>
@@ -1204,7 +1206,7 @@ export default function SubjectManagement() {
             </View>
           </View>
         );
-      
+
       default:
         return null;
     }
@@ -1745,7 +1747,7 @@ export default function SubjectManagement() {
                         <TouchableOpacity
                           key={cls.classSectionId}
                           style={[styles.dropdownItem, timetableClassId === cls.classSectionId && styles.dropdownItemActiveTT]}
-                          onPress={() => { setTimetableClassId(cls.classSectionId); setTimetableClassObj(cls); setIsTTClassDropdownOpen(false); setTimetableErrors(prev => { const n = {...prev}; delete n.class; return n; }); }}
+                          onPress={() => { setTimetableClassId(cls.classSectionId); setTimetableClassObj(cls); setIsTTClassDropdownOpen(false); setTimetableErrors(prev => { const n = { ...prev }; delete n.class; return n; }); }}
                         >
                           <View style={styles.dropdownItemContent}>
                             <School size={16} color={timetableClassId === cls.classSectionId ? "#fff" : "#f59e0b"} />
@@ -1790,20 +1792,20 @@ export default function SubjectManagement() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FDF8F0', padding: 16 },
-  headerArea: { 
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
+  headerArea: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: 20, flexWrap: 'wrap', gap: 12
   },
   headerTextContainer: { flex: 1, minWidth: 160 },
   mainTitle: { fontSize: 24, fontWeight: '800', color: '#A0522D', letterSpacing: 0.5 },
   subTitle: { fontSize: 13, color: '#8c7664', marginTop: 4, lineHeight: 18 },
-  addBtn: { 
-    backgroundColor: '#A0522D', paddingHorizontal: 16, paddingVertical: 10, 
+  addBtn: {
+    backgroundColor: '#A0522D', paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 8,
     shadowColor: '#A0522D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4
   },
   addBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  
+
   tabCardsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1830,13 +1832,13 @@ const styles = StyleSheet.create({
   tabCardTitle: { fontSize: 12, fontWeight: '600', color: '#2e2520', textAlign: 'center' },
   tabCardTitleActive: { color: '#fff' },
   activeIndicator: { position: 'absolute', bottom: 8, width: 20, height: 3, backgroundColor: '#fff', borderRadius: 2 },
-  
+
   contentArea: { flex: 1 },
   listContainer: { paddingBottom: 20 },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   loaderText: { fontSize: 14, color: '#8c7664', marginTop: 10 },
-  
-  card: { 
+
+  card: {
     backgroundColor: '#fff', borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#f0e6dc',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2
   },
@@ -1854,12 +1856,12 @@ const styles = StyleSheet.create({
   activeStatusText: { color: '#4caf50' },
   editActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#e8f0fe', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   editActionText: { fontSize: 12, fontWeight: '600', color: '#3b82f6' },
-  
+
   // Class Card Actions
   classCardActions: { flexDirection: 'row', padding: 12, borderTopWidth: 1, borderTopColor: '#f0e6dc', gap: 8 },
   classActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 8 },
   classActionBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  
+
   // View Timetable Styles
   viewTimetableContainer: { flex: 1 },
   daySelector: { flexDirection: 'row', marginBottom: 16, gap: 8 },
@@ -1890,7 +1892,7 @@ const styles = StyleSheet.create({
   editTimeValue: { fontSize: 14, fontWeight: '600', color: '#2e2520' },
   saveEditBtn: { backgroundColor: '#f59e0b', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10, borderRadius: 8 },
   saveEditBtnText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  
+
   // Existing Timetables
   existingTimetables: { marginTop: 20, marginBottom: 20 },
   existingTimetablesTitle: { fontSize: 16, fontWeight: '700', color: '#2e2520', marginBottom: 12 },
@@ -1898,14 +1900,14 @@ const styles = StyleSheet.create({
   existingTimetableInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   existingTimetableClass: { fontSize: 14, fontWeight: '600', color: '#2e2520' },
   existingTimetableYear: { fontSize: 11, color: '#8c7664', marginTop: 2 },
-  
+
   // Allocation styles
   dropdownItemActiveAllocation: { backgroundColor: '#16a34a' },
   dropdownItemActiveTT: { backgroundColor: '#f59e0b' },
   allocationClassSelector: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#e0d4c8', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   allocationSelectorLabel: { fontSize: 14, fontWeight: '600', color: '#2e2520', marginBottom: 12 },
   allocationDropdownButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#16a34a', borderRadius: 10, backgroundColor: '#f0fdf4', padding: 14 },
-  
+
   allocationSummaryCard: { backgroundColor: '#fff', borderRadius: 14, marginBottom: 16, borderWidth: 1, borderColor: '#bbf7d0', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
   allocationSummaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, backgroundColor: '#f0fdf4', borderBottomWidth: 1, borderBottomColor: '#bbf7d0' },
   allocationSummaryTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1942,7 +1944,7 @@ const styles = StyleSheet.create({
   subjectTagsContainer: { padding: 16, flexDirection: 'row' },
   subjectTag: { backgroundColor: '#f3e8ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginRight: 8 },
   subjectTagText: { fontSize: 12, color: '#8b5cf6', fontWeight: '500' },
-  
+
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: 60, gap: 12 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#A0522D', marginTop: 16 },
   emptyText: { fontSize: 14, color: '#b0a090', textAlign: 'center' },
@@ -2010,7 +2012,7 @@ const styles = StyleSheet.create({
   statusOptionActive: { backgroundColor: '#A0522D', borderColor: '#A0522D' },
   statusOptionText: { fontSize: 14, fontWeight: '600', color: '#666' },
   statusOptionTextActive: { color: '#fff' },
-  
+
   dropdownButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#eaddcc', borderRadius: 10, backgroundColor: '#fafafa', padding: 12 },
   dropdownButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dropdownButtonText: { fontSize: 14, color: '#2e2520' },
@@ -2025,13 +2027,13 @@ const styles = StyleSheet.create({
   dropdownItemTextActive: { color: '#fff' },
   dropdownEmpty: { padding: 20, alignItems: 'center', gap: 8 },
   dropdownEmptyText: { fontSize: 13, color: '#8c7664', textAlign: 'center' },
-  
+
   selectedSubjectsContainer: { marginTop: 10, padding: 12, backgroundColor: '#f9f9f9', borderRadius: 10 },
   selectedCount: { fontSize: 12, fontWeight: '600', color: '#8b5cf6', marginBottom: 8 },
   selectedTagsWrapper: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   selectedTag: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#8b5cf6', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   selectedTagText: { fontSize: 12, color: '#fff', fontWeight: '500' },
-  
+
   modalButtons: { flexDirection: 'row', gap: 12, marginTop: 20 },
   modalButton: { flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   cancelButton: { backgroundColor: '#f5f0ea', borderWidth: 1, borderColor: '#eaddcc' },

@@ -98,7 +98,7 @@ export default function FeeManagement() {
         dueDate: bulkForm.dueDate,
         isExtra: bulkForm.isExtra
       };
-      
+
       await rootApi.post('/api/student/fee/admin/bulk-create', payload);
       Alert.alert('Success', 'Fee created successfully!');
       setBulkCreateModal(false);
@@ -136,7 +136,7 @@ export default function FeeManagement() {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'PAID': return '#4caf50';
       case 'PARTIAL': return '#ff9800';
       case 'PENDING': return '#f44336';
@@ -145,7 +145,7 @@ export default function FeeManagement() {
   };
 
   const getStatusBgColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'PAID': return '#e8f5e9';
       case 'PARTIAL': return '#fff3e0';
       case 'PENDING': return '#ffebee';
@@ -259,7 +259,7 @@ export default function FeeManagement() {
             <Text style={styles.bulkBtnSmallText}>Add Fee</Text>
           </TouchableOpacity>
         </View>
-        
+
         {!hasFee ? (
           <View style={styles.noFeeContainer}>
             <DollarSign size={24} color="#e0d4c8" />
@@ -282,7 +282,7 @@ export default function FeeManagement() {
                 <Text style={[styles.classStatValue, { color: '#ff9800' }]}>{formatCurrency(item.totalPendingFee)}</Text>
               </View>
             </View>
-            
+
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
                 <View style={[styles.progressFill, { width: `${item.totalExpectedFee > 0 ? ((item.totalCollectedFee / item.totalExpectedFee) * 100).toFixed(1) : 0}%` }]} />
@@ -293,7 +293,7 @@ export default function FeeManagement() {
             </View>
           </>
         )}
-        
+
         <View style={styles.classFooter}>
           <View style={styles.footerItem}>
             <Users size={12} color="#8c7664" />
@@ -312,7 +312,7 @@ export default function FeeManagement() {
     const isExpanded = expandedRows[item.classSectionId];
     const hasFee = item.totalExpectedFee > 0;
     const collectionPercent = item.totalExpectedFee > 0 ? ((item.totalCollectedFee / item.totalExpectedFee) * 100).toFixed(1) : 0;
-    
+
     return (
       <View style={styles.tableRowWrapper}>
         <TouchableOpacity style={styles.tableRow} onPress={() => toggleExpand(item.classSectionId)} activeOpacity={0.7}>
@@ -347,7 +347,7 @@ export default function FeeManagement() {
             {isExpanded ? <ChevronUp size={18} color="#A0522D" /> : <ChevronDown size={18} color="#A0522D" />}
           </TouchableOpacity>
         </TouchableOpacity>
-        
+
         {isExpanded && (
           <View style={styles.expandedRow}>
             <View style={styles.expandedContent}>
@@ -588,7 +588,7 @@ export default function FeeManagement() {
                 />
               </View>
               <View style={styles.checkboxRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.checkbox, bulkForm.isExtra && styles.checkboxChecked]}
                   onPress={() => setBulkForm({ ...bulkForm, isExtra: !bulkForm.isExtra })}
                 >

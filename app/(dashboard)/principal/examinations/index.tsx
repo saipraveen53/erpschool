@@ -13,33 +13,33 @@ import {
 import { rootApi } from '../../../utils/axiosInstance';
 
 const COLORS = {
-  brand:       '#A0522D',
-  brandLight:  '#fdf0e6',
-  brandMid:    '#e8d5c4',
-  green:       '#16a34a',
-  greenLight:  '#dcfce7',
-  blue:        '#2563eb',
-  blueLight:   '#eff6ff',
-  amber:       '#d97706',
-  amberLight:  '#fffbeb',
-  red:         '#dc2626',
-  redLight:    '#fef2f2',
-  purple:      '#7c3aed',
+  brand: '#A0522D',
+  brandLight: '#fdf0e6',
+  brandMid: '#e8d5c4',
+  green: '#16a34a',
+  greenLight: '#dcfce7',
+  blue: '#2563eb',
+  blueLight: '#eff6ff',
+  amber: '#d97706',
+  amberLight: '#fffbeb',
+  red: '#dc2626',
+  redLight: '#fef2f2',
+  purple: '#7c3aed',
   purpleLight: '#f5f3ff',
-  bg:          '#FDF8F0',
-  surface:     '#ffffff',
-  border:      '#f0e6dc',
-  borderMid:   '#eaddcc',
-  text:        '#1c1410',
-  textMid:     '#5c4a3a',
-  textLight:   '#8c7664',
-  textFaint:   '#b0a090',
+  bg: '#FDF8F0',
+  surface: '#ffffff',
+  border: '#f0e6dc',
+  borderMid: '#eaddcc',
+  text: '#1c1410',
+  textMid: '#5c4a3a',
+  textLight: '#8c7664',
+  textFaint: '#b0a090',
 };
 
 const STATUS_CONFIG = {
-  CREATED:   { bg: COLORS.blueLight,   text: COLORS.blue,   label: 'Created' },
-  ONGOING:   { bg: COLORS.amberLight,  text: COLORS.amber,  label: 'Ongoing' },
-  COMPLETED: { bg: COLORS.greenLight,  text: COLORS.green,  label: 'Completed' },
+  CREATED: { bg: COLORS.blueLight, text: COLORS.blue, label: 'Created' },
+  ONGOING: { bg: COLORS.amberLight, text: COLORS.amber, label: 'Ongoing' },
+  COMPLETED: { bg: COLORS.greenLight, text: COLORS.green, label: 'Completed' },
   PUBLISHED: { bg: COLORS.purpleLight, text: COLORS.purple, label: 'Published' },
 };
 
@@ -124,9 +124,9 @@ export default function ExamManagement() {
   const [showCreateExam, setShowCreateExam] = useState(false);
 
   const [examForm, setExamForm] = useState({
-    examName: '', 
+    examName: '',
     academicYear: new Date().getFullYear().toString(),
-    startDate: '', 
+    startDate: '',
     endDate: ''
   });
 
@@ -144,24 +144,24 @@ export default function ExamManagement() {
   }, []);
 
   const fetchSubjects = useCallback(async () => {
-    try { 
-      const r = await rootApi.get('/api/student/subject/allSubjects'); 
-      setSubjects(r.data); 
-    } catch {}
+    try {
+      const r = await rootApi.get('/api/student/subject/allSubjects');
+      setSubjects(r.data);
+    } catch { }
   }, []);
 
   const fetchClasses = useCallback(async () => {
-    try { 
-      const r = await rootApi.get('/api/student/class-sections'); 
-      setClasses(r.data); 
-    } catch {}
+    try {
+      const r = await rootApi.get('/api/student/class-sections');
+      setClasses(r.data);
+    } catch { }
   }, []);
 
   const fetchTeachers = useCallback(async () => {
-    try { 
-      const r = await rootApi.get('/api/student/teacher/all'); 
-      setTeachers(r.data); 
-    } catch {}
+    try {
+      const r = await rootApi.get('/api/student/teacher/all');
+      setTeachers(r.data);
+    } catch { }
   }, []);
 
   useEffect(() => {

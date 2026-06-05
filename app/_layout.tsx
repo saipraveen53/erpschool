@@ -123,8 +123,8 @@ export default function RootLayout() {
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
-              <StatusBar 
-                style="light" 
+              <StatusBar
+                style="light"
                 backgroundColor="#2563eb"
                 translucent={false}
               />
