@@ -130,27 +130,24 @@ export default function DriverDashboard() {
 
   // Native Bento Grid Menu Items - Light Theme
   const mobileMenuItems = [
-    { title: "Pickup List", icon: <Users size={26} color="#fff" />, bg: ["#10b981", "#059669"], onPress: () => router.push("/(dashboard)/driver/students/pickup-list") },
-    { title: "Attendance", icon: <UserCheck size={26} color="#fff" />, bg: ["#8b5cf6", "#7c3aed"], onPress: () => router.push("/(dashboard)/driver/attendance/confirmation") },
-    { title: "Live GPS", icon: <Navigation size={26} color="#fff" />, bg: ["#ef4444", "#dc2626"], onPress: () => router.push("/(dashboard)/driver/tracking/gps") },
-    { title: "Vehicle", icon: <Bus size={26} color="#fff" />, bg: ["#f59e0b", "#d97706"], onPress: () => router.push("/(dashboard)/driver/vehicle/reporting") },
-    { title: "Emergency", icon: <AlertTriangle size={26} color="#fff" />, bg: ["#dc2626", "#b91c1c"], onPress: () => router.push("/(dashboard)/driver/alerts/emergency") },
-    { title: "Fuel", icon: <Fuel size={26} color="#fff" />, bg: ["#6366f1", "#4f46e5"], onPress: () => router.push("/(dashboard)/driver/fuel-tracking") },
-    { title: "Profile", icon: <User size={26} color="#fff" />, bg: ["#ec4899", "#db2777"], onPress: () => router.push("/(dashboard)/driver/profile") },
-  ];
-
+  { title: "Attendance", icon: <UserCheck size={26} color="#fff" />, bg: ["#8b5cf6", "#7c3aed"], onPress: () => router.push("/(dashboard)/driver/attendance/confirmation") },
+  { title: "Live GPS", icon: <Navigation size={26} color="#fff" />, bg: ["#ef4444", "#dc2626"], onPress: () => router.push("/(dashboard)/driver/tracking/gps") },
+  { title: "Vehicle", icon: <Bus size={26} color="#fff" />, bg: ["#f59e0b", "#d97706"], onPress: () => router.push("/(dashboard)/driver/vehicle/reporting") },
+  { title: "Emergency", icon: <AlertTriangle size={26} color="#fff" />, bg: ["#dc2626", "#b91c1c"], onPress: () => router.push("/(dashboard)/driver/alerts/emergency") },
+  { title: "Fuel", icon: <Fuel size={26} color="#fff" />, bg: ["#6366f1", "#4f46e5"], onPress: () => router.push("/(dashboard)/driver/fuel-tracking") },
+  { title: "Profile", icon: <User size={26} color="#fff" />, bg: ["#ec4899", "#db2777"], onPress: () => router.push("/(dashboard)/driver/profile") },
+];
   // Web menu items (full list)
   const webMenuItems = [
-    { title: "Assigned Route", icon: <MapPin size={24} color="#3b82f6" />, onPress: () => router.push("/(dashboard)/driver/routes/assigned") },
-    { title: "Pickup List", icon: <Users size={24} color="#10b981" />, onPress: () => router.push("/(dashboard)/driver/students/pickup-list") },
-    { title: "Attendance", icon: <UserCheck size={24} color="#8b5cf6" />, onPress: () => router.push("/(dashboard)/driver/attendance/confirmation") },
-    { title: "Live GPS", icon: <Navigation size={24} color="#ef4444" />, onPress: () => router.push("/(dashboard)/driver/tracking/gps") },
-    { title: "Vehicle Report", icon: <Bus size={24} color="#f59e0b" />, onPress: () => router.push("/(dashboard)/driver/vehicle/reporting") },
-    { title: "Emergency", icon: <AlertTriangle size={24} color="#dc2626" />, onPress: () => router.push("/(dashboard)/driver/alerts/emergency") },
-    { title: "Inspection", icon: <CheckCircle size={24} color="#06b6d4" />, onPress: () => router.push("/(dashboard)/driver/inspection") },
-    { title: "Fuel Tracking", icon: <Fuel size={24} color="#6366f1" />, onPress: () => router.push("/(dashboard)/driver/fuel-tracking") },
-    { title: "My Profile", icon: <User size={24} color="#ec4899" />, onPress: () => router.push("/(dashboard)/driver/profile") },
-  ];
+  { title: "Assigned Route", icon: <MapPin size={24} color="#3b82f6" />, onPress: () => router.push("/(dashboard)/driver/routes/assigned") },
+  { title: "Attendance", icon: <UserCheck size={24} color="#8b5cf6" />, onPress: () => router.push("/(dashboard)/driver/attendance/confirmation") },
+  { title: "Live GPS", icon: <Navigation size={24} color="#ef4444" />, onPress: () => router.push("/(dashboard)/driver/tracking/gps") },
+  { title: "Vehicle Report", icon: <Bus size={24} color="#f59e0b" />, onPress: () => router.push("/(dashboard)/driver/vehicle/reporting") },
+  { title: "Emergency", icon: <AlertTriangle size={24} color="#dc2626" />, onPress: () => router.push("/(dashboard)/driver/alerts/emergency") },
+  { title: "Inspection", icon: <CheckCircle size={24} color="#06b6d4" />, onPress: () => router.push("/(dashboard)/driver/inspection") },
+  { title: "Fuel Tracking", icon: <Fuel size={24} color="#6366f1" />, onPress: () => router.push("/(dashboard)/driver/fuel-tracking") },
+  { title: "My Profile", icon: <User size={24} color="#ec4899" />, onPress: () => router.push("/(dashboard)/driver/profile") },
+];
 
   const columns = isWeb ? (width >= 1024 ? 4 : width >= 768 ? 3 : 2) : 2;
   const cardWidth = `${(100 / columns) - 2}%`;
