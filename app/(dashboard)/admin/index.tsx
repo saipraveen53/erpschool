@@ -413,12 +413,10 @@ export default function AdminDashboard() {
           </Text>
 
           <TouchableOpacity
-            onPress={() =>
-              setActivityModal(
-                true,
-              )
-            }
-          >
+  onPress={() =>
+    setActivityModal(true)
+  }
+>      >
             <Text
               style={
                 styles.activityButton
@@ -535,118 +533,74 @@ export default function AdminDashboard() {
         {/* NOTICE BOARD */}
         {/* ====================================================== */}
 
-        <View style={styles.row}>
-          <Text
-            style={styles.sectionTitle}
-          >
-            Notice Board
-          </Text>
+        {/* ====================================================== */}
+{/* NOTICE BOARD */}
+{/* ====================================================== */}
 
-          <BellRing
-            size={18}
-            color={
-              COLORS.primary
-            }
-          />
+<TouchableOpacity
+  style={styles.row}
+  onPress={() => router.push("/admin/communication")}
+>
+  <Text style={styles.sectionTitle}>
+    Notice Board
+  </Text>
+
+  <BellRing
+    size={18}
+    color={COLORS.primary}
+  />
+</TouchableOpacity>
+
+{notices.map((item, index) => (
+  <TouchableOpacity
+    key={index}
+    activeOpacity={0.9}
+    onPress={() =>
+      router.push("/admin/communication")
+    }
+  >
+    <Animated.View
+      entering={FadeInDown.delay(index * 100)}
+      style={styles.noticeCard}
+    >
+      <View style={styles.noticeTop}>
+        <View style={styles.noticeLeft}>
+          <View style={styles.noticeIcon}>
+            <Megaphone
+              size={22}
+              color="#FFFFFF"
+            />
+          </View>
+
+          <View
+            style={{
+              flex: 1,
+              marginLeft: 12,
+            }}
+          >
+            <Text style={styles.noticeTitle}>
+              {item.noticeName}
+            </Text>
+
+            <Text style={styles.noticeType}>
+              {item.noticeType}
+            </Text>
+          </View>
         </View>
 
-        {notices.map(
-          (item, index) => (
-            <TouchableOpacity
-              key={index}
-              activeOpacity={0.9}
-              onPress={() =>
-                router.push(
-                  "/admin/noticeboard",
-                )
-              }
-            >
-              <Animated.View
-                entering={FadeInDown.delay(
-                  index * 100,
-                )}
-                style={
-                  styles.noticeCard
-                }
-              >
-                <View
-                  style={
-                    styles.noticeTop
-                  }
-                >
-                  <View
-                    style={
-                      styles.noticeLeft
-                    }
-                  >
-                    <View
-                      style={
-                        styles.noticeIcon
-                      }
-                    >
-                      <Megaphone
-                        size={22}
-                        color="#FFFFFF"
-                      />
-                    </View>
+        <View style={styles.dateBadge}>
+          <Text style={styles.dateText}>
+            03 Jun
+          </Text>
+        </View>
+      </View>
 
-                    <View
-                      style={{
-                        flex: 1,
-
-                        marginLeft: 12,
-                      }}
-                    >
-                      <Text
-                        style={
-                          styles.noticeTitle
-                        }
-                      >
-                        {
-                          item.noticeName
-                        }
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.noticeType
-                        }
-                      >
-                        {
-                          item.noticeType
-                        }
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View
-                    style={
-                      styles.dateBadge
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.dateText
-                      }
-                    >
-                      03 Jun
-                    </Text>
-                  </View>
-                </View>
-
-                <Text
-                  style={
-                    styles.noticeDesc
-                  }
-                >
-                  {
-                    item.noticeDescription
-                  }
-                </Text>
-              </Animated.View>
-            </TouchableOpacity>
-          ),
-        )}
+      <Text style={styles.noticeDesc}>
+        {item.noticeDescription}
+      </Text>
+    </Animated.View>
+  </TouchableOpacity>
+))}
 
         {/* ====================================================== */}
         {/* SCHOOL OVERVIEW */}

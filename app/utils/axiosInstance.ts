@@ -185,17 +185,13 @@ export const studentApi: AxiosInstance = createAxiosInstance("http://192.168.88.
 );
 export const staffApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
 );
-export const studentAttendanceApi: AxiosInstance = createAxiosInstance("http://192.168.88.9:8081",
+export const createExamApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8081",
 );
-export const staffAttendanceApi: AxiosInstance = createAxiosInstance("http://192.168.88.9:8081",
-);
-export const createExamApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
-);
-export const addSubjectApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
+export const addSubjectApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8081",
 );
 export const hallticket192Api: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
 );
-export const addRouteApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081",
+export const addRouteApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8081",
 );
 export const holidayApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083",
 );
@@ -205,7 +201,11 @@ export const noticeApi: AxiosInstance = createAxiosInstance("http://192.168.88.2
 );
 export const createTimetableApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083",
 );
-export const transportApi: AxiosInstance = createAxiosInstance("http://192.168.88.19.8081",
+export const transportApi: AxiosInstance = createAxiosInstance("http://192.168.24.8081",
+);
+export const teacherAttendanceApi: AxiosInstance = createAxiosInstance("http://192.168.88.13:8081",
+);
+export const studentAttendanceApi: AxiosInstance = createAxiosInstance("http://192.168.88.13:8081",
 );
 export const root2Api: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083");
 export const rootApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081");

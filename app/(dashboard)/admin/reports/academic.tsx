@@ -110,61 +110,6 @@ export default function AcademicReportsPage() {
         )}
       </View>
 
-      {/* HERO */}
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroLeft}>
-          <Sparkles
-            size={
-              isMobile ? 30 : 36
-            }
-            color="#fff"
-          />
-
-          <Text style={styles.heroTitle}>
-            Smart Academic
-            Analytics
-          </Text>
-
-          <Text
-            style={
-              styles.heroSubtitle
-            }
-          >
-            AI-powered academic
-            insights with real-time
-            performance tracking
-          </Text>
-
-          <TouchableOpacity
-            style={styles.heroButton}
-          >
-            <Text
-              style={
-                styles.heroButtonText
-              }
-            >
-              Explore Insights
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroBadge}>
-          <GraduationCap
-            size={28}
-            color={PRIMARY}
-          />
-
-          <Text
-            style={
-              styles.heroBadgeText
-            }
-          >
-            95% Success
-          </Text>
-        </View>
-      </View>
-
       {/* SEARCH */}
 
       <View
