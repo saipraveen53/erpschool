@@ -15,10 +15,12 @@ import {
   Dimensions,
   Easing,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -134,6 +136,117 @@ export default function SettingsScreen() {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [offlineSync, setOfflineSync] = useState(true);
+
+  // Global Mock Account Context Data States
+  const [userProfile, setUserProfile] = useState({
+    fullName: "Shanmukhi",
+    contactEmail: "shanmukhi@enterprise.corp",
+    routingHandle: "@shan_dev_admin",
+  });
+
+  // Profile Form Interaction Temporaries
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [profileErrors, setProfileErrors] = useState<{
+    fullName?: string;
+    contactEmail?: string;
+  }>({});
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+
+  // Credentials Update Temporaries
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [credErrors, setCredErrors] = useState<{
+    currentPass?: string;
+    newPass?: string;
+    confirmPass?: string;
+  }>({});
+  const [credSuccess, setCredSuccess] = useState<string | null>(null);
+
+  // Safe Lifecycle Form Initializers
+  useEffect(() => {
+    if (activePopup === "profile_meta") {
+      setEditName(userProfile.fullName);
+      setEditEmail(userProfile.contactEmail);
+      setProfileErrors({});
+      setProfileSuccess(null);
+    } else if (activePopup === "credentials") {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setCredErrors({});
+      setCredSuccess(null);
+    }
+  }, [activePopup]);
+
+  // Profile Meta Commit Workflow Verification Engine
+  const commitProfileChanges = () => {
+    const errorsMap: typeof profileErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!editName.trim()) {
+      errorsMap.fullName = "Display name label field cannot be blank.";
+    } else if (editName.trim().length < 3) {
+      errorsMap.fullName = "Name handle must be 3 or more characters.";
+    }
+
+    if (!editEmail.trim()) {
+      errorsMap.contactEmail =
+        "Enterprise target routing endpoint is required.";
+    } else if (!emailRegex.test(editEmail.trim())) {
+      errorsMap.contactEmail =
+        "Input does not conform to valid standard email structures.";
+    }
+
+    if (Object.keys(errorsMap).length > 0) {
+      setProfileErrors(errorsMap);
+      return;
+    }
+
+    setProfileErrors({});
+    setUserProfile((prev) => ({
+      ...prev,
+      fullName: editName.trim(),
+      contactEmail: editEmail.trim(),
+    }));
+
+    setProfileSuccess("User environment details successfully configured.");
+    setTimeout(() => {
+      setActivePopup(null);
+      setProfileSuccess(null);
+    }, 1400);
+  };
+
+  // Credential Security Policy Evaluation Layer
+  const commitCredentialReset = () => {
+    const errorsMap: typeof credErrors = {};
+
+    if (!currentPassword) {
+      errorsMap.currentPass = "Active verification passphrase must be input.";
+    }
+    if (!newPassword) {
+      errorsMap.newPass = "Security token initialization requires a value.";
+    } else if (newPassword.length < 8) {
+      errorsMap.newPass =
+        "Passphrase strength matrix requires at least 8 characters.";
+    }
+    if (newPassword !== confirmPassword) {
+      errorsMap.confirmPass = "Mismatched validation entries detected.";
+    }
+
+    if (Object.keys(errorsMap).length > 0) {
+      setCredErrors(errorsMap);
+      return;
+    }
+
+    setCredErrors({});
+    setCredSuccess("Master Authorization Headers Synchronized.");
+    setTimeout(() => {
+      setActivePopup(null);
+      setCredSuccess(null);
+    }, 1400);
+  };
 
   return (
     <ScrollView
@@ -286,38 +399,73 @@ export default function SettingsScreen() {
 
       {/* ─── INTERACTIVE MODAL OVERLAY STREAMS ─── */}
 
-      {/* Popup 1: Profile Meta Details */}
+      {/* Popup 1: Profile Meta Configuration Form */}
       <PopupOverlay
         visible={activePopup === "profile_meta"}
-        onClose={() => setActivePopup(null)}
-        title="Profile Information Metadata"
+        onClose={() => !profileSuccess && setActivePopup(null)}
+        title="Edit Profile Information"
       >
-        <Text style={S.popupBodyParagraph}>
-          Your user profile routing handle is uniquely assigned to
-          **Shanmukhi**. Dynamic parameters such as active enterprise roles are
-          synchronizing directly with corporate active directory branches.
-        </Text>
-        <TouchableOpacity
-          style={[S.actionButtonPrimary, { backgroundColor: C.indigo }]}
-          onPress={() => setActivePopup(null)}
-        >
-          <Text style={S.actionButtonText}>Done</Text>
-        </TouchableOpacity>
-      </PopupOverlay>
+        {profileSuccess && (
+          <View style={S.successInlineMessageCard}>
+            <Text style={S.successInlineMessageText}>{profileSuccess}</Text>
+          </View>
+        )}
 
-      {/* Popup 2: Credentials Security Notice */}
-      <PopupOverlay
-        visible={activePopup === "credentials"}
-        onClose={() => setActivePopup(null)}
-        title="Security Token Authorization"
-      >
-        <Text style={S.popupBodyParagraph}>
-          To refresh access codes or sign client tokens, API request routes
-          require secondary multi-factor headers. Security ledger parameters are
-          actively logged.
-        </Text>
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={S.inputFieldControlGroup}>
+          <Text style={S.inputFieldLabel}>Display Target Name</Text>
+          <TextInput
+            editable={!profileSuccess}
+            value={editName}
+            onChangeText={(v) => {
+              setEditName(v);
+              if (profileErrors.fullName)
+                setProfileErrors((p) => ({ ...p, fullName: undefined }));
+            }}
+            placeholder="Input display profile identification"
+            placeholderTextColor={C.textTer}
+            style={[
+              S.interactiveTextInput,
+              profileErrors.fullName && S.interactiveTextInputInvalid,
+            ]}
+          />
+          {profileErrors.fullName && (
+            <Text style={S.validationErrorMessageLabel}>
+              {profileErrors.fullName}
+            </Text>
+          )}
+        </View>
+
+        <View style={S.inputFieldControlGroup}>
+          <Text style={S.inputFieldLabel}>
+            Enterprise Routing Endpoint (Email)
+          </Text>
+          <TextInput
+            editable={!profileSuccess}
+            value={editEmail}
+            onChangeText={(v) => {
+              setEditEmail(v);
+              if (profileErrors.contactEmail)
+                setProfileErrors((p) => ({ ...p, contactEmail: undefined }));
+            }}
+            placeholder="username@company.domain"
+            placeholderTextColor={C.textTer}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={[
+              S.interactiveTextInput,
+              profileErrors.contactEmail && S.interactiveTextInputInvalid,
+            ]}
+          />
+          {profileErrors.contactEmail && (
+            <Text style={S.validationErrorMessageLabel}>
+              {profileErrors.contactEmail}
+            </Text>
+          )}
+        </View>
+
+        <View style={S.dualActionButtonLayoutContainer}>
           <TouchableOpacity
+            disabled={!!profileSuccess}
             style={[S.actionButtonPrimary, { backgroundColor: C.bg, flex: 1 }]}
             onPress={() => setActivePopup(null)}
           >
@@ -326,18 +474,129 @@ export default function SettingsScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            disabled={!!profileSuccess}
             style={[
               S.actionButtonPrimary,
               { backgroundColor: C.indigo, flex: 1 },
             ]}
-            onPress={() => setActivePopup(null)}
+            onPress={commitProfileChanges}
           >
-            <Text style={S.actionButtonText}>Proceed</Text>
+            <Text style={S.actionButtonText}>Save Details</Text>
           </TouchableOpacity>
         </View>
       </PopupOverlay>
 
-      {/* Popup 3: Biometrics Enabled Alert */}
+      {/* Popup 2: Credentials Security Token Form */}
+      <PopupOverlay
+        visible={activePopup === "credentials"}
+        onClose={() => !credSuccess && setActivePopup(null)}
+        title="Update Security Parameters"
+      >
+        {credSuccess && (
+          <View style={S.successInlineMessageCard}>
+            <Text style={S.successInlineMessageText}>{credSuccess}</Text>
+          </View>
+        )}
+
+        <View style={S.inputFieldControlGroup}>
+          <Text style={S.inputFieldLabel}>Current Verification Key</Text>
+          <TextInput
+            secureTextEntry
+            editable={!credSuccess}
+            value={currentPassword}
+            onChangeText={(v) => {
+              setCurrentPassword(v);
+              if (credErrors.currentPass)
+                setCredErrors((p) => ({ ...p, currentPass: undefined }));
+            }}
+            placeholder="••••••••"
+            placeholderTextColor={C.textTer}
+            style={[
+              S.interactiveTextInput,
+              credErrors.currentPass && S.interactiveTextInputInvalid,
+            ]}
+          />
+          {credErrors.currentPass && (
+            <Text style={S.validationErrorMessageLabel}>
+              {credErrors.currentPass}
+            </Text>
+          )}
+        </View>
+
+        <View style={S.inputFieldControlGroup}>
+          <Text style={S.inputFieldLabel}>New Security Passphrase Token</Text>
+          <TextInput
+            secureTextEntry
+            editable={!credSuccess}
+            value={newPassword}
+            onChangeText={(v) => {
+              setNewPassword(v);
+              if (credErrors.newPass)
+                setCredErrors((p) => ({ ...p, newPass: undefined }));
+            }}
+            placeholder="Minimum 8 symbols"
+            placeholderTextColor={C.textTer}
+            style={[
+              S.interactiveTextInput,
+              credErrors.newPass && S.interactiveTextInputInvalid,
+            ]}
+          />
+          {credErrors.newPass && (
+            <Text style={S.validationErrorMessageLabel}>
+              {credErrors.newPass}
+            </Text>
+          )}
+        </View>
+
+        <View style={S.inputFieldControlGroup}>
+          <Text style={S.inputFieldLabel}>Confirm New Entry Token</Text>
+          <TextInput
+            secureTextEntry
+            editable={!credSuccess}
+            value={confirmPassword}
+            onChangeText={(v) => {
+              setConfirmPassword(v);
+              if (credErrors.confirmPass)
+                setCredErrors((p) => ({ ...p, confirmPass: undefined }));
+            }}
+            placeholder="Match input explicitly"
+            placeholderTextColor={C.textTer}
+            style={[
+              S.interactiveTextInput,
+              credErrors.confirmPass && S.interactiveTextInputInvalid,
+            ]}
+          />
+          {credErrors.confirmPass && (
+            <Text style={S.validationErrorMessageLabel}>
+              {credErrors.confirmPass}
+            </Text>
+          )}
+        </View>
+
+        <View style={S.dualActionButtonLayoutContainer}>
+          <TouchableOpacity
+            disabled={!!credSuccess}
+            style={[S.actionButtonPrimary, { backgroundColor: C.bg, flex: 1 }]}
+            onPress={() => setActivePopup(null)}
+          >
+            <Text style={[S.actionButtonText, { color: C.textPrimary }]}>
+              Abandone
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled={!!credSuccess}
+            style={[
+              S.actionButtonPrimary,
+              { backgroundColor: C.indigo, flex: 1 },
+            ]}
+            onPress={commitCredentialReset}
+          >
+            <Text style={S.actionButtonText}>Update Keys</Text>
+          </TouchableOpacity>
+        </View>
+      </PopupOverlay>
+
+      {/* Popup 3: Biometrics Sync Notification Badge */}
       <PopupOverlay
         visible={activePopup === "biometrics_success"}
         onClose={() => setActivePopup(null)}
@@ -356,7 +615,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </PopupOverlay>
 
-      {/* Popup 4: Danger Action Confirmation (Purge) */}
+      {/* Popup 4: Danger Cache Purge Interceptor */}
       <PopupOverlay
         visible={activePopup === "purge_cache_confirm"}
         onClose={() => setActivePopup(null)}
@@ -366,15 +625,28 @@ export default function SettingsScreen() {
           Warning: Erasing the runtime state cache drops all local indices.
           Non-synchronized changes will require full data fetches from servers.
         </Text>
-        <TouchableOpacity
-          style={[
-            S.actionButtonPrimary,
-            { backgroundColor: C.red, marginBottom: 8 },
-          ]}
-          onPress={() => setActivePopup(null)}
-        >
-          <Text style={S.actionButtonText}>Confirm and Clear Data</Text>
-        </TouchableOpacity>
+        <View style={{ gap: 8 }}>
+          <TouchableOpacity
+            style={[S.actionButtonPrimary, { backgroundColor: C.red }]}
+            onPress={() => {
+              setBiometricsEnabled(false);
+              setPushEnabled(true);
+              setDarkMode(false);
+              setOfflineSync(true);
+              setActivePopup(null);
+            }}
+          >
+            <Text style={S.actionButtonText}>Confirm and Clear Data</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[S.actionButtonPrimary, { backgroundColor: C.bg }]}
+            onPress={() => setActivePopup(null)}
+          >
+            <Text style={[S.actionButtonText, { color: C.textPrimary }]}>
+              Abort Operation
+            </Text>
+          </TouchableOpacity>
+        </View>
       </PopupOverlay>
     </ScrollView>
   );
@@ -383,27 +655,28 @@ export default function SettingsScreen() {
 const S = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#fbececb5" },
   content: { padding: isWide ? 24 : 16, paddingBottom: 40 },
-  heroContainer: { padding: 20, borderRadius: 24, marginBottom: 16 },
-  profileHeaderRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+  telemetryBoard: {
+    backgroundColor: C.dark2,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+  },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  avatarBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: C.indigo,
     alignItems: "center",
     justifyContent: "center",
   },
-  heroTitle: {
-    color: C.white,
-    fontSize: 18,
-    fontWeight: "800",
-    letterSpacing: -0.3,
-  },
-  heroSubtitle: {
+  avatarText: { color: C.white, fontWeight: "800", fontSize: 14 },
+  telemetryTitle: { color: C.white, fontSize: 16, fontWeight: "800" },
+  telemetrySubtitle: {
     color: C.textTer,
     fontSize: 11,
-    fontWeight: "500",
     marginTop: 2,
+    fontWeight: "500",
   },
   sectionLabelHeader: {
     flexDirection: "row",
@@ -443,6 +716,7 @@ const S = StyleSheet.create({
     height: 32,
     borderRadius: 10,
     alignItems: "center",
+
     justifyContent: "center",
   },
   rowContent: { flex: 1, justifyContent: "center" },
@@ -462,6 +736,55 @@ const S = StyleSheet.create({
     marginTop: 24,
   },
   purgeActionLabelText: { color: C.red, fontSize: 12, fontWeight: "700" },
+
+  /* ─── ENHANCED INPUTS & VALIDATION GRAPHICS ─── */
+  inputFieldControlGroup: { marginBottom: 14 },
+  inputFieldLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: C.textPrimary,
+    marginBottom: 5,
+  },
+  interactiveTextInput: {
+    backgroundColor: C.bg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    height: 40,
+    paddingHorizontal: 12,
+    fontSize: 12,
+    color: C.textPrimary,
+    ...Platform.select({ web: { outlineStyle: "none" } as any }),
+  },
+  interactiveTextInputInvalid: {
+    borderColor: C.red,
+    backgroundColor: "#fff5f5",
+  },
+  validationErrorMessageLabel: {
+    color: C.red,
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 4,
+    marginLeft: 2,
+  },
+  successInlineMessageCard: {
+    backgroundColor: C.greenLight,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+    borderLeftWidth: 3,
+    borderColor: C.green,
+  },
+  successInlineMessageText: {
+    color: "#065f46",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  dualActionButtonLayoutContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 6,
+  },
 
   /* ─── POPUP STYLE SCHEMAS ─── */
   popupOverlayContainer: {

@@ -1,3 +1,4 @@
+import * as ImagePicker from "expo-image-picker";
 import {
   AlertCircle,
   Camera,
@@ -14,12 +15,14 @@ import {
   UploadCloud,
   User,
   Wrench,
+  X,
 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
   Easing,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -111,7 +114,7 @@ const CATEGORIES = [
   { label: "Equipment Damage", zone: "laboratory", icon: FlaskConicalIcon },
 ];
 
-const COMPLAINTS_DATA = [
+const INITIAL_COMPLAINTS = [
   {
     id: "TKT-2026-44",
     title: "Flush valve failure & leaking pipe",
@@ -148,30 +151,6 @@ const COMPLAINTS_DATA = [
     urgency: "Medium",
     author: "Me",
   },
-  {
-    id: "TKT-2026-35",
-    title: "Broken armrests on 4 desks in Row G",
-    category: "Furniture Damage",
-    zoneKey: "classroom" as const,
-    location: "Seminar Complex Room 402",
-    status: "Resolved",
-    reportedAt: "May 30, 2026",
-    hasImage: true,
-    urgency: "Low",
-    author: "Ananya R. (Faculty)",
-  },
-  {
-    id: "TKT-2026-31",
-    title: "HVAC Unit short circuit throwing sparks",
-    category: "Electrical Problems",
-    zoneKey: "office" as const,
-    location: "Main Admin Conference Hall",
-    status: "Resolved",
-    reportedAt: "May 28, 2026",
-    hasImage: false,
-    urgency: "Critical",
-    author: "Kiran Kumar (Office Admin)",
-  },
 ];
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
@@ -182,15 +161,116 @@ const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> =
   };
 
 export default function ComplaintManagementScreen() {
-  const [activeTab, setActiveTab] = useState<"raise" | "track">("track"); // Default set to track to showcase lists
+  const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
+  const [activeTab, setActiveTab] = useState<"raise" | "track">("track");
   const [scope, setScope] = useState<"mine" | "all">("all");
+
+  // Form Field Tracks State
   const [selectedCategory, setSelectedCategory] = useState("");
   const [locationText, setLocationText] = useState("");
   const [descriptionText, setDescriptionText] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Search & Filter state configurations
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  const filteredComplaints = COMPLAINTS_DATA.filter((item) => {
+  // Inline Validation Banner System State
+  const [formValidationError, setFormValidationError] = useState<string | null>(
+    null,
+  );
+
+  // Media Library Integration Picker Logic Handler
+  const handleImagePick = async () => {
+    if (formValidationError) setFormValidationError(null);
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setFormValidationError(
+        "Permissions Error: Media access rights are required to attach evidence.",
+      );
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+
+    if (
+      !pickerResult.canceled &&
+      pickerResult.assets &&
+      pickerResult.assets.length > 0
+    ) {
+      setSelectedImage(pickerResult.assets[0].uri);
+    }
+  };
+
+  // Submission Pipeline & Form Validation Layer
+  const handleFormSubmit = () => {
+    // 1. Mandatory Field Group Validations
+    if (!selectedCategory) {
+      setFormValidationError(
+        "Validation Missing: A specific fault category classification is required.",
+      );
+      return;
+    }
+    if (!locationText.trim()) {
+      setFormValidationError(
+        "Validation Missing: Unit marker placement description location cannot be empty.",
+      );
+      return;
+    }
+    if (!descriptionText.trim() || descriptionText.trim().length < 10) {
+      setFormValidationError(
+        "Validation Missing: Detailed issue breakdown summary must contain at least 10 characters.",
+      );
+      return;
+    }
+    if (!selectedImage) {
+      setFormValidationError(
+        "Validation Missing: Fault visual verification proof image attachment is required.",
+      );
+      return;
+    }
+
+    // Clear validation error if all parameters match schema checklist rule
+    setFormValidationError(null);
+
+    const matchCategoryConfig = CATEGORIES.find(
+      (cat) => cat.label === selectedCategory,
+    );
+    const assignedTicketId = `TKT-2026-${Math.floor(50 + Math.random() * 900)}`;
+
+    const generatedTicketObject = {
+      id: assignedTicketId,
+      title: descriptionText.trim(),
+      category: selectedCategory,
+      zoneKey: (matchCategoryConfig?.zone || "classroom") as any,
+      location: locationText.trim(),
+      status: "Pending",
+      reportedAt: "Just Now",
+      hasImage: true,
+      urgency: "Medium",
+      author: "Me",
+    };
+
+    // Inject object into working memory array
+    setComplaints([generatedTicketObject, ...complaints]);
+
+    // Reset workflow fields parameters
+    setSelectedCategory("");
+    setLocationText("");
+    setDescriptionText("");
+    setSelectedImage(null);
+
+    // Swap to operational list tracking framework
+    setActiveTab("track");
+  };
+
+  const filteredComplaints = complaints.filter((item) => {
     const matchesSearch =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -209,7 +289,7 @@ export default function ComplaintManagementScreen() {
       {/* Hero Billboard Headliner */}
       <FadeInUp delay={0}>
         <View style={S.heroContainer}>
-          <View>
+          <View style={{ flex: 1, paddingRight: isWide ? 16 : 0 }}>
             <Text style={S.heroTitle}>Support Hub</Text>
             <Text style={S.heroSubtitle}>
               Report facility issues, submit structural maintenance tickets, and
@@ -223,8 +303,8 @@ export default function ComplaintManagementScreen() {
               onPress={() => setActiveTab("raise")}
             >
               <Plus
-                size={20}
-                color={activeTab === "raise" ? C.white : C.textTer}
+                size={18}
+                color={activeTab === "raise" ? C.white : C.textSec}
               />
               <Text
                 style={[
@@ -240,8 +320,8 @@ export default function ComplaintManagementScreen() {
               onPress={() => setActiveTab("track")}
             >
               <FileText
-                size={20}
-                color={activeTab === "track" ? C.white : C.textTer}
+                size={18}
+                color={activeTab === "track" ? C.white : C.textSec}
               />
               <Text
                 style={[
@@ -249,7 +329,7 @@ export default function ComplaintManagementScreen() {
                   activeTab === "track" && S.toggleTabTextActive,
                 ]}
               >
-                Track Status ({COMPLAINTS_DATA.length})
+                Track Status ({complaints.length})
               </Text>
             </TouchableOpacity>
           </View>
@@ -259,6 +339,25 @@ export default function ComplaintManagementScreen() {
       {/* ─── TAB VIEW A: SUBMIT A COMPLAINT ─── */}
       {activeTab === "raise" && (
         <View>
+          {/* Form Error Banner Notification engine overlay banner */}
+          {formValidationError && (
+            <FadeInUp delay={50}>
+              <View style={S.validationErrorBannerLayout}>
+                <AlertCircle
+                  size={16}
+                  color={C.red}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={S.validationErrorBannerTextString}>
+                  {formValidationError}
+                </Text>
+                <TouchableOpacity onPress={() => setFormValidationError(null)}>
+                  <X size={14} color={C.textSec} />
+                </TouchableOpacity>
+              </View>
+            </FadeInUp>
+          )}
+
           <FadeInUp delay={100}>
             <View style={S.sectionLabelHeader}>
               <View style={S.accentIndicatorDot} />
@@ -277,7 +376,10 @@ export default function ComplaintManagementScreen() {
                   <TouchableOpacity
                     key={i}
                     activeOpacity={0.85}
-                    onPress={() => setSelectedCategory(cat.label)}
+                    onPress={() => {
+                      setSelectedCategory(cat.label);
+                      if (formValidationError) setFormValidationError(null);
+                    }}
                     style={[
                       S.categoryBox,
                       isPicked && {
@@ -324,7 +426,7 @@ export default function ComplaintManagementScreen() {
             <View style={S.inputFormCard}>
               <View style={S.inputGroup}>
                 <Text style={S.fieldLabel}>
-                  Specific Location / Unit Marker
+                  Specific Location / Unit Marker *
                 </Text>
                 <View style={S.inputFieldWrapper}>
                   <MapPin
@@ -336,21 +438,27 @@ export default function ComplaintManagementScreen() {
                     placeholder="e.g., Room 302, Washroom Complex B, Floor 1"
                     placeholderTextColor={C.textTer}
                     value={locationText}
-                    onChangeText={setLocationText}
+                    onChangeText={(val) => {
+                      setLocationText(val);
+                      if (formValidationError) setFormValidationError(null);
+                    }}
                     style={S.textInputControl}
                   />
                 </View>
               </View>
 
               <View style={S.inputGroup}>
-                <Text style={S.fieldLabel}>Detailed Issue Breakdown</Text>
+                <Text style={S.fieldLabel}>Detailed Issue Breakdown *</Text>
                 <TextInput
-                  placeholder="Provide precise details describing the physical fault..."
+                  placeholder="Provide precise details describing the physical fault (min 10 characters)..."
                   placeholderTextColor={C.textTer}
                   multiline
                   numberOfLines={4}
                   value={descriptionText}
-                  onChangeText={setDescriptionText}
+                  onChangeText={(val) => {
+                    setDescriptionText(val);
+                    if (formValidationError) setFormValidationError(null);
+                  }}
                   style={[S.textInputControl, S.multilineInputStyle]}
                 />
               </View>
@@ -360,28 +468,57 @@ export default function ComplaintManagementScreen() {
           <FadeInUp delay={220}>
             <View style={S.sectionLabelHeader}>
               <View style={S.accentIndicatorDot} />
-              <Text style={S.sectionLabelText}>3. EVIDENCE ATTACHMENT</Text>
+              <Text style={S.sectionLabelText}>3. EVIDENCE ATTACHMENT *</Text>
             </View>
 
-            <TouchableOpacity style={S.photoUploaderBox} activeOpacity={0.75}>
-              <View style={S.cloudRingContainer}>
-                <UploadCloud size={24} color={C.indigo} />
-              </View>
-              <Text style={S.uploadHeadlineText}>
-                Upload Fault Proof Photos
-              </Text>
-              <Text style={S.uploadSubText}>
-                Capture directly via hardware camera or drop files (.JPEG, max
-                8MB)
-              </Text>
+            {/* Photo Uploader Selector Area */}
+            <TouchableOpacity
+              style={S.photoUploaderBox}
+              activeOpacity={0.75}
+              onPress={handleImagePick}
+            >
+              {selectedImage ? (
+                <View style={S.imageWrapperPreviewBox}>
+                  <Image
+                    source={{ uri: selectedImage }}
+                    style={S.previewImageStyle}
+                  />
+                  <View style={S.imageReplaceOverlyBadge}>
+                    <Camera
+                      size={12}
+                      color={C.white}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={S.imageReplaceText}>Change Photo</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={{ alignItems: "center" }}>
+                  <View style={S.cloudRingContainer}>
+                    <UploadCloud size={24} color={C.indigo} />
+                  </View>
+                  <Text style={S.uploadHeadlineText}>
+                    Upload Fault Proof Photos
+                  </Text>
+                  <Text style={S.uploadSubText}>
+                    Click to access device media storage reference photo library
+                    files
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 S.dispatchSubmitButton,
-                !selectedCategory && S.dispatchDisabledButton,
+                (!selectedCategory ||
+                  !locationText.trim() ||
+                  !descriptionText.trim() ||
+                  !selectedImage) &&
+                  S.dispatchDisabledButton,
               ]}
               activeOpacity={0.9}
+              onPress={handleFormSubmit}
             >
               <Text style={S.dispatchButtonLabel}>Dispatch Urgent Request</Text>
             </TouchableOpacity>
@@ -389,6 +526,7 @@ export default function ComplaintManagementScreen() {
         </View>
       )}
 
+      {/* ─── TAB VIEW B: TRACK STATUS LIST ─── */}
       {activeTab === "track" && (
         <View>
           <FadeInUp delay={100}>
@@ -480,10 +618,10 @@ export default function ComplaintManagementScreen() {
             </ScrollView>
           </FadeInUp>
 
-          {/* Ticket Ledger System */}
+          {/* Ticket Ledger Layout */}
           <View style={S.ledgerGrid}>
             {filteredComplaints.map((ticket, index) => {
-              const status = STATUS_MAP[ticket.status];
+              const status = STATUS_MAP[ticket.status] || STATUS_MAP["Pending"];
               const accentColor =
                 C[ticket.zoneKey as keyof typeof C] || C.indigo;
 
@@ -567,7 +705,6 @@ export default function ComplaintManagementScreen() {
                         </View>
                       )}
 
-                      {/* Reporter Identifier Label */}
                       <View
                         style={[
                           S.authorBadge,
@@ -608,23 +745,15 @@ export default function ComplaintManagementScreen() {
   );
 }
 
-// Stylesheet Extensions
 const S = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#fbececb5",
-  },
-  content: {
-    padding: isWide ? 24 : 16,
-    paddingBottom: 40,
-  },
+  screen: { flex: 1, backgroundColor: "#fbececb5" },
+  content: { padding: isWide ? 24 : 16, paddingBottom: 40 },
   heroContainer: {
-    padding: 20,
-    borderRadius: 24,
+    padding: 4,
     marginBottom: 20,
-
     flexDirection: isWide ? "row" : "column",
     justifyContent: "space-between",
+    alignItems: isWide ? "center" : "flex-start",
   },
   heroTitle: {
     fontSize: isWide ? 26 : 22,
@@ -639,46 +768,36 @@ const S = StyleSheet.create({
   },
   navigationToggleRow: {
     flexDirection: "row",
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    backgroundColor: "rgba(255, 255, 255, 0.75)",
     borderRadius: 14,
     padding: 4,
-    marginTop: 20,
+    marginTop: isWide ? 0 : 16,
     gap: 4,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   toggleTab: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    gap: 10,
-    marginHorizontal: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 6,
     borderRadius: 10,
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
   },
-  toggleTabActive: {
-    backgroundColor: "#dc2626",
-    paddingHorizontal: 12,
-    width: "auto",
-    color: C.white,
-  },
-  toggleTabText: {
-    fontSize: 12,
-    fontWeight: "600",
-
-    // color: C.textTer,
-  },
-  toggleTabTextActive: {
-    color: C.white,
-  },
+  toggleTabActive: { backgroundColor: "#dc2626" },
+  toggleTabText: { fontSize: 12, fontWeight: "600", color: C.textSec },
+  toggleTabTextActive: { color: C.white },
   scopeSelectorContainer: {
     flexDirection: "row",
-    backgroundColor: C.border,
+    backgroundColor: "#ffffff",
     padding: 4,
     borderRadius: 12,
     marginBottom: 14,
     gap: 4,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   scopeOptionButton: {
     flex: 1,
@@ -689,18 +808,9 @@ const S = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-  scopeOptionButtonActive: {
-    backgroundColor: "#dc2626",
-  },
-  scopeOptionText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: C.textSec,
-  },
-  scopeOptionTextActive: {
-    color: C.white,
-    fontWeight: "700",
-  },
+  scopeOptionButtonActive: { backgroundColor: "#dc2626" },
+  scopeOptionText: { fontSize: 12, fontWeight: "600", color: C.textSec },
+  scopeOptionTextActive: { color: C.white, fontWeight: "700" },
   sectionLabelHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -727,17 +837,16 @@ const S = StyleSheet.create({
     marginBottom: 16,
   },
   categoryBox: {
-    width: isWide ? "10%" : isMid ? "20%" : "50%",
+    width: isWide ? "23%" : isMid ? "30%" : "47%",
     paddingHorizontal: 4,
-    marginBottom: 8,
     backgroundColor: C.white,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "#f1f5f9",
     borderRadius: 16,
-    padding: 20,
+    padding: 14,
     flexDirection: "column",
     alignItems: "center",
-    marginHorizontal: 8,
+    margin: 4,
   },
   iconFrame: {
     width: 36,
@@ -748,21 +857,20 @@ const S = StyleSheet.create({
     marginBottom: 10,
   },
   categoryBoxLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: C.textSec,
+    textAlign: "center",
   },
   inputFormCard: {
     backgroundColor: C.white,
     borderRadius: 20,
     padding: 16,
-    borderWidth: 1,
-    borderColor: C.border,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#eedbdb",
   },
-  inputGroup: {
-    marginBottom: 14,
-  },
+  inputGroup: { marginBottom: 14 },
   fieldLabel: {
     fontSize: 12,
     fontWeight: "600",
@@ -773,43 +881,42 @@ const S = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-
     borderRadius: 12,
-
-    borderColor: "#fa0606",
+    borderColor: "#eedbdb",
     paddingHorizontal: 12,
-    height: 42,
+    height: 44,
+    backgroundColor: C.bg,
   },
-  fieldInnerIcon: {
-    marginRight: 6,
-  },
+  fieldInnerIcon: { marginRight: 6 },
   textInputControl: {
     flex: 1,
     color: C.textPrimary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
   },
   multilineInputStyle: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#fa0606",
-    shadowColor: "#fa0606",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-
+    borderColor: "#eedbdb",
+    backgroundColor: C.bg,
     padding: 12,
     height: 90,
     textAlignVertical: "top",
   },
+
+  // Custom styled photo uploader framework block handles
   photoUploaderBox: {
     backgroundColor: C.white,
     borderWidth: 2,
-    borderColor: C.border,
+    borderColor: "#eedbdb",
     borderStyle: "dashed",
     borderRadius: 20,
-    padding: 24,
+    padding: 16,
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
+    minHeight: 140,
+    overflow: "hidden",
   },
   cloudRingContainer: {
     width: 46,
@@ -818,57 +925,81 @@ const S = StyleSheet.create({
     backgroundColor: C.indigoLight,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  uploadHeadlineText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: C.textPrimary,
-  },
+  uploadHeadlineText: { fontSize: 13, fontWeight: "700", color: C.textPrimary },
   uploadSubText: {
     fontSize: 11,
     color: C.textTer,
     textAlign: "center",
     marginTop: 4,
+    paddingHorizontal: 16,
   },
+  imageWrapperPreviewBox: {
+    width: "100%",
+    height: 160,
+    borderRadius: 14,
+    overflow: "hidden",
+    position: "relative",
+  },
+  previewImageStyle: { width: "100%", height: "100%", resizeMode: "cover" },
+  imageReplaceOverlyBadge: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  imageReplaceText: { color: C.white, fontSize: 10, fontWeight: "700" },
+
+  // Validation message box element layouts
+  validationErrorBannerLayout: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.redLight,
+    borderWidth: 1,
+    borderColor: C.red,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  validationErrorBannerTextString: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.red,
+  },
+
   dispatchSubmitButton: {
     backgroundColor: C.indigo,
     borderRadius: 14,
-    height: 46,
+    height: 48,
     alignItems: "center",
     justifyContent: "center",
   },
-  dispatchDisabledButton: {
-    backgroundColor: C.textTer,
-    opacity: 0.5,
-  },
-  dispatchButtonLabel: {
-    color: C.white,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  searchFilterRow: {
-    flexDirection: "row",
-    marginBottom: 10,
-  },
+  dispatchDisabledButton: { backgroundColor: C.textTer, opacity: 0.4 },
+  dispatchButtonLabel: { color: C.white, fontSize: 14, fontWeight: "700" },
+  searchFilterRow: { flexDirection: "row", marginBottom: 10 },
   searchContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: C.white,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: C.border,
     paddingHorizontal: 12,
-    height: 42,
+    height: 44,
+    borderWidth: 1,
+    borderColor: "#eedbdb",
   },
-  searchIcon: {
-    marginRight: 6,
-  },
+  searchIcon: { marginRight: 6 },
   searchInputField: {
     flex: 1,
     color: C.textPrimary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
   },
   pillStripWrapper: {
@@ -879,33 +1010,22 @@ const S = StyleSheet.create({
   },
   statusPillItem: {
     backgroundColor: C.white,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "#eedbdb",
   },
-  statusPillItemActive: {
-    backgroundColor: C.indigo,
-    borderColor: C.indigo,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: C.textSec,
-  },
-  statusPillTextActive: {
-    color: C.white,
-  },
-  ledgerGrid: {
-    gap: 10,
-  },
+  statusPillItemActive: { backgroundColor: C.indigo, borderColor: C.indigo },
+  statusPillText: { fontSize: 11, fontWeight: "600", color: C.textSec },
+  statusPillTextActive: { color: C.white },
+  ledgerGrid: { gap: 10 },
   ticketItemCard: {
     backgroundColor: C.white,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: C.border,
     padding: 14,
+    borderWidth: 1,
+    borderColor: "#eedbdb",
   },
   ticketHeaderLine: {
     flexDirection: "row",
@@ -913,62 +1033,29 @@ const S = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  identityGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  categoryDotTag: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  tokenIdString: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: C.textPrimary,
-  },
-  bulletSpace: {
-    color: C.textTer,
-    marginHorizontal: 4,
-  },
-  categoryBadgeLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
+  identityGroup: { flexDirection: "row", alignItems: "center" },
+  categoryDotTag: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  tokenIdString: { fontSize: 11, fontWeight: "700", color: C.textPrimary },
+  bulletSpace: { color: C.textTer, marginHorizontal: 4 },
+  categoryBadgeLabel: { fontSize: 11, fontWeight: "600" },
   stateBadgeContainer: {
     paddingVertical: 2,
     paddingHorizontal: 8,
     borderRadius: 6,
   },
-  stateBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
+  stateBadgeText: { fontSize: 10, fontWeight: "700" },
   ticketMainTitle: {
     fontSize: 14,
     fontWeight: "700",
     color: C.textPrimary,
     marginBottom: 8,
   },
-  ticketLocationFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locLine: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    flex: 1,
-  },
-  locValueString: {
-    fontSize: 12,
-    color: C.textSec,
-    fontWeight: "500",
-  },
+  ticketLocationFooter: { flexDirection: "row", alignItems: "center" },
+  locLine: { flexDirection: "row", alignItems: "center", gap: 4, flex: 1 },
+  locValueString: { fontSize: 12, color: C.textSec, fontWeight: "500" },
   cardBoundarySeparator: {
     height: 1,
-    backgroundColor: C.border,
+    backgroundColor: "#f1f5f9",
     marginVertical: 10,
   },
   metaParametersLine: {
@@ -977,21 +1064,9 @@ const S = StyleSheet.create({
     gap: 10,
     flexWrap: "wrap",
   },
-  paramItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  urgencyIndicatorDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 100,
-  },
-  paramValueText: {
-    fontSize: 11,
-    color: C.textSec,
-    fontWeight: "500",
-  },
+  paramItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  urgencyIndicatorDot: { width: 5, height: 5, borderRadius: 100 },
+  paramValueText: { fontSize: 11, color: C.textSec, fontWeight: "500" },
   imagePresencePill: {
     flexDirection: "row",
     alignItems: "center",
@@ -1001,38 +1076,23 @@ const S = StyleSheet.create({
     paddingHorizontal: 6,
     borderRadius: 4,
   },
-  presenceText: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: C.purple,
-  },
+  presenceText: { fontSize: 9, fontWeight: "700", color: C.purple },
   authorBadge: {
-    backgroundColor: C.border,
+    backgroundColor: C.bg,
     paddingVertical: 2,
     paddingHorizontal: 6,
     borderRadius: 4,
     marginLeft: "auto",
   },
-  authorBadgeMine: {
-    backgroundColor: C.greenLight,
-  },
-  authorBadgeText: {
-    fontSize: 10,
-    color: C.textSec,
-    fontWeight: "600",
-  },
-  authorBadgeTextMine: {
-    color: C.green,
-    fontWeight: "700",
-  },
+  authorBadgeMine: { backgroundColor: C.greenLight },
+  authorBadgeText: { fontSize: 10, color: C.textSec, fontWeight: "600" },
+  authorBadgeTextMine: { color: C.green, fontWeight: "700" },
   emptyStateBox: {
     alignItems: "center",
     justifyContent: "center",
     padding: 32,
     backgroundColor: C.white,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: C.border,
     marginTop: 8,
   },
   emptyTitleString: {
