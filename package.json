@@ -15,10 +15,7 @@
     "@expo/metro-config": "~54.0.14",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
-<<<<<<< HEAD
-=======
-    "@react-native-community/datetimepicker": "8.4.4",
->>>>>>> dea719476cc3d088202f28b301b7908b2c394ac1
+    "@react-native-community/datetimepicker": "^8.4.4",
     "@react-native-picker/picker": "^2.11.4",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/drawer": "^7.10.3",

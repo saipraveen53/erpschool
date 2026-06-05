@@ -1,18 +1,16 @@
-import React, {
-  useState,
-} from "react";
+import React, { useState } from "react";
 
 import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  FlatList,
-  Alert,
-  Dimensions,
+    Alert,
+    Dimensions,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,15 +18,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 
 import {
-  Users,
-  Search,
-  X,
-  Mail,
-  Phone,
-  UserCircle2,
-  GraduationCap,
-  BriefcaseBusiness,
-  MapPin,
+    BriefcaseBusiness,
+    GraduationCap,
+    Mail,
+    MapPin,
+    Phone,
+    Search,
+    UserCircle2,
+    Users,
+    X,
 } from "lucide-react-native";
 
 import { staffApi } from "@/app/utils/axiosInstance";
@@ -67,88 +65,63 @@ export default function AddStaff() {
   /* STAFF STATES */
   /* ===================================== */
 
-  const [teachers, setTeachers] =
-    useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
 
-  const [teachersModal, setTeachersModal] =
-    useState(false);
+  const [teachersModal, setTeachersModal] = useState(false);
 
-  const [loadingTeachers, setLoadingTeachers] =
-    useState(false);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
 
   /* ===================================== */
   /* MODAL */
   /* ===================================== */
 
-  const [modalVisible, setModalVisible] =
-    useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
   /* ===================================== */
   /* REGISTRATION STATES */
   /* ===================================== */
 
-  const [password, setPassword] =
-    useState("");
+  const [password, setPassword] = useState("");
 
-  const [experience, setExperience] =
-    useState("");
+  const [experience, setExperience] = useState("");
 
-  const [address, setAddress] =
-    useState("");
+  const [address, setAddress] = useState("");
 
-  const [phoneNo, setPhoneNo] =
-    useState("");
+  const [phoneNo, setPhoneNo] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   /* ===================================== */
   /* FETCH STAFF */
   /* ===================================== */
 
-  const fetchTeachers =
-    async () => {
-      try {
-        setLoadingTeachers(true);
+  const fetchTeachers = async () => {
+    try {
+      setLoadingTeachers(true);
 
-        const response =
-          await staffApi.get(
-            "/api/student/teacher/all",
-          );
+      const response = await staffApi.get("/api/student/teacher/all");
 
-        const teachersData =
-          Array.isArray(response.data)
-            ? response.data
-            : response.data.data || [];
+      const teachersData = Array.isArray(response.data)
+        ? response.data
+        : response.data.data || [];
 
-        setTeachers(teachersData);
+      setTeachers(teachersData);
 
-        setTeachersModal(true);
-      } catch (error) {
-        console.log(
-          "Teachers Fetch Error:",
-          error,
-        );
-      } finally {
-        setLoadingTeachers(false);
-      }
-    };
+      setTeachersModal(true);
+    } catch (error) {
+      console.log("Teachers Fetch Error:", error);
+    } finally {
+      setLoadingTeachers(false);
+    }
+  };
 
   /* ===================================== */
   /* REGISTER PRINCIPAL */
   /* ===================================== */
 
   const submitRegistration = async () => {
-    if (
-      !password ||
-      !experience ||
-      !address ||
-      !phoneNo
-    ) {
-      Alert.alert(
-        "Error",
-        "Please fill all required fields",
-      );
+    if (!password || !experience || !address || !phoneNo) {
+      Alert.alert("Error", "Please fill all required fields");
 
       return;
     }
@@ -156,28 +129,21 @@ export default function AddStaff() {
     try {
       setLoading(true);
 
-      const token =
-        await AsyncStorage.getItem(
-          "userToken",
-        );
+      const token = await AsyncStorage.getItem("userToken");
 
       if (!token) {
-        Alert.alert(
-          "Error",
-          "Token not found",
-        );
+        Alert.alert("Error", "Token not found");
 
         return;
       }
 
       const response = await fetch(
-        `http://192.168.88.20:8081/api/principle/complete-onboarding?token=${token}`,
+        `http://192.168.88.20:8083/api/principle/complete-onboarding?token=${token}`,
         {
           method: "POST",
 
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
           },
 
           body: JSON.stringify({
@@ -189,14 +155,10 @@ export default function AddStaff() {
         },
       );
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (response.ok) {
-        Alert.alert(
-          "Success",
-          "Principal Registration Completed Successfully",
-        );
+        Alert.alert("Success", "Principal Registration Completed Successfully");
 
         setPassword("");
         setExperience("");
@@ -205,19 +167,12 @@ export default function AddStaff() {
 
         setModalVisible(false);
       } else {
-        Alert.alert(
-          "Error",
-          data?.message ||
-            "Registration Failed",
-        );
+        Alert.alert("Error", data?.message || "Registration Failed");
       }
     } catch (error) {
       console.log(error);
 
-      Alert.alert(
-        "Error",
-        "Network Request Failed",
-      );
+      Alert.alert("Error", "Network Request Failed");
     } finally {
       setLoading(false);
     }
@@ -228,55 +183,33 @@ export default function AddStaff() {
       <StatusBar style="dark" />
 
       <ScrollView
-        contentContainerStyle={
-          styles.contentContainer
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
         {/* HEADER */}
 
-        <Text style={styles.heading}>
-          Staff Management
-        </Text>
+        <Text style={styles.heading}>Staff Management</Text>
 
-        <Text style={styles.subHeading}>
-          Manage faculty and staff
-          records
-        </Text>
+        <Text style={styles.subHeading}>Manage faculty and staff records</Text>
 
         {/* SEARCH */}
 
         <View style={styles.searchBox}>
-          <Search
-            size={20}
-            color={COLORS.textSub}
-          />
+          <Search size={20} color={COLORS.textSub} />
 
           <TextInput
             placeholder="Search staff..."
-            placeholderTextColor={
-              COLORS.textSub
-            }
+            placeholderTextColor={COLORS.textSub}
             style={styles.searchInput}
           />
         </View>
 
         {/* STAFF CARD */}
 
-        <TouchableOpacity
-          style={styles.staffCard}
-          onPress={fetchTeachers}
-        >
-          <Users
-            size={42}
-            color={COLORS.accent}
-          />
+        <TouchableOpacity style={styles.staffCard} onPress={fetchTeachers}>
+          <Users size={42} color={COLORS.accent} />
 
-          <Text style={styles.staffTitle}>
-            Teachers
-          </Text>
+          <Text style={styles.staffTitle}>Teachers</Text>
 
           <Text style={styles.staffDesc}>
             {loadingTeachers
@@ -288,66 +221,48 @@ export default function AddStaff() {
         {/* STAFF FORM */}
 
         <View style={styles.form}>
-          <Text style={styles.formTitle}>
-            Add New Staff
-          </Text>
+          <Text style={styles.formTitle}>Add New Staff</Text>
 
           <TextInput
             placeholder="Full Name"
-            placeholderTextColor={
-              COLORS.textSub
-            }
+            placeholderTextColor={COLORS.textSub}
             style={styles.input}
           />
 
           <TextInput
             placeholder="Email Address"
-            placeholderTextColor={
-              COLORS.textSub
-            }
+            placeholderTextColor={COLORS.textSub}
             style={styles.input}
           />
 
           <TextInput
             placeholder="Phone Number"
-            placeholderTextColor={
-              COLORS.textSub
-            }
+            placeholderTextColor={COLORS.textSub}
             style={styles.input}
           />
 
           <TextInput
             placeholder="Department"
-            placeholderTextColor={
-              COLORS.textSub
-            }
+            placeholderTextColor={COLORS.textSub}
             style={styles.input}
           />
 
           <TextInput
             placeholder="Designation"
-            placeholderTextColor={
-              COLORS.textSub
-            }
+            placeholderTextColor={COLORS.textSub}
             style={styles.input}
           />
 
           <TextInput
             placeholder="Employee ID"
-            placeholderTextColor={
-              COLORS.textSub
-            }
+            placeholderTextColor={COLORS.textSub}
             style={styles.input}
           />
 
           {/* SAVE BUTTON */}
 
-          <TouchableOpacity
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>
-              Save Staff Member
-            </Text>
+          <TouchableOpacity style={styles.button}>
+            <Text style={styles.buttonText}>Save Staff Member</Text>
           </TouchableOpacity>
 
           {/* PRINCIPAL INVITATION */}
@@ -355,51 +270,22 @@ export default function AddStaff() {
           <TouchableOpacity
             style={styles.registerButton}
             activeOpacity={0.9}
-            onPress={() =>
-              setModalVisible(true)
-            }
+            onPress={() => setModalVisible(true)}
           >
-            <View
-              style={
-                styles.registerContent
-              }
-            >
-              <View
-                style={
-                  styles.iconContainer
-                }
-              >
-                <Text style={styles.icon}>
-                  👨‍🏫
+            <View style={styles.registerContent}>
+              <View style={styles.iconContainer}>
+                <Text style={styles.icon}>👨‍🏫</Text>
+              </View>
+
+              <View style={styles.textContainer}>
+                <Text style={styles.registerTitle}>Principal Invitation</Text>
+
+                <Text style={styles.registerSubtitle}>
+                  Open principal registration form
                 </Text>
               </View>
 
-              <View
-                style={
-                  styles.textContainer
-                }
-              >
-                <Text
-                  style={
-                    styles.registerTitle
-                  }
-                >
-                  Principal Invitation
-                </Text>
-
-                <Text
-                  style={
-                    styles.registerSubtitle
-                  }
-                >
-                  Open principal
-                  registration form
-                </Text>
-              </View>
-
-              <Text style={styles.arrow}>
-                →
-              </Text>
+              <Text style={styles.arrow}>→</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -409,43 +295,16 @@ export default function AddStaff() {
       {/* STAFF MODAL */}
       {/* ===================================== */}
 
-      <Modal
-        visible={teachersModal}
-        animationType="slide"
-        transparent
-      >
+      <Modal visible={teachersModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View
-            style={styles.staffModal}
-          >
+          <View style={styles.staffModal}>
             {/* HEADER */}
 
-            <View
-              style={
-                styles.staffModalHeader
-              }
-            >
-              <Text
-                style={
-                  styles.staffModalTitle
-                }
-              >
-                Teachers List
-              </Text>
+            <View style={styles.staffModalHeader}>
+              <Text style={styles.staffModalTitle}>Teachers List</Text>
 
-              <TouchableOpacity
-                onPress={() =>
-                  setTeachersModal(
-                    false,
-                  )
-                }
-              >
-                <X
-                  size={24}
-                  color={
-                    COLORS.textMain
-                  }
-                />
+              <TouchableOpacity onPress={() => setTeachersModal(false)}>
+                <X size={24} color={COLORS.textMain} />
               </TouchableOpacity>
             </View>
 
@@ -453,30 +312,11 @@ export default function AddStaff() {
 
             <FlatList
               data={teachers}
-              keyExtractor={(
-                item,
-                index,
-              ) =>
-                item.teacherId ||
-                index.toString()
-              }
+              keyExtractor={(item, index) => item.teacherId || index.toString()}
               renderItem={({ item }) => (
-                <View
-                  style={
-                    styles.teacherCard
-                  }
-                >
-                  <View
-                    style={
-                      styles.teacherTop
-                    }
-                  >
-                    <UserCircle2
-                      size={46}
-                      color={
-                        COLORS.accent
-                      }
-                    />
+                <View style={styles.teacherCard}>
+                  <View style={styles.teacherTop}>
+                    <UserCircle2 size={46} color={COLORS.accent} />
 
                     <View
                       style={{
@@ -484,163 +324,61 @@ export default function AddStaff() {
                         flex: 1,
                       }}
                     >
-                      <Text
-                        style={
-                          styles.teacherName
-                        }
-                      >
-                        {
-                          item.teacherName
-                        }
-                      </Text>
+                      <Text style={styles.teacherName}>{item.teacherName}</Text>
 
-                      <Text
-                        style={
-                          styles.teacherId
-                        }
-                      >
-                        {
-                          item.teacherId
-                        }
-                      </Text>
+                      <Text style={styles.teacherId}>{item.teacherId}</Text>
                     </View>
                   </View>
 
                   {/* EMAIL */}
 
-                  <View
-                    style={
-                      styles.infoRow
-                    }
-                  >
-                    <Mail
-                      size={16}
-                      color={
-                        COLORS.accent
-                      }
-                    />
+                  <View style={styles.infoRow}>
+                    <Mail size={16} color={COLORS.accent} />
 
-                    <Text
-                      style={
-                        styles.infoText
-                      }
-                    >
-                      {item.email}
-                    </Text>
+                    <Text style={styles.infoText}>{item.email}</Text>
                   </View>
 
                   {/* PHONE */}
 
-                  <View
-                    style={
-                      styles.infoRow
-                    }
-                  >
-                    <Phone
-                      size={16}
-                      color={
-                        COLORS.accent
-                      }
-                    />
+                  <View style={styles.infoRow}>
+                    <Phone size={16} color={COLORS.accent} />
 
-                    <Text
-                      style={
-                        styles.infoText
-                      }
-                    >
-                      {item.phone}
-                    </Text>
+                    <Text style={styles.infoText}>{item.phone}</Text>
                   </View>
 
                   {/* QUALIFICATION */}
 
-                  <View
-                    style={
-                      styles.infoRow
-                    }
-                  >
-                    <GraduationCap
-                      size={16}
-                      color={
-                        COLORS.accent
-                      }
-                    />
+                  <View style={styles.infoRow}>
+                    <GraduationCap size={16} color={COLORS.accent} />
 
-                    <Text
-                      style={
-                        styles.infoText
-                      }
-                    >
-                      Qualification:{" "}
-                      {
-                        item.qualification
-                      }
+                    <Text style={styles.infoText}>
+                      Qualification: {item.qualification}
                     </Text>
                   </View>
 
                   {/* EXPERIENCE */}
 
-                  <View
-                    style={
-                      styles.infoRow
-                    }
-                  >
-                    <BriefcaseBusiness
-                      size={16}
-                      color={
-                        COLORS.accent
-                      }
-                    />
+                  <View style={styles.infoRow}>
+                    <BriefcaseBusiness size={16} color={COLORS.accent} />
 
-                    <Text
-                      style={
-                        styles.infoText
-                      }
-                    >
-                      Experience:{" "}
-                      {item.experience}{" "}
-                      Years
+                    <Text style={styles.infoText}>
+                      Experience: {item.experience} Years
                     </Text>
                   </View>
 
                   {/* ADDRESS */}
 
-                  <View
-                    style={
-                      styles.infoRow
-                    }
-                  >
-                    <MapPin
-                      size={16}
-                      color={
-                        COLORS.accent
-                      }
-                    />
+                  <View style={styles.infoRow}>
+                    <MapPin size={16} color={COLORS.accent} />
 
-                    <Text
-                      style={
-                        styles.infoText
-                      }
-                    >
-                      {item.address}
-                    </Text>
+                    <Text style={styles.infoText}>{item.address}</Text>
                   </View>
 
                   {/* SUBJECTS */}
 
-                  <View
-                    style={
-                      styles.subjectBox
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.subjectText
-                      }
-                    >
-                      Subjects:{" "}
-                      {item.subjectIds
-                        ?.length || 0}
+                  <View style={styles.subjectBox}>
+                    <Text style={styles.subjectText}>
+                      Subjects: {item.subjectIds?.length || 0}
                     </Text>
                   </View>
                 </View>
@@ -652,173 +390,87 @@ export default function AddStaff() {
 
       {/* PRINCIPAL MODAL */}
 
-      <Modal
-        visible={modalVisible}
-        animationType="fade"
-        transparent={true}
-      >
+      <Modal visible={modalVisible} animationType="fade" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View
-            style={styles.modalContainer}
-          >
-            <ScrollView
-              showsVerticalScrollIndicator={
-                false
-              }
-            >
-              <View
-                style={styles.modalHeader}
-              >
-                <View
-                  style={
-                    styles.modalIconBox
-                  }
-                >
-                  <Text
-                    style={
-                      styles.modalIcon
-                    }
-                  >
-                    👨‍🏫
-                  </Text>
+          <View style={styles.modalContainer}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalIconBox}>
+                  <Text style={styles.modalIcon}>👨‍🏫</Text>
                 </View>
 
-                <Text
-                  style={styles.modalTitle}
-                >
-                  Principal Registration
-                </Text>
+                <Text style={styles.modalTitle}>Principal Registration</Text>
 
-                <Text
-                  style={
-                    styles.modalSubtitle
-                  }
-                >
-                  Complete onboarding
-                  registration
+                <Text style={styles.modalSubtitle}>
+                  Complete onboarding registration
                 </Text>
               </View>
 
-              <View
-                style={styles.formSection}
-              >
-                <Text style={styles.label}>
-                  Password
-                </Text>
+              <View style={styles.formSection}>
+                <Text style={styles.label}>Password</Text>
 
                 <TextInput
                   placeholder="Enter password"
-                  placeholderTextColor={
-                    COLORS.textSub
-                  }
-                  style={
-                    styles.modalInput
-                  }
+                  placeholderTextColor={COLORS.textSub}
+                  style={styles.modalInput}
                   secureTextEntry
                   value={password}
-                  onChangeText={
-                    setPassword
-                  }
+                  onChangeText={setPassword}
                 />
 
-                <Text style={styles.label}>
-                  Experience
-                </Text>
+                <Text style={styles.label}>Experience</Text>
 
                 <TextInput
                   placeholder="Enter experience"
-                  placeholderTextColor={
-                    COLORS.textSub
-                  }
-                  style={
-                    styles.modalInput
-                  }
+                  placeholderTextColor={COLORS.textSub}
+                  style={styles.modalInput}
                   value={experience}
-                  onChangeText={
-                    setExperience
-                  }
+                  onChangeText={setExperience}
                 />
 
-                <Text style={styles.label}>
-                  Address
-                </Text>
+                <Text style={styles.label}>Address</Text>
 
                 <TextInput
                   placeholder="Enter address"
-                  placeholderTextColor={
-                    COLORS.textSub
-                  }
+                  placeholderTextColor={COLORS.textSub}
                   style={[
                     styles.modalInput,
                     {
                       height: 70,
-                      textAlignVertical:
-                        "top",
+                      textAlignVertical: "top",
                     },
                   ]}
                   multiline
                   value={address}
-                  onChangeText={
-                    setAddress
-                  }
+                  onChangeText={setAddress}
                 />
 
-                <Text style={styles.label}>
-                  Phone Number
-                </Text>
+                <Text style={styles.label}>Phone Number</Text>
 
                 <TextInput
                   placeholder="Enter phone number"
-                  placeholderTextColor={
-                    COLORS.textSub
-                  }
-                  style={
-                    styles.modalInput
-                  }
+                  placeholderTextColor={COLORS.textSub}
+                  style={styles.modalInput}
                   keyboardType="phone-pad"
                   value={phoneNo}
-                  onChangeText={
-                    setPhoneNo
-                  }
+                  onChangeText={setPhoneNo}
                 />
 
                 <TouchableOpacity
-                  style={
-                    styles.submitButton
-                  }
-                  onPress={
-                    submitRegistration
-                  }
+                  style={styles.submitButton}
+                  onPress={submitRegistration}
                   disabled={loading}
                 >
-                  <Text
-                    style={
-                      styles.buttonText
-                    }
-                  >
-                    {loading
-                      ? "Submitting..."
-                      : "Submit Registration"}
+                  <Text style={styles.buttonText}>
+                    {loading ? "Submitting..." : "Submit Registration"}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={
-                    styles.cancelButton
-                  }
-                  onPress={() =>
-                    setModalVisible(
-                      false,
-                    )
-                  }
+                  style={styles.cancelButton}
+                  onPress={() => setModalVisible(false)}
                 >
-                  <Text
-                    style={
-                      styles.cancelText
-                    }
-                  >
-                    Cancel
-                  </Text>
+                  <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -836,8 +488,7 @@ export default function AddStaff() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:
-      COLORS.background,
+    backgroundColor: COLORS.background,
   },
 
   contentContainer: {
@@ -936,13 +587,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     fontSize: 14,
     color: COLORS.textMain,
-    backgroundColor:
-      COLORS.white,
+    backgroundColor: COLORS.white,
   },
 
   button: {
-    backgroundColor:
-      COLORS.accent,
+    backgroundColor: COLORS.accent,
     paddingVertical: 15,
     borderRadius: 16,
     alignItems: "center",
@@ -959,8 +608,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor:
-      COLORS.primary,
+    backgroundColor: COLORS.primary,
     elevation: 5,
   },
 
@@ -975,8 +623,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 16,
-    backgroundColor:
-      "rgba(255,255,255,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -997,8 +644,7 @@ const styles = StyleSheet.create({
   },
 
   registerSubtitle: {
-    color:
-      "rgba(255,255,255,0.8)",
+    color: "rgba(255,255,255,0.8)",
     marginTop: 3,
     fontSize: 12,
   },
@@ -1014,16 +660,14 @@ const styles = StyleSheet.create({
   staffModal: {
     width: "88%",
     maxHeight: "82%",
-    backgroundColor:
-      COLORS.white,
+    backgroundColor: COLORS.white,
     borderRadius: 28,
     padding: 20,
   },
 
   staffModalHeader: {
     flexDirection: "row",
-    justifyContent:
-      "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
   },
@@ -1035,8 +679,7 @@ const styles = StyleSheet.create({
   },
 
   teacherCard: {
-    backgroundColor:
-      "#F8FBFD",
+    backgroundColor: "#F8FBFD",
     borderRadius: 20,
     padding: 18,
     marginBottom: 16,
@@ -1077,8 +720,7 @@ const styles = StyleSheet.create({
 
   subjectBox: {
     marginTop: 16,
-    backgroundColor:
-      COLORS.lightAccent,
+    backgroundColor: COLORS.lightAccent,
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
@@ -1094,43 +736,35 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor:
-      "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
 
   modalContainer: {
-    width:
-      width > 900
-        ? "34%"
-        : "88%",
-    backgroundColor:
-      COLORS.white,
+    width: width > 900 ? "34%" : "88%",
+    backgroundColor: COLORS.white,
     borderRadius: 24,
     overflow: "hidden",
     elevation: 10,
   },
 
   modalHeader: {
-    backgroundColor:
-      COLORS.lightAccent,
+    backgroundColor: COLORS.lightAccent,
     alignItems: "center",
     paddingTop: 20,
     paddingBottom: 18,
     paddingHorizontal: 18,
     borderBottomWidth: 1,
-    borderBottomColor:
-      COLORS.border,
+    borderBottomColor: COLORS.border,
   },
 
   modalIconBox: {
     width: 58,
     height: 58,
     borderRadius: 18,
-    backgroundColor:
-      COLORS.primary,
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
@@ -1173,14 +807,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 14,
     fontSize: 13,
-    backgroundColor:
-      "#FAFAFA",
+    backgroundColor: "#FAFAFA",
     color: COLORS.textMain,
   },
 
   submitButton: {
-    backgroundColor:
-      COLORS.accent,
+    backgroundColor: COLORS.accent,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: "center",

@@ -197,12 +197,7 @@ const menuItems = [
         title: "Exams",
         route: "/admin/examination/exams",
       },
-
-      {
-        title: "Hall Tickets",
-        route: "/admin/examination/hall-tickets",
-      },
-
+      
       {
         title: "Results",
         route: "/admin/examination/results",

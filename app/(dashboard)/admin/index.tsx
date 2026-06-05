@@ -413,18 +413,12 @@ export default function AdminDashboard() {
           </Text>
 
           <TouchableOpacity
-  onPress={() =>
-    setActivityModal(true)
-  }
->      >
-            <Text
-              style={
-                styles.activityButton
-              }
-            >
-              Activities
-            </Text>
-          </TouchableOpacity>
+        onPress={() => setActivityModal(true)}
+      >
+        <Text style={styles.activityButton}>
+          Activities
+        </Text>
+      </TouchableOpacity>
         </View>
 
         {/* ====================================================== */}
