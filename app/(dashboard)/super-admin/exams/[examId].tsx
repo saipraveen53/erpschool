@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator, Modal, TextInput, Alert, Platform } from "react-native";
-import { BookOpen, Plus, Calendar, Clock, ChevronLeft, Search, X, Users, CheckCircle, FileText, User } from "lucide-react-native";
-import { useState, useEffect, createElement } from "react";
-import { rootApi } from "../../../utils/axiosInstance";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { BookOpen, Calendar, CheckCircle, ChevronLeft, FileText, Plus, Send, User, Users, X } from "lucide-react-native";
+import { createElement, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { rootApi } from "../../../utils/axiosInstance";
 
 export default function ExamDetails() {
   const { examId } = useLocalSearchParams();
@@ -11,13 +11,13 @@ export default function ExamDetails() {
   const isMobile = width < 768;
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"classes" | "subjects" | "timetable" | "marks">("classes");
+  const [activeTab, setActiveTab] = useState<"classes" | "subjects" | "timetable" | "marks" | "publish" | "halltickets">("classes");
 
-  
+
   const [classModalVisible, setClassModalVisible] = useState(false);
   const [subjectModalVisible, setSubjectModalVisible] = useState(false);
   const [timetableModalVisible, setTimetableModalVisible] = useState(false);
-  
+
   const [processing, setProcessing] = useState(false);
   const [classSections, setClassSections] = useState<any[]>([]);
   const [assignClassDropdown, setAssignClassDropdown] = useState(false);
@@ -26,7 +26,7 @@ export default function ExamDetails() {
   const [assignedClasses, setAssignedClasses] = useState<any[]>([]);
 
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
-  
+
   const [examMarks, setExamMarks] = useState<any[]>([]);
   const [marksLoading, setMarksLoading] = useState(false);
   const [marksFilterSubject, setMarksFilterSubject] = useState("");
@@ -64,12 +64,13 @@ export default function ExamDetails() {
       try {
         const response = await rootApi.get('/api/student/class-sections');
         if (response.data) setClassSections(response.data);
-        
+
         const teacherRes = await rootApi.get('/api/student/teacher/all');
         if (teacherRes.data) {
-          const fetchedTeachers = teacherRes.data.map((t: any) => ({
+          const tData = Array.isArray(teacherRes.data) ? teacherRes.data : (teacherRes.data.data || []);
+          const fetchedTeachers = tData.map((t: any) => ({
             id: t.teacherId || t.id,
-            name: t.teacherName || t.name
+            name: t.teacherName || t.name || t.firstName || "Unknown Teacher"
           }));
           setTeachers(fetchedTeachers);
         }
@@ -77,7 +78,7 @@ export default function ExamDetails() {
         const subjectRes = await rootApi.get('/api/student/subject/allSubjects');
         if (subjectRes.data) setAllSubjects(subjectRes.data);
 
-       
+
         const allExamsRes = await rootApi.get('/api/all-exams');
         if (allExamsRes.data && Array.isArray(allExamsRes.data)) {
           const examData = allExamsRes.data.find((e: any) => e.examId === examId);
@@ -98,7 +99,47 @@ export default function ExamDetails() {
 
   // Form states
   const [classSectionId, setClassSectionId] = useState("");
-  
+
+  const [publishClassId, setPublishClassId] = useState("");
+  const [publishDropdown, setPublishDropdown] = useState(false);
+
+  const handlePublish = async () => {
+    if (!publishClassId) return Alert.alert("Error", "Select a Class Section to publish results.");
+    try {
+      setProcessing(true);
+      await rootApi.put(`/api/exams/${examId}/publish/${publishClassId}`);
+      Alert.alert('Success', 'Results calculated and published successfully.');
+      setPublishClassId("");
+    } catch (error) {
+      Alert.alert('Error', 'Failed to publish results');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const [htClassId, setHtClassId] = useState("");
+  const [hallTickets, setHallTickets] = useState<any[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [htDropdown, setHtDropdown] = useState(false);
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      if (!htClassId) return;
+      setLoadingTickets(true);
+      try {
+        const res = await rootApi.get(`/api/exam/${examId}/class-section/${htClassId}`);
+        if (res.data) setHallTickets(res.data);
+      } catch (e) {
+        setHallTickets([]);
+      } finally {
+        setLoadingTickets(false);
+      }
+    };
+    if (activeTab === "halltickets" && htClassId) {
+      fetchTickets();
+    }
+  }, [htClassId, activeTab, examId]);
+
   const [subjectForm, setSubjectForm] = useState({
     subjectId: "",
     teacherId: "",
@@ -146,7 +187,7 @@ export default function ExamDetails() {
 
   const handleAssignClass = async () => {
     if (!classSectionId) return Alert.alert("Error", "Enter a Class Section ID.");
-    
+
     try {
       setProcessing(true);
       await rootApi.post(`/api/exams/${examId}/classes`, {
@@ -169,7 +210,7 @@ export default function ExamDetails() {
     if (!subjectForm.subjectId || !subjectForm.maxMarks || !subjectForm.passingMarks) {
       return Alert.alert("Error", "Fill all required fields.");
     }
-    
+
     try {
       setProcessing(true);
       const payload = {
@@ -265,7 +306,7 @@ export default function ExamDetails() {
           <ChevronLeft size={20} color="#64748b" />
           <Text style={styles.backBtnText}>Back</Text>
         </TouchableOpacity>
-        
+
         <View style={{ marginTop: 16 }}>
           <Text style={styles.examIdTag}>ID: {examId} {examDetails?.status ? `• ${examDetails.status}` : ''}</Text>
           <Text style={styles.headerTitle}>{examDetails?.examName || "Exam Configuration"}</Text>
@@ -277,36 +318,52 @@ export default function ExamDetails() {
 
       <View style={styles.tabsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.tabBtn, activeTab === "classes" && styles.tabBtnActive]}
             onPress={() => setActiveTab("classes")}
           >
             <Users size={16} color={activeTab === "classes" ? "#0284c7" : "#64748b"} />
             <Text style={[styles.tabText, activeTab === "classes" && styles.tabTextActive]}>Assigned Classes</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.tabBtn, activeTab === "subjects" && styles.tabBtnActive]}
             onPress={() => setActiveTab("subjects")}
           >
             <BookOpen size={16} color={activeTab === "subjects" ? "#0284c7" : "#64748b"} />
             <Text style={[styles.tabText, activeTab === "subjects" && styles.tabTextActive]}>Exam Subjects</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.tabBtn, activeTab === "timetable" && styles.tabBtnActive]}
             onPress={() => setActiveTab("timetable")}
           >
             <Calendar size={16} color={activeTab === "timetable" ? "#0284c7" : "#64748b"} />
             <Text style={[styles.tabText, activeTab === "timetable" && styles.tabTextActive]}>Timetable</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.tabBtn, activeTab === "marks" && styles.tabBtnActive]}
             onPress={() => setActiveTab("marks")}
           >
             <FileText size={16} color={activeTab === "marks" ? "#0284c7" : "#64748b"} />
             <Text style={[styles.tabText, activeTab === "marks" && styles.tabTextActive]}>Marks</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === "publish" && styles.tabBtnActive]}
+            onPress={() => setActiveTab("publish")}
+          >
+            <Send size={16} color={activeTab === "publish" ? "#0284c7" : "#64748b"} />
+            <Text style={[styles.tabText, activeTab === "publish" && styles.tabTextActive]}>Publish</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabBtn, activeTab === "halltickets" && styles.tabBtnActive]}
+            onPress={() => setActiveTab("halltickets")}
+          >
+            <User size={16} color={activeTab === "halltickets" ? "#0284c7" : "#64748b"} />
+            <Text style={[styles.tabText, activeTab === "halltickets" && styles.tabTextActive]}>Hall Tickets</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -337,7 +394,7 @@ export default function ExamDetails() {
                         <CheckCircle size={16} color="#E35336" style={{ marginRight: 8 }} />
                         <Text style={{ fontSize: 15, color: '#A0522D', fontWeight: '500' }}>{cls.className} - {cls.section}</Text>
                       </View>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 }}
                         onPress={() => fetchStudentsForClass(cls.classSectionId)}
                       >
@@ -346,7 +403,7 @@ export default function ExamDetails() {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    
+
                     {expandedClassId === cls.classSectionId && (
                       <View style={{ padding: 12, backgroundColor: '#f8fafc', borderTopWidth: 1, borderTopColor: '#e2e8f0' }}>
                         {loadingStudents ? (
@@ -355,8 +412,8 @@ export default function ExamDetails() {
                           <Text style={{ color: '#64748b', fontSize: 13 }}>No students found for this class.</Text>
                         ) : (
                           classStudents.map((stu, sIdx) => (
-                            <TouchableOpacity 
-                              key={sIdx} 
+                            <TouchableOpacity
+                              key={sIdx}
                               style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: sIdx === classStudents.length - 1 ? 0 : 1, borderBottomColor: '#e2e8f0' }}
                               onPress={() => router.push(`/super-admin/reports?studentId=${stu.studentId}`)}
                             >
@@ -423,7 +480,7 @@ export default function ExamDetails() {
                 <Text style={styles.actionBtnText}>Schedule Exam</Text>
               </TouchableOpacity>
             </View>
-            
+
             {examTimetable.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyText}>No timetable scheduled yet. Click 'Schedule Exam' to start.</Text>
@@ -451,6 +508,152 @@ export default function ExamDetails() {
             )}
           </View>
         )}
+        {activeTab === "marks" && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Exam Marks</Text>
+                <Text style={styles.sectionSubtitle}>View marks obtained by students.</Text>
+              </View>
+            </View>
+            <View style={{ padding: 16 }}>
+              {marksLoading ? (
+                <ActivityIndicator size="small" color="#E35336" />
+              ) : examMarks.length === 0 ? (
+                <Text style={{ color: '#8A6B5D', textAlign: 'center', marginVertical: 20 }}>No marks found for this exam.</Text>
+              ) : (
+                examMarks.map((m, i) => (
+                  <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#F5F5DC', borderRadius: 10, marginBottom: 8, borderWidth: 1, borderColor: '#E6D8D2' }}>
+                    <View>
+                      <Text style={{ fontWeight: '600', color: '#A0522D' }}>{m.studentName}</Text>
+                      <Text style={{ fontSize: 12, color: '#8A6B5D' }}>Sub: {m.subjectId} • {m.attendanceStatus}</Text>
+                    </View>
+                    <Text style={{ fontWeight: 'bold', color: '#E35336', fontSize: 16 }}>{m.obtainedMarks}</Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        )}
+
+        {activeTab === "publish" && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Publish Results</Text>
+                <Text style={styles.sectionSubtitle}>Publish compiled results for a class section.</Text>
+              </View>
+            </View>
+            <View style={{ padding: 24, zIndex: 10 }}>
+              <View style={[styles.formGroup, { zIndex: 50 }]}>
+                <Text style={styles.label}>Select Class Section *</Text>
+                <TouchableOpacity
+                  style={[styles.input, { justifyContent: 'center' }]}
+                  onPress={() => setPublishDropdown(!publishDropdown)}
+                >
+                  <Text style={{ color: publishClassId ? "#0f172a" : "#94a3b8" }}>
+                    {publishClassId ? classSections.find(c => c.classSectionId === publishClassId)?.className + " - " + classSections.find(c => c.classSectionId === publishClassId)?.section || publishClassId : "Select Class Section"}
+                  </Text>
+                </TouchableOpacity>
+
+                {publishDropdown && (
+                  <View style={styles.dropdownMenu}>
+                    <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                      {classSections.map(cls => (
+                        <TouchableOpacity
+                          key={cls.classSectionId}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setPublishClassId(cls.classSectionId);
+                            setPublishDropdown(false);
+                          }}
+                        >
+                          <Text style={styles.dropdownItemText}>{cls.className} - {cls.section}</Text>
+                        </TouchableOpacity>
+                      ))}
+                      {classSections.length === 0 && <Text style={{ padding: 10, color: '#94a3b8' }}>No classes found</Text>}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+              <TouchableOpacity style={styles.submitBtn} onPress={handlePublish} disabled={processing}>
+                {processing ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitBtnText}>Publish Results</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {activeTab === "halltickets" && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionTitle}>Hall Tickets</Text>
+                <Text style={styles.sectionSubtitle}>View and print hall tickets for a class section.</Text>
+              </View>
+            </View>
+            <View style={{ padding: 24, zIndex: 10 }}>
+              <View style={[styles.formGroup, { zIndex: 50 }]}>
+                <Text style={styles.label}>Select Class Section *</Text>
+                <TouchableOpacity
+                  style={[styles.input, { justifyContent: 'center' }]}
+                  onPress={() => setHtDropdown(!htDropdown)}
+                >
+                  <Text style={{ color: htClassId ? "#0f172a" : "#94a3b8" }}>
+                    {htClassId ? classSections.find(c => c.classSectionId === htClassId)?.className + " - " + classSections.find(c => c.classSectionId === htClassId)?.section || htClassId : "Choose Class"}
+                  </Text>
+                </TouchableOpacity>
+
+                {htDropdown && (
+                  <View style={styles.dropdownMenu}>
+                    <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
+                      {classSections.map(cls => (
+                        <TouchableOpacity
+                          key={cls.classSectionId}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setHtClassId(cls.classSectionId);
+                            setHtDropdown(false);
+                          }}
+                        >
+                          <Text style={styles.dropdownItemText}>{cls.className} - {cls.section}</Text>
+                        </TouchableOpacity>
+                      ))}
+                      {classSections.length === 0 && <Text style={{ padding: 10, color: '#94a3b8' }}>No classes found</Text>}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={{ padding: 16, backgroundColor: '#f8fafc' }}>
+              {loadingTickets ? (
+                <ActivityIndicator size="large" color="#E35336" />
+              ) : hallTickets.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>{htClassId ? "No students found for this class." : "Select a class section to view hall tickets."}</Text>
+                </View>
+              ) : (
+                hallTickets.map((item, idx) => (
+                  <View key={item.studentId || String(idx)} style={styles.htTicket}>
+                    <View style={styles.htTicketHeader}>
+                      <Text style={styles.htTicketSchool}>ERP School Hall Ticket</Text>
+                      <Text style={styles.htTicketExamName}>{item.examName || examDetails?.examName || "Exam"}</Text>
+                    </View>
+                    <View style={styles.htTicketBody}>
+                      <View style={styles.htAvatar}><User size={30} color="#E35336" /></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.htStudentName}>{item.studentName}</Text>
+                        <View style={styles.htRow}><Text style={styles.htLabel}>Roll No:</Text><Text style={styles.htVal}>{item.rollNumber || 'N/A'}</Text></View>
+                        <View style={styles.htRow}><Text style={styles.htLabel}>Class:</Text><Text style={styles.htVal}>{item.classSectionName || (classSections.find(c => c.classSectionId === htClassId)?.className + " - " + classSections.find(c => c.classSectionId === htClassId)?.section)}</Text></View>
+                        <View style={styles.htRow}><Text style={styles.htLabel}>Academic Year:</Text><Text style={styles.htVal}>{item.academicYear || examDetails?.academicYear}</Text></View>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Assign Class Modal */}
@@ -463,24 +666,24 @@ export default function ExamDetails() {
                 <X size={24} color="#94a3b8" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={[styles.formGroup, { zIndex: 50 }]}>
               <Text style={styles.label}>Class Section *</Text>
-              <TouchableOpacity 
-                style={[styles.input, { justifyContent: 'center' }]} 
+              <TouchableOpacity
+                style={[styles.input, { justifyContent: 'center' }]}
                 onPress={() => setAssignClassDropdown(!assignClassDropdown)}
               >
                 <Text style={{ color: classSectionId ? "#0f172a" : "#94a3b8" }}>
                   {classSectionId ? classSections.find(c => c.classSectionId === classSectionId)?.className + " - " + classSections.find(c => c.classSectionId === classSectionId)?.section || classSectionId : "Select Class Section"}
                 </Text>
               </TouchableOpacity>
-              
+
               {assignClassDropdown && (
                 <View style={styles.dropdownMenu}>
                   <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
                     {classSections.map(cls => (
-                      <TouchableOpacity 
-                        key={cls.classSectionId} 
+                      <TouchableOpacity
+                        key={cls.classSectionId}
                         style={styles.dropdownItem}
                         onPress={() => {
                           setClassSectionId(cls.classSectionId);
@@ -490,12 +693,12 @@ export default function ExamDetails() {
                         <Text style={styles.dropdownItemText}>{cls.className} - {cls.section}</Text>
                       </TouchableOpacity>
                     ))}
-                    {classSections.length === 0 && <Text style={{padding: 10, color: '#94a3b8'}}>No classes found</Text>}
+                    {classSections.length === 0 && <Text style={{ padding: 10, color: '#94a3b8' }}>No classes found</Text>}
                   </ScrollView>
                 </View>
               )}
             </View>
-            
+
             <TouchableOpacity style={styles.submitBtn} onPress={handleAssignClass} disabled={processing}>
               {processing ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitBtnText}>Assign Class</Text>}
             </TouchableOpacity>
@@ -513,34 +716,34 @@ export default function ExamDetails() {
                 <X size={24} color="#94a3b8" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={[styles.formGroup, { zIndex: 60 }]}>
               <Text style={styles.label}>Subject ID *</Text>
-              <TouchableOpacity 
-                style={[styles.input, { justifyContent: 'center' }]} 
+              <TouchableOpacity
+                style={[styles.input, { justifyContent: 'center' }]}
                 onPress={() => setAddSubjectDropdown(!addSubjectDropdown)}
               >
                 <Text style={{ color: subjectForm.subjectId ? "#0f172a" : "#94a3b8" }}>
                   {subjectForm.subjectId ? allSubjects.find(s => s.subjectId === subjectForm.subjectId)?.subjectName || subjectForm.subjectId : "Select Subject"}
                 </Text>
               </TouchableOpacity>
-              
+
               {addSubjectDropdown && (
                 <View style={styles.dropdownMenu}>
                   <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
                     {allSubjects.map(sub => (
-                      <TouchableOpacity 
-                        key={sub.subjectId} 
+                      <TouchableOpacity
+                        key={sub.subjectId}
                         style={styles.dropdownItem}
                         onPress={() => {
-                          setSubjectForm({...subjectForm, subjectId: sub.subjectId});
+                          setSubjectForm({ ...subjectForm, subjectId: sub.subjectId });
                           setAddSubjectDropdown(false);
                         }}
                       >
                         <Text style={styles.dropdownItemText}>{sub.subjectName} ({sub.subjectCode})</Text>
                       </TouchableOpacity>
                     ))}
-                    {allSubjects.length === 0 && <Text style={{padding: 10, color: '#94a3b8'}}>No subjects found</Text>}
+                    {allSubjects.length === 0 && <Text style={{ padding: 10, color: '#94a3b8' }}>No subjects found</Text>}
                   </ScrollView>
                 </View>
               )}
@@ -548,31 +751,31 @@ export default function ExamDetails() {
 
             <View style={[styles.formGroup, { zIndex: 50 }]}>
               <Text style={styles.label}>Teacher (Optional)</Text>
-              <TouchableOpacity 
-                style={[styles.input, { justifyContent: 'center' }]} 
+              <TouchableOpacity
+                style={[styles.input, { justifyContent: 'center' }]}
                 onPress={() => setTeacherDropdown(!teacherDropdown)}
               >
                 <Text style={{ color: subjectForm.teacherId ? "#0f172a" : "#94a3b8" }}>
                   {subjectForm.teacherId ? teachers.find(t => t.id === subjectForm.teacherId)?.name || subjectForm.teacherId : "Select Teacher"}
                 </Text>
               </TouchableOpacity>
-              
+
               {teacherDropdown && (
                 <View style={styles.dropdownMenu}>
                   <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
                     {teachers.map(t => (
-                      <TouchableOpacity 
-                        key={t.id} 
+                      <TouchableOpacity
+                        key={t.id}
                         style={styles.dropdownItem}
                         onPress={() => {
-                          setSubjectForm({...subjectForm, teacherId: t.id});
+                          setSubjectForm({ ...subjectForm, teacherId: t.id });
                           setTeacherDropdown(false);
                         }}
                       >
                         <Text style={styles.dropdownItemText}>{t.name}</Text>
                       </TouchableOpacity>
                     ))}
-                    {teachers.length === 0 && <Text style={{padding: 10, color: '#94a3b8'}}>No teachers found</Text>}
+                    {teachers.length === 0 && <Text style={{ padding: 10, color: '#94a3b8' }}>No teachers found</Text>}
                   </ScrollView>
                 </View>
               )}
@@ -581,14 +784,14 @@ export default function ExamDetails() {
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={[styles.formGroup, { flex: 1 }]}>
                 <Text style={styles.label}>Max Marks *</Text>
-                <TextInput style={styles.input} value={subjectForm.maxMarks} onChangeText={t => setSubjectForm({...subjectForm, maxMarks: t})} keyboardType="numeric" />
+                <TextInput style={styles.input} value={subjectForm.maxMarks} onChangeText={t => setSubjectForm({ ...subjectForm, maxMarks: t })} keyboardType="numeric" />
               </View>
               <View style={[styles.formGroup, { flex: 1 }]}>
                 <Text style={styles.label}>Passing Marks *</Text>
-                <TextInput style={styles.input} value={subjectForm.passingMarks} onChangeText={t => setSubjectForm({...subjectForm, passingMarks: t})} keyboardType="numeric" />
+                <TextInput style={styles.input} value={subjectForm.passingMarks} onChangeText={t => setSubjectForm({ ...subjectForm, passingMarks: t })} keyboardType="numeric" />
               </View>
             </View>
-            
+
             <TouchableOpacity style={styles.submitBtn} onPress={handleAddSubject} disabled={processing}>
               {processing ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.submitBtnText}>Add Subject</Text>}
             </TouchableOpacity>
@@ -606,67 +809,67 @@ export default function ExamDetails() {
                 <X size={24} color="#94a3b8" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
               <View style={{ flexDirection: 'row', gap: 12, zIndex: 50 }}>
                 <View style={[styles.formGroup, { flex: 1 }]}>
                   <Text style={styles.label}>Class Section *</Text>
-                  <TouchableOpacity 
-                    style={[styles.input, { justifyContent: 'center' }]} 
+                  <TouchableOpacity
+                    style={[styles.input, { justifyContent: 'center' }]}
                     onPress={() => setTimetableClassDropdown(!timetableClassDropdown)}
                   >
                     <Text style={{ color: timetableForm.classSectionId ? "#0f172a" : "#94a3b8" }}>
                       {timetableForm.classSectionId ? classSections.find(c => c.classSectionId === timetableForm.classSectionId)?.className + " - " + classSections.find(c => c.classSectionId === timetableForm.classSectionId)?.section || timetableForm.classSectionId : "Select Class Section"}
                     </Text>
                   </TouchableOpacity>
-                  
+
                   {timetableClassDropdown && (
                     <View style={styles.dropdownMenu}>
                       <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
                         {classSections.map(cls => (
-                          <TouchableOpacity 
-                            key={cls.classSectionId} 
+                          <TouchableOpacity
+                            key={cls.classSectionId}
                             style={styles.dropdownItem}
                             onPress={() => {
-                              setTimetableForm({...timetableForm, classSectionId: cls.classSectionId});
+                              setTimetableForm({ ...timetableForm, classSectionId: cls.classSectionId });
                               setTimetableClassDropdown(false);
                             }}
                           >
                             <Text style={styles.dropdownItemText}>{cls.className} - {cls.section}</Text>
                           </TouchableOpacity>
                         ))}
-                        {classSections.length === 0 && <Text style={{padding: 10, color: '#94a3b8'}}>No classes found</Text>}
+                        {classSections.length === 0 && <Text style={{ padding: 10, color: '#94a3b8' }}>No classes found</Text>}
                       </ScrollView>
                     </View>
                   )}
                 </View>
                 <View style={[styles.formGroup, { flex: 1, zIndex: 60 }]}>
                   <Text style={styles.label}>Subject ID *</Text>
-                  <TouchableOpacity 
-                    style={[styles.input, { justifyContent: 'center' }]} 
+                  <TouchableOpacity
+                    style={[styles.input, { justifyContent: 'center' }]}
                     onPress={() => setTimetableSubjectDropdown(!timetableSubjectDropdown)}
                   >
                     <Text style={{ color: timetableForm.subjectId ? "#0f172a" : "#94a3b8" }}>
                       {timetableForm.subjectId ? allSubjects.find(s => s.subjectId === timetableForm.subjectId)?.subjectName || timetableForm.subjectId : "Select Subject"}
                     </Text>
                   </TouchableOpacity>
-                  
+
                   {timetableSubjectDropdown && (
                     <View style={styles.dropdownMenu}>
                       <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
                         {allSubjects.map(sub => (
-                          <TouchableOpacity 
-                            key={sub.subjectId} 
+                          <TouchableOpacity
+                            key={sub.subjectId}
                             style={styles.dropdownItem}
                             onPress={() => {
-                              setTimetableForm({...timetableForm, subjectId: sub.subjectId});
+                              setTimetableForm({ ...timetableForm, subjectId: sub.subjectId });
                               setTimetableSubjectDropdown(false);
                             }}
                           >
                             <Text style={styles.dropdownItemText}>{sub.subjectName} ({sub.subjectCode})</Text>
                           </TouchableOpacity>
                         ))}
-                        {allSubjects.length === 0 && <Text style={{padding: 10, color: '#94a3b8'}}>No subjects found</Text>}
+                        {allSubjects.length === 0 && <Text style={{ padding: 10, color: '#94a3b8' }}>No subjects found</Text>}
                       </ScrollView>
                     </View>
                   )}
@@ -679,7 +882,7 @@ export default function ExamDetails() {
                   createElement('input', {
                     type: 'date',
                     value: timetableForm.examDate,
-                    onChange: (e: any) => setTimetableForm({...timetableForm, examDate: e.target.value}),
+                    onChange: (e: any) => setTimetableForm({ ...timetableForm, examDate: e.target.value }),
                     style: {
                       borderWidth: '1px',
                       borderColor: "#E6D8D2",
@@ -720,7 +923,7 @@ export default function ExamDetails() {
                     createElement('input', {
                       type: 'time',
                       value: timetableForm.startTime,
-                      onChange: (e: any) => setTimetableForm({...timetableForm, startTime: e.target.value}),
+                      onChange: (e: any) => setTimetableForm({ ...timetableForm, startTime: e.target.value }),
                       style: {
                         borderWidth: '1px',
                         borderColor: "#E6D8D2",
@@ -759,7 +962,7 @@ export default function ExamDetails() {
                     createElement('input', {
                       type: 'time',
                       value: timetableForm.endTime,
-                      onChange: (e: any) => setTimetableForm({...timetableForm, endTime: e.target.value}),
+                      onChange: (e: any) => setTimetableForm({ ...timetableForm, endTime: e.target.value }),
                       style: {
                         borderWidth: '1px',
                         borderColor: "#E6D8D2",
@@ -811,11 +1014,11 @@ const styles = StyleSheet.create({
   header: { backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#E6D8D2", padding: 24, paddingBottom: 0 },
   backBtn: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
   backBtnText: { fontSize: 14, fontWeight: '600', color: '#8A6B5D', marginLeft: 4 },
-  
+
   examIdTag: { color: '#E35336', fontSize: 12, fontWeight: 'bold', marginBottom: 4, textTransform: 'uppercase' },
   headerTitle: { fontSize: 24, fontWeight: "bold", color: "#A0522D" },
   headerSubtitle: { fontSize: 14, color: "#8A6B5D", marginTop: 4, marginBottom: 20 },
-  
+
   tabsContainer: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E6D8D2' },
   tabsScroll: { paddingHorizontal: 24, flexDirection: 'row', gap: 24 },
   tabBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 2, borderBottomColor: 'transparent', gap: 8 },
@@ -824,12 +1027,12 @@ const styles = StyleSheet.create({
   tabTextActive: { color: '#E35336' },
 
   contentContainer: { padding: 24, paddingBottom: 40 },
-  
+
   sectionCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#E6D8D2', overflow: 'hidden' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#F5F5DC' },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: "#A0522D" },
   sectionSubtitle: { fontSize: 13, color: '#8A6B5D', marginTop: 2 },
-  
+
   actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E35336', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, gap: 6 },
   actionBtnText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
 
@@ -840,16 +1043,31 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: "#fff", borderRadius: 16, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
   modalTitle: { fontSize: 18, fontWeight: "bold", color: "#A0522D" },
-  
+
   formGroup: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: "600", color: "#705244", marginBottom: 6 },
   input: { borderWidth: 1, borderColor: "#E6D8D2", borderRadius: 8, padding: 12, fontSize: 15, color: "#A0522D", backgroundColor: "#F5F5DC", ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any },
-  
+
   submitBtn: { backgroundColor: "#E35336", padding: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
   submitBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-  
-  dropdownMenu: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E6D8D2', borderRadius: 8, marginTop: 4, zIndex: 100, maxHeight: 150, elevation: 4 },
+
+  dropdownMenu: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E6D8D2', borderRadius: 8, marginTop: 4, zIndex: 9999, maxHeight: 150, elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   dropdownContainer: { borderWidth: 1, borderColor: '#E6D8D2', borderRadius: 8, backgroundColor: '#fff', marginTop: 4, overflow: 'hidden', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
   dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5DC' },
   dropdownItemText: { fontSize: 14, color: '#A0522D' },
+
+  htTicket: {
+    backgroundColor: '#fff', borderRadius: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: '#E6D8D2', overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3
+  },
+  htTicketHeader: { backgroundColor: '#E35336', padding: 16, alignItems: 'center' },
+  htTicketSchool: { color: '#fff', fontSize: 12, fontWeight: '600', letterSpacing: 1, opacity: 0.9 },
+  htTicketExamName: { color: '#fff', fontSize: 18, fontWeight: '700', marginTop: 4 },
+  htTicketBody: { flexDirection: 'row', padding: 20, gap: 20, alignItems: 'center' },
+  htAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#F5F5DC', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#E6D8D2' },
+  htStudentName: { fontSize: 18, fontWeight: '700', color: '#A0522D', marginBottom: 8 },
+  htRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  htLabel: { fontSize: 13, color: '#8A6B5D', width: 90 },
+  htVal: { fontSize: 13, fontWeight: '600', color: '#A0522D' },
 });
