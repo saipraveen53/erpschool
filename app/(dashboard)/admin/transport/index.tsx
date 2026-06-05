@@ -39,7 +39,7 @@ const THEME = {
   darkAccent: "#00BCD4",    // Deep Sienna Brown
   white: "#FFFFFF",         
   textDark: "#2C1A14",      
-  textMuted: "#FFFFFF",     
+  textMuted: "#7A6862",     
   successGlow: "#16A34A",   
   cardBorder: "rgba(160, 82, 45, 0.08)" 
 };
