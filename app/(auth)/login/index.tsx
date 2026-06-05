@@ -102,6 +102,25 @@ export default function LoginScreen() {
     }
   };
 
+  // Helper: map role to dashboard route
+  const getDashboardRoute = (role: string): string => {
+    const roleMap: Record<string, string> = {
+      SUPER_ADMIN: "/super-admin",
+      ADMIN: "/admin",
+      PRINCIPAL: "/principal",
+      VICE_PRINCIPAL: "/vice-principal",
+      TEACHER: "/teacher",
+      STUDENT: "/student",
+      PARENT: "/parent",
+      DRIVER: "/driver",
+      HOUSEKEEPING: "/housekeeping",
+      RECEPTIONIST: "/receptionist",
+      LIBRARIAN: "/librarian",
+    };
+    const path = roleMap[role] || "/admin";
+    return `/(dashboard)${path}`;
+  };
+
   const handleVerifyOtp = async () => {
     if (otp !== "123456") {
       Alert.alert("Error", "Invalid OTP. Please try again.");
@@ -109,45 +128,19 @@ export default function LoginScreen() {
       return;
     }
 
-    // OTP verified – manually store user data and navigate
     if (!demoUserData) return;
 
-  // Complete list of demo credentials for all dashboard roles
-  const demoCredentials = [
-    {
-      role: "Super Admin",
-      email: "superadmin@school.com",
-      password: "super123",
-    },
-    { role: "Admin", email: "admin@school.com", password: "admin123" },
-    {
-      role: "Principal",
-      email: "principal@school.com",
-      password: "principal123",
-    },
-    { role: "Vice Principal", email: "vice@school.com", password: "vice123" },
-    { role: "Teacher", email: "teacher@school.com", password: "teacher123" },
-    { role: "Student", email: "student@school.com", password: "student123" },
-    { role: "Parent", email: "parent@school.com", password: "parent123" },
-    { role: "Driver", email: "driver@school.com", password: "driver123" },
-    {
-      role: "Housekeeping",
-      email: "housekeeping@school.com",
-      password: "house123",
-    },
-    {
-      role: "Receptionist",
-      email: "receptionist@school.com",
-      password: "reception123",
-    },
-    {
-      role: "Librarian",
-      email: "librarian@school.com",
-      password: "librarian123",
-    },
-  ];
     try {
-      // Create fake token and store in AsyncStorage
+      // Clear any existing session to avoid stale AuthContext data
+      await AsyncStorage.multiRemove([
+        "userToken",
+        "refreshToken",
+        "userRole",
+        "userUsername",
+        "authenticated",
+      ]);
+
+      // Create fake token and store new demo session
       const fakeToken = `fake-jwt-token-${Date.now()}`;
       await AsyncStorage.setItem("userToken", fakeToken);
       await AsyncStorage.setItem("userRole", demoUserData.role);
@@ -155,15 +148,12 @@ export default function LoginScreen() {
       await AsyncStorage.setItem("userFullName", demoUserData.fullName);
       await AsyncStorage.setItem("authenticated", "true");
 
-      // Also update AuthContext state indirectly by logging in again?
-      // Instead, we can directly navigate and let index.tsx pick up AsyncStorage.
-      // But AuthContext won't know. Simpler: force reload for web, or redirect.
-      // For a smoother experience, we can call a "silent login" but easiest:
       setShowOtpModal(false);
       setOtp("");
 
-      // Navigate to index (root) which will read AsyncStorage and redirect
-      router.replace("/");
+      // Navigate directly to the role's dashboard (bypass index.tsx)
+      const route = getDashboardRoute(demoUserData.role);
+      router.replace(route as any);
     } catch (err) {
       Alert.alert("Error", "Something went wrong. Please try again.");
     }
