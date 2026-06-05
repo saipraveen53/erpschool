@@ -14,10 +14,10 @@ export default function RouteDetails() {
   const [students, setStudents] = useState<any[]>([]);
   const [allStudents, setAllStudents] = useState<any[]>([]);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
-  
+
   const [allDrivers, setAllDrivers] = useState<any[]>([]);
   const [showDriverDropdown, setShowDriverDropdown] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
 
   const [driverId, setDriverId] = useState("");
@@ -45,9 +45,17 @@ export default function RouteDetails() {
       }
 
       // Fetch assigned students
-      const studentsRes = await rootApi.get(`/api/student/transport/route/${routeId}/students`);
-      if (studentsRes.data && Array.isArray(studentsRes.data)) {
-        setStudents(studentsRes.data);
+      try {
+        const studentsRes = await rootApi.get(`/api/student/transport/route/${routeId}/students`);
+        if (studentsRes.data && Array.isArray(studentsRes.data)) {
+          setStudents(studentsRes.data);
+        }
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          setStudents([]);
+        } else {
+          console.error("Failed to fetch assigned students", err);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch route details", e);
@@ -122,7 +130,7 @@ export default function RouteDetails() {
           <ChevronLeft size={20} color="#8A6B5D" />
           <Text style={styles.backBtnText}>Back</Text>
         </TouchableOpacity>
-        
+
         <View style={{ marginTop: 16 }}>
           <Text style={styles.routeIdTag}>Route ID: {routeId}</Text>
           <Text style={styles.headerTitle}>{routeDetails?.routeName || "Loading Route..."}</Text>
@@ -137,7 +145,7 @@ export default function RouteDetails() {
           <ActivityIndicator size="large" color="#E35336" style={{ marginTop: 40 }} />
         ) : (
           <View style={{ gap: 24 }}>
-            
+
             {/* Driver Assignment Section */}
             <View style={[styles.sectionCard, { zIndex: 50 }]}>
               <View style={styles.sectionHeader}>
@@ -146,7 +154,7 @@ export default function RouteDetails() {
                   <Text style={styles.sectionSubtitle}>Link a driver to this route.</Text>
                 </View>
               </View>
-              
+
               <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-end', zIndex: 40 }}>
                 <View style={{ flex: 1, position: 'relative' }}>
                   <Text style={styles.label}>Driver ID</Text>
@@ -164,13 +172,13 @@ export default function RouteDetails() {
                     <View style={[styles.dropdownContainer, { top: 75 }]}>
                       <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
                         {allDrivers
-                          .filter((d: any) => 
-                            (String(d.id || "").toLowerCase().includes(driverId.toLowerCase()) ||
-                             String(d.fullName || "").toLowerCase().includes(driverId.toLowerCase()))
+                          .filter((d: any) =>
+                          (String(d.id || "").toLowerCase().includes(driverId.toLowerCase()) ||
+                            String(d.fullName || "").toLowerCase().includes(driverId.toLowerCase()))
                           )
                           .slice(0, 20)
                           .map((d: any, idx: number) => (
-                            <TouchableOpacity 
+                            <TouchableOpacity
                               key={idx}
                               style={styles.dropdownItem}
                               onPress={() => {
@@ -204,7 +212,7 @@ export default function RouteDetails() {
                   <Text style={styles.actionBtnText}>Add Student</Text>
                 </TouchableOpacity>
               </View>
-              
+
               {students.length === 0 ? (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyText}>No students assigned yet.</Text>
@@ -259,27 +267,27 @@ export default function RouteDetails() {
             <ScrollView style={{ padding: 24 }} contentContainerStyle={{ paddingBottom: 150 }}>
               <View style={[styles.formGroup, { position: 'relative', zIndex: 50 }]}>
                 <Text style={styles.label}>Student ID *</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={studentForm.studentId} 
+                <TextInput
+                  style={styles.input}
+                  value={studentForm.studentId}
                   onChangeText={t => {
-                    setStudentForm({...studentForm, studentId: t});
+                    setStudentForm({ ...studentForm, studentId: t });
                     setShowStudentDropdown(true);
-                  }} 
+                  }}
                   onFocus={() => setShowStudentDropdown(true)}
-                  placeholder="Search by ID or Name..." 
+                  placeholder="Search by ID or Name..."
                 />
                 {showStudentDropdown && (
                   <View style={styles.dropdownContainer}>
                     <ScrollView style={{ maxHeight: 150 }} nestedScrollEnabled>
                       {allStudents
-                        .filter((stu: any) => 
-                          (String(stu.studentId || "").toLowerCase().includes(studentForm.studentId.toLowerCase()) ||
-                           String(stu.fullName || "").toLowerCase().includes(studentForm.studentId.toLowerCase()))
+                        .filter((stu: any) =>
+                        (String(stu.studentId || "").toLowerCase().includes(studentForm.studentId.toLowerCase()) ||
+                          String(stu.fullName || "").toLowerCase().includes(studentForm.studentId.toLowerCase()))
                         )
                         .slice(0, 20)
                         .map((stu: any, idx: number) => (
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             key={idx}
                             style={styles.dropdownItem}
                             onPress={() => {
@@ -299,20 +307,20 @@ export default function RouteDetails() {
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={[styles.formGroup, { flex: 1 }]}>
                   <Text style={styles.label}>Pickup Stop *</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={studentForm.pickupStop} 
-                    onChangeText={t => setStudentForm({...studentForm, pickupStop: t})} 
-                    placeholder="e.g., LB Nagar" 
+                  <TextInput
+                    style={styles.input}
+                    value={studentForm.pickupStop}
+                    onChangeText={t => setStudentForm({ ...studentForm, pickupStop: t })}
+                    placeholder="e.g., LB Nagar"
                   />
                 </View>
                 <View style={[styles.formGroup, { flex: 1 }]}>
                   <Text style={styles.label}>Drop Stop *</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    value={studentForm.dropStop} 
-                    onChangeText={t => setStudentForm({...studentForm, dropStop: t})} 
-                    placeholder="e.g., Hastinapuram" 
+                  <TextInput
+                    style={styles.input}
+                    value={studentForm.dropStop}
+                    onChangeText={t => setStudentForm({ ...studentForm, dropStop: t })}
+                    placeholder="e.g., Hastinapuram"
                   />
                 </View>
               </View>
@@ -340,11 +348,11 @@ export default function RouteDetails() {
                       }
                     })
                   ) : (
-                    <TextInput 
-                      style={styles.input} 
-                      value={studentForm.pickupTime} 
-                      onChangeText={t => setStudentForm({...studentForm, pickupTime: t})} 
-                      placeholder="10:00 AM" 
+                    <TextInput
+                      style={styles.input}
+                      value={studentForm.pickupTime}
+                      onChangeText={t => setStudentForm({ ...studentForm, pickupTime: t })}
+                      placeholder="10:00 AM"
                     />
                   )}
                 </View>
@@ -370,23 +378,23 @@ export default function RouteDetails() {
                       }
                     })
                   ) : (
-                    <TextInput 
-                      style={styles.input} 
-                      value={studentForm.dropTime} 
-                      onChangeText={t => setStudentForm({...studentForm, dropTime: t})} 
-                      placeholder="12:00 PM" 
+                    <TextInput
+                      style={styles.input}
+                      value={studentForm.dropTime}
+                      onChangeText={t => setStudentForm({ ...studentForm, dropTime: t })}
+                      placeholder="12:00 PM"
                     />
                   )}
                 </View>
               </View>
-              
+
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Fee Status</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={studentForm.feeStatus} 
-                  onChangeText={t => setStudentForm({...studentForm, feeStatus: t})} 
-                  placeholder="PAID / PENDING" 
+                <TextInput
+                  style={styles.input}
+                  value={studentForm.feeStatus}
+                  onChangeText={t => setStudentForm({ ...studentForm, feeStatus: t })}
+                  placeholder="PAID / PENDING"
                 />
               </View>
             </ScrollView>
@@ -414,7 +422,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#A0522D' },
   sectionSubtitle: { fontSize: 13, color: '#8A6B5D', marginTop: 2 },
-  
+
   actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E35336', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, gap: 6 },
   actionBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
 
@@ -432,11 +440,11 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', maxHeight: '90%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E6D8D2' },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#A0522D' },
-  
+
   formGroup: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '600', color: '#A0522D', marginBottom: 8 },
   input: { backgroundColor: '#F5F5DC', borderWidth: 1, borderColor: '#E6D8D2', borderRadius: 8, padding: 12, fontSize: 15, color: '#A0522D' },
-  
+
   dropdownContainer: { position: 'absolute', top: 75, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#E6D8D2', zIndex: 9999, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 },
   dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5DC', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 

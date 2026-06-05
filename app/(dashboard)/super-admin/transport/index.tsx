@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { AlertTriangle, Bus, Calendar, CheckCircle, ChevronRight, Clock, Map, Plus, X } from "lucide-react-native";
 import { createElement, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { rootApi } from "../../../utils/axiosInstance";
 
 export default function TransportDashboard() {
@@ -11,12 +12,12 @@ export default function TransportDashboard() {
 
   const [activeTab, setActiveTab] = useState<"routes" | "issues" | "attendance">("routes");
   const [loading, setLoading] = useState(false);
-  
+
   // Data States
   const [routes, setRoutes] = useState<any[]>([]);
   const [issues, setIssues] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any>(null);
-  
+
   // Create Route Modal State
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -29,10 +30,8 @@ export default function TransportDashboard() {
   });
 
   // Attendance Date filter
-  const [attendanceDate, setAttendanceDate] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  });
+  const [attendanceDate, setAttendanceDate] = useState(() => new Date());
+  const [showAttendanceDatePicker, setShowAttendanceDatePicker] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -44,7 +43,8 @@ export default function TransportDashboard() {
         const res = await rootApi.get('/api/student/transport/all-issues');
         if (res.data) setIssues(res.data);
       } else if (activeTab === "attendance") {
-        const res = await rootApi.get(`/api/student/transport/attendance-summary?date=${attendanceDate}`);
+        const formattedDate = attendanceDate.toISOString().split('T')[0];
+        const res = await rootApi.get(`/api/student/transport/attendance-summary?date=${formattedDate}`);
         if (res.data) setAttendance(res.data);
       }
     } catch (e) {
@@ -62,7 +62,7 @@ export default function TransportDashboard() {
     if (!routeForm.routeName || !routeForm.vehicleName || !routeForm.vehicleNumber) {
       return Alert.alert("Error", "Please fill out route name and vehicle details.");
     }
-    
+
     try {
       setCreating(true);
       await rootApi.post('/api/student/transport/route', routeForm);
@@ -75,6 +75,17 @@ export default function TransportDashboard() {
       console.error(err);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const updateIssueStatus = async (issueId: string, newStatus: string) => {
+    try {
+      await rootApi.patch(`/api/student/transport/${issueId}/status?status=${newStatus}`);
+      Alert.alert('Success', `Issue marked as ${newStatus}`);
+      fetchData();
+    } catch (err) {
+      console.error("Error updating status", err);
+      Alert.alert('Error', 'Failed to update issue status');
     }
   };
 
@@ -99,23 +110,23 @@ export default function TransportDashboard() {
 
       <View style={styles.tabsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.tabBtn, activeTab === "routes" && styles.tabBtnActive]}
             onPress={() => setActiveTab("routes")}
           >
             <Map size={16} color={activeTab === "routes" ? "#E35336" : "#8A6B5D"} />
             <Text style={[styles.tabText, activeTab === "routes" && styles.tabTextActive]}>Routes</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.tabBtn, activeTab === "issues" && styles.tabBtnActive]}
             onPress={() => setActiveTab("issues")}
           >
             <AlertTriangle size={16} color={activeTab === "issues" ? "#E35336" : "#8A6B5D"} />
             <Text style={[styles.tabText, activeTab === "issues" && styles.tabTextActive]}>Driver Issues</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.tabBtn, activeTab === "attendance" && styles.tabBtnActive]}
             onPress={() => setActiveTab("attendance")}
           >
@@ -147,7 +158,7 @@ export default function TransportDashboard() {
                           <Text style={styles.routeName} numberOfLines={1}>{route.routeName}</Text>
                           <Text style={styles.routeIdTag}>{route.routeId}</Text>
                         </View>
-                        
+
                         <View style={styles.infoRow}>
                           <Bus size={14} color="#8A6B5D" style={{ marginRight: 6 }} />
                           <Text style={styles.infoText}>{route.vehicleName} ({route.vehicleNumber})</Text>
@@ -156,7 +167,7 @@ export default function TransportDashboard() {
                           <Clock size={14} color="#8A6B5D" style={{ marginRight: 6 }} />
                           <Text style={styles.infoText}>{route.pickupStartTime || 'N/A'} - {route.dropStartTime || 'N/A'}</Text>
                         </View>
-                        
+
                         <View style={styles.cardFooter}>
                           <Text style={styles.viewDetailsText}>Manage Route</Text>
                           <ChevronRight size={16} color="#E35336" />
@@ -190,6 +201,15 @@ export default function TransportDashboard() {
                         </View>
                       </View>
                       <Text style={styles.listItemDesc}>{issue.description}</Text>
+                      {issue.status !== 'RESOLVED' && (
+                        <TouchableOpacity
+                          style={{ marginTop: 12, backgroundColor: '#16a34a', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                          onPress={() => updateIssueStatus(issue.issueId, 'RESOLVED')}
+                        >
+                          <CheckCircle size={14} color="#fff" />
+                          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>Mark as Resolved</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -201,13 +221,36 @@ export default function TransportDashboard() {
               <View style={styles.attendanceContainer}>
                 <View style={{ marginBottom: 24 }}>
                   <Text style={styles.label}>Select Date</Text>
-                  <TextInput 
-                    style={[styles.input, { width: 200 }]} 
-                    value={attendanceDate} 
-                    onChangeText={setAttendanceDate} 
-                    placeholder="YYYY-MM-DD" 
-                    {...((Platform.OS === 'web' ? { type: 'date' } : {}) as any)}
-                  />
+                  {Platform.OS === 'web' ? (
+                    createElement('input', {
+                      type: 'date',
+                      value: attendanceDate.toISOString().split('T')[0],
+                      onChange: (e: any) => {
+                        const d = new Date(e.target.value);
+                        if (!isNaN(d.getTime())) setAttendanceDate(d);
+                      },
+                      style: {
+                        padding: '12px', borderRadius: '8px', borderWidth: '1px', borderColor: '#E6D8D2', backgroundColor: '#FDF8F0', outline: 'none', color: '#0f172a'
+                      }
+                    })
+                  ) : (
+                    <>
+                      <TouchableOpacity style={[styles.input, { justifyContent: 'center', width: 200 }]} onPress={() => setShowAttendanceDatePicker(true)}>
+                        <Text style={{ color: '#0f172a' }}>{attendanceDate.toISOString().split('T')[0]}</Text>
+                      </TouchableOpacity>
+                      {showAttendanceDatePicker && (
+                        <DateTimePicker
+                          value={attendanceDate}
+                          mode="date"
+                          display="default"
+                          onChange={(event, date) => {
+                            setShowAttendanceDatePicker(false);
+                            if (date) setAttendanceDate(date);
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
                 </View>
 
                 {attendance ? (
@@ -248,11 +291,11 @@ export default function TransportDashboard() {
             <ScrollView style={{ padding: 24 }}>
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Route Name *</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={routeForm.routeName} 
-                  onChangeText={t => setRouteForm({...routeForm, routeName: t})} 
-                  placeholder="e.g., Lb nagar" 
+                <TextInput
+                  style={styles.input}
+                  value={routeForm.routeName}
+                  onChangeText={t => setRouteForm({ ...routeForm, routeName: t })}
+                  placeholder="e.g., Lb nagar"
                 />
               </View>
 
@@ -279,11 +322,11 @@ export default function TransportDashboard() {
                       }
                     })
                   ) : (
-                    <TextInput 
-                      style={styles.input} 
-                      value={routeForm.pickupStartTime} 
-                      onChangeText={t => setRouteForm({...routeForm, pickupStartTime: t})} 
-                      placeholder="8:00 AM" 
+                    <TextInput
+                      style={styles.input}
+                      value={routeForm.pickupStartTime}
+                      onChangeText={t => setRouteForm({ ...routeForm, pickupStartTime: t })}
+                      placeholder="8:00 AM"
                     />
                   )}
                 </View>
@@ -310,11 +353,11 @@ export default function TransportDashboard() {
                       }
                     })
                   ) : (
-                    <TextInput 
-                      style={styles.input} 
-                      value={routeForm.dropStartTime} 
-                      onChangeText={t => setRouteForm({...routeForm, dropStartTime: t})} 
-                      placeholder="4:00 PM" 
+                    <TextInput
+                      style={styles.input}
+                      value={routeForm.dropStartTime}
+                      onChangeText={t => setRouteForm({ ...routeForm, dropStartTime: t })}
+                      placeholder="4:00 PM"
                     />
                   )}
                 </View>
@@ -322,21 +365,21 @@ export default function TransportDashboard() {
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Vehicle Name *</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={routeForm.vehicleName} 
-                  onChangeText={t => setRouteForm({...routeForm, vehicleName: t})} 
-                  placeholder="e.g., School Bus 1" 
+                <TextInput
+                  style={styles.input}
+                  value={routeForm.vehicleName}
+                  onChangeText={t => setRouteForm({ ...routeForm, vehicleName: t })}
+                  placeholder="e.g., School Bus 1"
                 />
               </View>
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Vehicle Number *</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={routeForm.vehicleNumber} 
-                  onChangeText={t => setRouteForm({...routeForm, vehicleNumber: t})} 
-                  placeholder="e.g., TS05ER6789" 
+                <TextInput
+                  style={styles.input}
+                  value={routeForm.vehicleNumber}
+                  onChangeText={t => setRouteForm({ ...routeForm, vehicleNumber: t })}
+                  placeholder="e.g., TS05ER6789"
                 />
               </View>
             </ScrollView>
@@ -356,7 +399,7 @@ const styles = StyleSheet.create({
   header: { backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#E6D8D2", justifyContent: "space-between", zIndex: 100 },
   headerTitle: { fontWeight: "bold", color: "#A0522D" },
   headerSubtitle: { fontSize: 14, color: "#8A6B5D", marginTop: 4 },
-  
+
   createBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E35336', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, gap: 8 },
   createBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 
@@ -385,7 +428,7 @@ const styles = StyleSheet.create({
   listItemTitle: { fontSize: 16, fontWeight: 'bold', color: '#A0522D', marginBottom: 2 },
   listItemSub: { fontSize: 12, color: '#8A6B5D' },
   listItemDesc: { fontSize: 14, color: '#475569', marginTop: 8 },
-  
+
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontSize: 11, fontWeight: 'bold' },
 
@@ -398,11 +441,11 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', maxHeight: '90%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E6D8D2' },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#A0522D' },
-  
+
   formGroup: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: '600', color: '#A0522D', marginBottom: 8 },
   input: { backgroundColor: '#F5F5DC', borderWidth: 1, borderColor: '#E6D8D2', borderRadius: 8, padding: 12, fontSize: 15, color: '#A0522D' },
-  
+
   submitBtn: { backgroundColor: '#E35336', padding: 16, alignItems: 'center' },
   submitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });

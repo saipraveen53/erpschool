@@ -13,7 +13,7 @@ export default function ExamsManagement() {
 
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Create Modal state
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -90,12 +90,12 @@ export default function ExamsManagement() {
 
       const response = await rootApi.post('/api/exams', payload);
       const createdExam = response.data || payload;
-      
+
       setExams([createdExam, ...exams]);
 
       Alert.alert("Success", "Exam created successfully.");
       setCreateModalVisible(false);
-      
+
       router.push(`/super-admin/exams/${createdExam.examId}` as any);
     } catch (error) {
       console.error("Failed to create exam:", error);
@@ -108,7 +108,7 @@ export default function ExamsManagement() {
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
     const d = new Date(dateString);
-    if(isNaN(d.getTime())) return dateString;
+    if (isNaN(d.getTime())) return dateString;
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
@@ -154,23 +154,23 @@ export default function ExamsManagement() {
                     </View>
                     <Text style={styles.yearBadge}>{exam.academicYear}</Text>
                   </View>
-                  
+
                   <Text style={styles.examName} numberOfLines={2}>{exam.examName}</Text>
-                  
+
                   <View style={styles.dateRow}>
                     <Calendar size={14} color="#64748b" style={{ marginRight: 6 }} />
                     <Text style={styles.dateText}>{formatDate(exam.startDate)} - {formatDate(exam.endDate)}</Text>
                   </View>
-                  
+
                   <View style={[styles.dateRow, { marginTop: 4 }]}>
                     <Users size={14} color="#64748b" style={{ marginRight: 6 }} />
                     <Text style={[styles.dateText, { flex: 1 }]} numberOfLines={1}>
-                      {exam.assignedClassSectionIds && exam.assignedClassSectionIds.length > 0 
+                      {exam.assignedClassSectionIds && exam.assignedClassSectionIds.length > 0
                         ? `Classes: ${exam.assignedClassSectionIds.join(", ")}`
                         : "No Classes Assigned"}
                     </Text>
                   </View>
-                  
+
                   <View style={styles.cardFooter}>
                     <Text style={styles.viewDetailsText}>Configure & Schedule</Text>
                     <ChevronRight size={16} color="#0369a1" />
@@ -196,24 +196,24 @@ export default function ExamsManagement() {
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Exam Name *</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={formData.examName} 
-                  onChangeText={t => setFormData({...formData, examName: t})} 
-                  placeholder="e.g., Annual Exam 2026" 
-                  placeholderTextColor="#94a3b8" 
+                <TextInput
+                  style={styles.input}
+                  value={formData.examName}
+                  onChangeText={t => setFormData({ ...formData, examName: t })}
+                  placeholder="e.g., Annual Exam 2026"
+                  placeholderTextColor="#94a3b8"
                 />
               </View>
 
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Academic Year *</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={formData.academicYear} 
-                  onChangeText={t => setFormData({...formData, academicYear: t})} 
-                  placeholder="e.g., 2026" 
+                <TextInput
+                  style={styles.input}
+                  value={formData.academicYear}
+                  onChangeText={t => setFormData({ ...formData, academicYear: t })}
+                  placeholder="e.g., 2026"
                   keyboardType="numeric"
-                  placeholderTextColor="#94a3b8" 
+                  placeholderTextColor="#94a3b8"
                 />
               </View>
 
@@ -224,7 +224,7 @@ export default function ExamsManagement() {
                     createElement('input', {
                       type: 'date',
                       value: formData.startDate,
-                      onChange: (e: any) => setFormData({...formData, startDate: e.target.value}),
+                      onChange: (e: any) => setFormData({ ...formData, startDate: e.target.value }),
                       style: {
                         borderWidth: '1px',
                         borderColor: "#e2e8f0",
@@ -264,7 +264,7 @@ export default function ExamsManagement() {
                     createElement('input', {
                       type: 'date',
                       value: formData.endDate,
-                      onChange: (e: any) => setFormData({...formData, endDate: e.target.value}),
+                      onChange: (e: any) => setFormData({ ...formData, endDate: e.target.value }),
                       style: {
                         borderWidth: '1px',
                         borderColor: "#e2e8f0",
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   header: { backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#E6D8D2", justifyContent: "space-between" },
   headerTitle: { fontWeight: "bold", color: "#A0522D" },
   headerSubtitle: { fontSize: 14, color: "#8A6B5D", marginTop: 4 },
-  
+
   createBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: "#E35336", paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, justifyContent: 'center', shadowColor: "#E35336", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
   createBtnText: { color: "#fff", fontWeight: "bold", fontSize: 14, marginLeft: 8 },
 
@@ -329,26 +329,26 @@ const styles = StyleSheet.create({
   statusBadge: { backgroundColor: '#dcfce7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusText: { color: '#166534', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
   yearBadge: { color: '#8A6B5D', fontSize: 12, fontWeight: '600' },
-  
+
   examName: { fontSize: 18, fontWeight: 'bold', color: "#A0522D", marginBottom: 12 },
   dateRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5DC', padding: 8, borderRadius: 6, marginBottom: 16 },
   dateText: { fontSize: 13, color: '#705244', fontWeight: '500' },
-  
+
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F5F5DC', paddingTop: 12 },
   viewDetailsText: { fontSize: 13, fontWeight: '600', color: '#A0522D' },
-  
+
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5DC', padding: 10, borderRadius: 8 },
   actionBtnText: { color: '#A0522D', fontSize: 13, fontWeight: 'bold', marginLeft: 4 },
-  
+
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
   modalContent: { backgroundColor: "#fff", borderRadius: 16, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
   modalTitle: { fontSize: 18, fontWeight: "bold", color: "#A0522D" },
-  
+
   formGroup: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: "600", color: "#705244", marginBottom: 6 },
   input: { borderWidth: 1, borderColor: "#E6D8D2", borderRadius: 8, padding: 12, fontSize: 15, color: "#A0522D", backgroundColor: "#F5F5DC", ...(Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as any },
-  
+
   submitBtn: { backgroundColor: "#E35336", padding: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
   submitBtnText: { color: "#fff", fontWeight: "bold", fontSize: 15 },
 });
