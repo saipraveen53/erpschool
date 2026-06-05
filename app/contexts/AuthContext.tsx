@@ -122,6 +122,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setToken(accessToken);
       setAuthenticated(true);
       console.log("✅ Login successful:", role);
+      
+      // Use REPLACE instead of PUSH to prevent back button to login
       router.replace("/");
     } catch (error: any) {
       console.error("Login error:", error);
@@ -155,11 +157,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       "userUsername",
       "authenticated"
     ]);
+    
     setUser(null);
     setToken(null);
     setAuthenticated(false);
+    
     if (Platform.OS === 'web') {
-      window.location.href = '/home';
+      // Use window.location.replace to clear history stack
+      window.location.replace('/home');
     } else {
       router.replace('/(public)/home');
     }
