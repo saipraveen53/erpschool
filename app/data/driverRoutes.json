@@ -1,0 +1,18 @@
+{
+  "assignedRoute": {
+    "id": "R-101",
+    "name": "Route 101 - East Zone",
+    "busNumber": "AP 28 AB 1234",
+    "driverName": "Rajesh Kumar",
+    "totalStudents": 32,
+    "distance": "24.5 km",
+    "estimatedTime": "1 hour 15 min",
+    "stops": [
+      { "id": 1, "name": "Main School", "time": "7:30 AM", "students": 0, "type": "school" },
+      { "id": 2, "name": "Raj Nagar", "time": "7:45 AM", "students": 8, "type": "stop" },
+      { "id": 3, "name": "Indira Colony", "time": "7:55 AM", "students": 6, "type": "stop" },
+      { "id": 4, "name": "Sai Nagar", "time": "8:05 AM", "students": 10, "type": "stop" },
+      { "id": 5, "name": "Shivaji Park", "time": "8:15 AM", "students": 8, "type": "stop" }
+    ]
+  }
+}
