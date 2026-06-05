@@ -17,6 +17,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export interface Inquiry {
   id: string;
@@ -52,7 +53,7 @@ const MOCK_INQUIRIES: Inquiry[] = [
     studentName: 'Aarav Sharma',
     parentName: 'Rajesh Sharma',
     phone: '+91 98765 43210',
-    email: 'rajesh.sharma@email.com',
+    email: 'rajesh.sharma@gmail.com',
     gradeOfInterest: 'Grade 5',
     date: '2026-05-28',
     status: 'Pending',
@@ -63,7 +64,7 @@ const MOCK_INQUIRIES: Inquiry[] = [
     studentName: 'Ananya Iyer',
     parentName: 'Meenakshi Iyer',
     phone: '+91 87654 32109',
-    email: 'meenakshi.i@email.com',
+    email: 'meenakshi.i@gmail.com',
     gradeOfInterest: 'Grade 10',
     date: '2026-05-25',
     status: 'In Progress',
@@ -74,7 +75,7 @@ const MOCK_INQUIRIES: Inquiry[] = [
     studentName: 'Kabir Verma',
     parentName: 'Amit Verma',
     phone: '+91 76543 21098',
-    email: 'amit.verma@email.com',
+    email: 'amit.verma@gmail.com',
     gradeOfInterest: 'UKG',
     date: '2026-05-20',
     status: 'Resolved',
@@ -178,21 +179,23 @@ type FormGradePickerProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  error?: string;
 };
 
-function FormGradePicker({ label, value, onChange, placeholder = 'Select grade' }: FormGradePickerProps) {
+function FormGradePicker({ label, value, onChange, placeholder = 'Select grade', error }: FormGradePickerProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <View style={{ marginTop: 14 }}>
-      <Text style={styles.formInputLabel}>{label}</Text>
+      <Text style={styles.formInputLabel}>{label} <Text style={styles.requiredMark}>*</Text></Text>
 
-      <TouchableOpacity style={styles.pickerTrigger} activeOpacity={0.85} onPress={() => setOpen(true)}>
+      <TouchableOpacity style={[styles.pickerTrigger, error && styles.formInputErrorBorder]} activeOpacity={0.85} onPress={() => setOpen(true)}>
         <Text style={[styles.pickerTriggerText, !value && styles.pickerPlaceholderText]}>
           {value || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={18} color={THEME.textMuted} />
       </TouchableOpacity>
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
       <Modal transparent visible={open} animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.pickerOverlay} onPress={() => setOpen(false)}>
@@ -255,6 +258,9 @@ export default function InquiriesScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Success Modal State
+  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
+
   const [form, setForm] = useState({
     studentName: '',
     parentName: '',
@@ -263,6 +269,7 @@ export default function InquiriesScreen() {
     gradeOfInterest: '',
     notes: '',
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const metrics = useMemo(() => {
     return inquiries.reduce(
@@ -298,6 +305,44 @@ export default function InquiriesScreen() {
     });
   }, [inquiries, searchQuery, activeFilter, gradeFilter, dateFilter]);
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!form.studentName.trim()) {
+      errors.studentName = 'Student Name is required.';
+    } else if (form.studentName.trim().length < 6) {
+      errors.studentName = 'Student Name must be at least 6 characters.';
+    }
+
+    if (!form.parentName.trim()) {
+      errors.parentName = 'Parent Name is required.';
+    } else if (form.parentName.trim().length < 6) {
+      errors.parentName = 'Parent Name must be at least 6 characters.';
+    }
+
+    const cleanPhone = form.phone.replace(/[\s\-\+]/g, '');
+    const phoneToTest = cleanPhone.startsWith('91') && cleanPhone.length === 12 ? cleanPhone.slice(2) : cleanPhone;
+    
+    if (!form.phone.trim()) {
+      errors.phone = 'Phone Number is required.';
+    } else if (!/^[6978]\d{9}$/.test(phoneToTest)) {
+      errors.phone = 'Phone must be exactly 10 digits and start with 6, 9, 7, or 8.';
+    }
+
+    if (!form.email.trim()) {
+      errors.email = 'Email Address is required.';
+    } else if (!form.email.toLowerCase().endsWith('@gmail.com')) {
+      errors.email = 'Please enter a valid @gmail.com address.';
+    }
+
+    if (!form.gradeOfInterest.trim()) {
+      errors.gradeOfInterest = 'Please select a Grade of Interest.';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const resetForm = () => {
     setForm({
       studentName: '',
@@ -307,6 +352,7 @@ export default function InquiriesScreen() {
       gradeOfInterest: '',
       notes: '',
     });
+    setFormErrors({});
   };
 
   const openCreateModal = () => {
@@ -326,20 +372,13 @@ export default function InquiriesScreen() {
       gradeOfInterest: selectedInquiry.gradeOfInterest,
       notes: selectedInquiry.notes,
     });
+    setFormErrors({});
     setIsEditMode(true);
     setIsCreateModalOpen(true);
   };
 
   const handleCreateOrUpdateInquiry = () => {
-    if (!form.studentName.trim() || !form.parentName.trim() || !form.phone.trim()) {
-      Alert.alert('Error', 'Please complete all required fields (*).');
-      return;
-    }
-
-    if (!form.gradeOfInterest.trim()) {
-      Alert.alert('Error', 'Please select a grade.');
-      return;
-    }
+    if (!validateForm()) return;
 
     if (isEditMode && selectedInquiry) {
       const updated: Inquiry = {
@@ -355,6 +394,7 @@ export default function InquiriesScreen() {
       setInquiries((prev) => prev.map((item) => (item.id === selectedInquiry.id ? updated : item)));
       setSelectedInquiry(updated);
       setIsCreateModalOpen(false);
+      setSuccessModal({ visible: true, title: 'Updated!', message: 'Inquiry details updated successfully.' });
       return;
     }
 
@@ -376,6 +416,7 @@ export default function InquiriesScreen() {
     setInquiries([newEntry, ...inquiries]);
     setIsCreateModalOpen(false);
     resetForm();
+    setSuccessModal({ visible: true, title: 'Success!', message: 'New admission inquiry recorded successfully.' });
   };
 
   const openDeleteConfirm = () => {
@@ -388,6 +429,7 @@ export default function InquiriesScreen() {
     setInquiries((prev) => prev.filter((item) => item.id !== selectedInquiry.id));
     setSelectedInquiry(null);
     setShowDeleteConfirm(false);
+    setSuccessModal({ visible: true, title: 'Deleted', message: 'Inquiry record has been removed.' });
   };
 
   const renderMetric = (label: string, value: number, color: string, borderColor: string) => (
@@ -427,7 +469,7 @@ export default function InquiriesScreen() {
           <View style={styles.controlContainer}>
             <View style={styles.searchAndGradeRow}>
               <View style={styles.searchBoxWrap}>
-                <Ionicons name="search" size={18} color={THEME.textMuted} style={styles.searchIcon} />
+                <Icon name="search" size={15} color="#B78D73" style={styles.searchIcon} />
                 <TextInput
                   style={styles.searchInputElement}
                   placeholder="Search by ID, Name, Grade, or Contact..."
@@ -437,12 +479,11 @@ export default function InquiriesScreen() {
                 />
                 {!!searchQuery && (
                   <TouchableOpacity style={styles.clearSearchButton} onPress={() => setSearchQuery('')}>
-                    <Text style={styles.clearSearchButtonText}>×</Text>
+                    <Icon name="times" size={14} color="#FFFFFF" />
                   </TouchableOpacity>
                 )}
               </View>
 
-              {/* Flex Container for Dropdowns to easily sit side-by-side on mobile */}
               <View style={styles.dropdownsContainer}>
                 <GradePicker value={gradeFilter} onChange={setGradeFilter} />
                 
@@ -456,9 +497,9 @@ export default function InquiriesScreen() {
                     />
                   ) : (
                     <View style={styles.gradeFilterButton}>
-                      <Ionicons name="calendar-outline" size={18} color={THEME.textMuted} />
+                      <Icon name="calendar" size={14} color={THEME.textMuted} />
                       <TextInput
-                        style={{ flex: 1, color: THEME.textStrong, fontWeight: '600', padding: 0, fontSize: 14.5 }}
+                        style={{ flex: 1, color: THEME.textStrong, fontWeight: '600', padding: 0, fontSize: 14.5, marginLeft: 8 }}
                         placeholder="YYYY-MM-DD"
                         placeholderTextColor="#B78D73"
                         value={dateFilter}
@@ -529,14 +570,20 @@ export default function InquiriesScreen() {
 
                 <View style={styles.cardDivider} />
 
-                <View style={styles.dataCardFooter}>
-                  <Text style={styles.footerMetaItem} numberOfLines={1}>
-                    🎯 {item.gradeOfInterest}
-                  </Text>
-                  <Text style={styles.footerMetaItem} numberOfLines={1}>
-                    📅 {item.date}
-                  </Text>
-                </View>
+             <View style={styles.dataCardFooter}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Icon name="bullseye" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                <Text style={styles.footerMetaItem} numberOfLines={1}>
+                  {item.gradeOfInterest}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Icon name="calendar" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                <Text style={styles.footerMetaItem} numberOfLines={1}>
+                  {item.date}
+                </Text>
+              </View>
+            </View>
               </TouchableOpacity>
             )}
             ListEmptyComponent={
@@ -636,10 +683,13 @@ export default function InquiriesScreen() {
         </View>
       </Modal>
 
-      <Modal transparent visible={isCreateModalOpen} animationType="slide" onRequestClose={() => setIsCreateModalOpen(false)}>
+      <Modal transparent visible={isCreateModalOpen} animationType="slide" onRequestClose={() => {
+        setIsCreateModalOpen(false);
+        setFormErrors({});
+      }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalKeyboardWrapper}>
           <View style={styles.overlayGlass}>
-            <View style={[styles.modalBaseCard, isMobile && styles.modalMobileCard]}>
+            <View style={[styles.modalBaseCard, isMobile && styles.modalMobileCard, { flexShrink: 1 }]}>
               <Text style={styles.modalHeadingText}>{isEditMode ? 'Update Inquiry' : 'Log New Inquiry'}</Text>
               <Text style={styles.modalFormInstruction}>
                 {isEditMode ? 'Update the inquiry details below.' : 'Provide prospect and contact details.'}
@@ -647,7 +697,7 @@ export default function InquiriesScreen() {
 
               <ScrollView
                 contentContainerStyle={styles.formScrollContent}
-                style={styles.formInnerScrollContainer}
+                style={{ flexShrink: 1, width: '100%' }}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled
                 keyboardShouldPersistTaps="handled"
@@ -656,52 +706,74 @@ export default function InquiriesScreen() {
                   Student Name <Text style={styles.requiredMark}>*</Text>
                 </Text>
                 <TextInput
-                  style={styles.formInputField}
+                  style={[styles.formInputField, formErrors.studentName && styles.formInputErrorBorder]}
                   value={form.studentName}
-                  onChangeText={(val) => setForm({ ...form, studentName: val })}
+                  onChangeText={(val) => {
+                    setForm({ ...form, studentName: val });
+                    if(formErrors.studentName) setFormErrors(prev => ({...prev, studentName: ''}));
+                  }}
                   placeholder="Enter full name"
                   placeholderTextColor="#B78D73"
                 />
+                {formErrors.studentName && <Text style={styles.errorText}>{formErrors.studentName}</Text>}
 
                 <Text style={styles.formInputLabel}>
                   Parent or Guardian Name <Text style={styles.requiredMark}>*</Text>
                 </Text>
                 <TextInput
-                  style={styles.formInputField}
+                  style={[styles.formInputField, formErrors.parentName && styles.formInputErrorBorder]}
                   value={form.parentName}
-                  onChangeText={(val) => setForm({ ...form, parentName: val })}
+                  onChangeText={(val) => {
+                    setForm({ ...form, parentName: val });
+                    if(formErrors.parentName) setFormErrors(prev => ({...prev, parentName: ''}));
+                  }}
                   placeholder="Enter guardian name"
                   placeholderTextColor="#B78D73"
                 />
+                {formErrors.parentName && <Text style={styles.errorText}>{formErrors.parentName}</Text>}
 
                 <Text style={styles.formInputLabel}>
                   Primary Phone Contact <Text style={styles.requiredMark}>*</Text>
                 </Text>
                 <TextInput
-                  style={styles.formInputField}
+                  style={[styles.formInputField, formErrors.phone && styles.formInputErrorBorder]}
                   value={form.phone}
-                  onChangeText={(val) => setForm({ ...form, phone: val })}
+                  onChangeText={(val) => {
+                    setForm({ ...form, phone: val });
+                    if(formErrors.phone) setFormErrors(prev => ({...prev, phone: ''}));
+                  }}
                   keyboardType="phone-pad"
                   placeholder="e.g. +91 99999 88888"
                   placeholderTextColor="#B78D73"
                 />
+                {formErrors.phone && <Text style={styles.errorText}>{formErrors.phone}</Text>}
 
-                <Text style={styles.formInputLabel}>Email Address</Text>
+                <Text style={styles.formInputLabel}>
+                  Email Address <Text style={styles.requiredMark}>*</Text>
+                </Text>
                 <TextInput
-                  style={styles.formInputField}
+                  style={[styles.formInputField, formErrors.email && styles.formInputErrorBorder]}
                   value={form.email}
-                  onChangeText={(val) => setForm({ ...form, email: val })}
+                  onChangeText={(val) => {
+                    setForm({ ...form, email: val });
+                    if(formErrors.email) setFormErrors(prev => ({...prev, email: ''}));
+                  }}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  placeholder="parent@domain.com"
+                  placeholder="parent@gmail.com"
                   placeholderTextColor="#B78D73"
                 />
+                {formErrors.email && <Text style={styles.errorText}>{formErrors.email}</Text>}
 
                 <FormGradePicker
                   label="Target Grade Level"
                   value={form.gradeOfInterest}
-                  onChange={(val) => setForm({ ...form, gradeOfInterest: val })}
+                  onChange={(val) => {
+                    setForm({ ...form, gradeOfInterest: val });
+                    if(formErrors.gradeOfInterest) setFormErrors(prev => ({...prev, gradeOfInterest: ''}));
+                  }}
                   placeholder="Select Grade"
+                  error={formErrors.gradeOfInterest}
                 />
 
                 <Text style={styles.formInputLabel}>Communication Notes</Text>
@@ -719,7 +791,10 @@ export default function InquiriesScreen() {
               <View style={styles.modalActionButtonsGroup}>
                 <TouchableOpacity
                   style={[styles.modalButtonBase, styles.modalButtonCancel]}
-                  onPress={() => setIsCreateModalOpen(false)}
+                  onPress={() => {
+                    setIsCreateModalOpen(false);
+                    setFormErrors({});
+                  }}
                 >
                   <Text style={styles.modalButtonTextCancel}>Discard</Text>
                 </TouchableOpacity>
@@ -732,6 +807,29 @@ export default function InquiriesScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* SUCCESS MODAL POPUP */}
+      <Modal transparent visible={successModal.visible} animationType="fade" onRequestClose={() => setSuccessModal((p) => ({...p, visible: false}))}>
+        <View style={styles.overlayGlass}>
+          <View style={[styles.confirmCard, isMobile && { margin: 12, width: '94%' }]}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 2, borderColor: '#A7F3D0' }}>
+              <Icon name="check" size={40} color="#16A34A" />
+            </View>
+            <Text style={styles.confirmTitle}>{successModal.title}</Text>
+            <Text style={styles.confirmText}>{successModal.message}</Text>
+            
+            <View style={styles.confirmButtonRow}>
+              <TouchableOpacity
+                style={[styles.confirmButton, { backgroundColor: '#16A34A' }]}
+                onPress={() => setSuccessModal((p) => ({...p, visible: false}))}
+              >
+                <Text style={styles.confirmDeleteText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -831,7 +929,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 200,
     position: 'relative',
-    justifyContent: 'center', // Fix container stretching edge-cases
+    justifyContent: 'center',
   },
   searchIcon: {
     position: 'absolute',
@@ -853,7 +951,7 @@ const styles = StyleSheet.create({
   clearSearchButton: {
     position: 'absolute',
     right: 12,
-    top: 12, // Fixed exact positioning instead of relying on 50%
+    top: 12, 
     width: 22,
     height: 22,
     borderRadius: 11,
@@ -870,7 +968,6 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
   
-  // Custom container for dropdown and date to sit nicely on mobile
   dropdownsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1041,9 +1138,10 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     borderWidth: 1,
     borderColor: THEME.border,
+    alignItems: 'center',
   },
-  confirmTitle: { fontSize: 20, fontWeight: '800', color: THEME.textStrong },
-  confirmText: { fontSize: 14.5, color: THEME.text, marginTop: 8, lineHeight: 22 },
+  confirmTitle: { fontSize: 20, fontWeight: '800', color: THEME.textStrong, textAlign: 'center' },
+  confirmText: { fontSize: 14.5, color: THEME.text, marginTop: 8, lineHeight: 22, textAlign: 'center' },
   confirmButtonRow: { flexDirection: 'row', gap: 12, marginTop: 18 },
   confirmButton: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
   confirmCancelButton: { backgroundColor: '#FFF1E4', borderWidth: 1, borderColor: '#F1D1B8' },
@@ -1070,6 +1168,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: THEME.textStrong,
     backgroundColor: THEME.inputBg,
+  },
+  formInputErrorBorder: {
+    borderColor: THEME.danger,
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: THEME.danger,
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+    fontWeight: '600',
   },
   formMultiLineTextArea: { minHeight: 110, textAlignVertical: 'top' },
 

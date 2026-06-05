@@ -15,6 +15,7 @@ import {
   Alert,
   KeyboardAvoidingView,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export interface InquiryRecord {
   id: string;
@@ -36,7 +37,7 @@ const MOCK_INQUIRIES: InquiryRecord[] = [
     date: '2026-05-29',
     prospectName: 'Meenakshi Iyer',
     phone: '+91 94440 12345',
-    email: 'meenakshi.iyer@example.com',
+    email: 'meenakshi.iyer@gmail.com',
     type: 'Admission',
     source: 'Walk-In',
     priority: 'High',
@@ -49,7 +50,7 @@ const MOCK_INQUIRIES: InquiryRecord[] = [
     date: '2026-05-29',
     prospectName: 'Kapil Dev Malhotra',
     phone: '+91 98100 55667',
-    email: 'kdm.malhotra@example.com',
+    email: 'kdm.malhotra@gmail.com',
     type: 'Fees',
     source: 'Phone Call',
     priority: 'Medium',
@@ -62,7 +63,7 @@ const MOCK_INQUIRIES: InquiryRecord[] = [
     date: '2026-05-28',
     prospectName: 'Sunita Deshmukh',
     phone: '+91 88888 44321',
-    email: 'sunita.d@example.com',
+    email: 'sunita.d@gmail.com',
     type: 'Transport',
     source: 'Website',
     priority: 'Low',
@@ -101,6 +102,10 @@ export default function InquiriesLog() {
   const [resolutionText, setResolutionText] = useState('');
   const [resolutionTargetId, setResolutionTargetId] = useState<string | null>(null);
 
+  // Success Modal State
+  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
+
+  // Form States & Validation Errors
   const [form, setForm] = useState({
     prospectName: '',
     phone: '',
@@ -110,6 +115,7 @@ export default function InquiriesLog() {
     priority: 'Medium' as InquiryRecord['priority'],
     details: '',
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [updateForm, setUpdateForm] = useState({
     prospectName: '',
@@ -120,6 +126,7 @@ export default function InquiriesLog() {
     priority: 'Medium' as InquiryRecord['priority'],
     details: '',
   });
+  const [updateFormErrors, setUpdateFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setIsMounted(true);
@@ -155,28 +162,52 @@ export default function InquiriesLog() {
     });
   }, [inquiries, searchQuery, statusFilter, typeFilter, priorityFilter, dateFilter]);
 
-  const showSuccessAlert = (message: string) => {
-    if (Platform.OS === 'web') {
-      setTimeout(() => {
-        window.alert(message);
-      }, 300);
-    } else {
-      Alert.alert('Success', message);
+  // Unified Strict Validation Function
+  const validateForm = (data: typeof form, setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>) => {
+    const errors: Record<string, string> = {};
+    
+    // Name Validation (At least 6 characters)
+    if (!data.prospectName.trim()) {
+      errors.prospectName = 'Prospect Name is required.';
+    } else if (data.prospectName.trim().length < 6) {
+      errors.prospectName = 'Name must be at least 6 characters long.';
     }
+
+    // Phone Validation (Exactly 10 digits starting with 6 or 9)
+    const cleanPhone = data.phone.replace(/[\s\-\+]/g, '');
+    const phoneToTest = cleanPhone.startsWith('91') && cleanPhone.length === 12 ? cleanPhone.slice(2) : cleanPhone;
+    
+   if (!form.phone.trim()) {
+      errors.phone = 'Phone Number is required.';
+    } else if (!/^[6978]\d{9}$/.test(phoneToTest)) {
+      errors.phone = 'Phone must be exactly 10 digits and start with 6, 9, 7, or 8.';
+    }
+
+    // Email Validation (Must have @gmail.com)
+    if (!data.email.trim()) {
+      errors.email = 'Email Address is required.';
+    } else if (!data.email.toLowerCase().endsWith('@gmail.com')) {
+      errors.email = 'Please enter a valid @gmail.com address.';
+    }
+
+    // Details Validation
+    if (!data.details.trim()) {
+      errors.details = 'Details description is required.';
+    }
+    
+    setErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleCreateInquiry = () => {
-    if (!form.prospectName.trim() || !form.phone.trim() || !form.details.trim()) {
-      Alert.alert('Validation Warning', 'Please fill Applicant Name, Phone Contact, and Context Description.');
-      return;
-    }
+    if (!validateForm(form, setFormErrors)) return;
 
     const newInquiry: InquiryRecord = {
       id: `INQ-2026-0${inquiries.length + 4}`,
       date: new Date().toISOString().split('T')[0],
       prospectName: form.prospectName.trim(),
       phone: form.phone.trim(),
-      email: form.email.trim() || 'N/A',
+      email: form.email.trim(),
       type: form.type,
       source: form.source,
       priority: form.priority,
@@ -194,15 +225,15 @@ export default function InquiriesLog() {
       priority: 'Medium',
       details: '',
     });
+    setFormErrors({});
     setIsCreateModalOpen(false);
+    
+    // Trigger Success Modal
+    setSuccessModal({ visible: true, title: 'Success!', message: 'New inquiry added successfully.' });
   };
 
   const handleUpdateInquiry = () => {
-    if (!updateForm.prospectName.trim() || !updateForm.phone.trim() || !updateForm.details.trim()) {
-      Alert.alert('Validation Warning', 'Please fill Applicant Name, Phone Contact, and Context Description.');
-      return;
-    }
-
+    if (!validateForm(updateForm, setUpdateFormErrors)) return;
     if (!selectedInquiry) return;
 
     const updatedInquiries = inquiries.map((item) =>
@@ -211,7 +242,7 @@ export default function InquiriesLog() {
             ...item,
             prospectName: updateForm.prospectName.trim(),
             phone: updateForm.phone.trim(),
-            email: updateForm.email.trim() || 'N/A',
+            email: updateForm.email.trim(),
             type: updateForm.type,
             source: updateForm.source,
             priority: updateForm.priority,
@@ -230,9 +261,12 @@ export default function InquiriesLog() {
       priority: 'Medium',
       details: '',
     });
+    setUpdateFormErrors({});
     setSelectedInquiry(null);
     setIsUpdateModalOpen(false);
-    showSuccessAlert('Inquiry updated successfully.');
+    
+    // Trigger Success Modal
+    setSuccessModal({ visible: true, title: 'Updated!', message: 'Inquiry updated successfully.' });
   };
 
   const handleDeleteInquiry = () => {
@@ -240,7 +274,7 @@ export default function InquiriesLog() {
 
     setInquiries(inquiries.filter((item) => item.id !== inquiryToDelete.id));
     setInquiryToDelete(null);
-    showSuccessAlert('Inquiry deleted successfully.');
+    setSuccessModal({ visible: true, title: 'Deleted', message: 'Inquiry record has been removed.' });
   };
 
   const openUpdateModal = (inquiry: InquiryRecord) => {
@@ -254,6 +288,7 @@ export default function InquiriesLog() {
       priority: inquiry.priority,
       details: inquiry.details,
     });
+    setUpdateFormErrors({});
     setIsUpdateModalOpen(true);
   };
 
@@ -318,7 +353,7 @@ export default function InquiriesLog() {
     setResolutionModalVisible(false);
     setResolutionTargetId(null);
     setResolutionText('');
-    showSuccessAlert('Inquiry resolved successfully.');
+    setSuccessModal({ visible: true, title: 'Resolved', message: 'Inquiry resolved successfully.' });
   };
 
   if (!isMounted) {
@@ -339,7 +374,13 @@ export default function InquiriesLog() {
             Track walk-in applications, route admission queries, and update resolution states.
           </Text>
         </View>
-        <TouchableOpacity style={styles.headerPrimaryAction} onPress={() => setIsCreateModalOpen(true)}>
+        <TouchableOpacity
+          style={styles.headerPrimaryAction}
+          onPress={() => {
+            setFormErrors({});
+            setIsCreateModalOpen(true);
+          }}
+        >
           <Text style={styles.headerPrimaryActionText}>+ New Inquiry</Text>
         </TouchableOpacity>
       </View>
@@ -363,15 +404,13 @@ export default function InquiriesLog() {
         </View>
       </View>
 
-      {/* FIXED Z-INDEX FOR DROPDOWNS OVERLAPPING LIST */}
       <View style={[styles.controlFilteringBox, { zIndex: 9999, ...(Platform.OS === 'web' ? { position: 'relative' } : {}) }]}>
         
         <View style={[isMobile ? styles.filterRowMobile : styles.filterRowWeb, { zIndex: 9999 }]}>
           
-          {/* 1. Enhanced Search Bar */}
           <View style={[styles.filterItemSearch, isMobile && styles.filterItemHalf]}>
             <View style={styles.searchInputContainer}>
-              <Text style={styles.searchIconLabel}>🔍</Text>
+              <Icon name="search" size={16} color="#B91C1C" style={styles.searchIcon} />
               <TextInput
                 style={styles.globalSearchBox}
                 placeholder="Search name, ID..."
@@ -381,13 +420,12 @@ export default function InquiriesLog() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity style={styles.clearSearchButton} onPress={clearSearch} activeOpacity={0.7}>
-                  <Text style={styles.clearSearchButtonText}>✕</Text>
+                  <Icon name="times" size={14} color="#FFFFFF" />
                 </TouchableOpacity>
               )}
             </View>
           </View>
 
-          {/* 2. Inquiry Type Dropdown Filter */}
           <View style={[styles.filterItem, { zIndex: 3000 }, isMobile && styles.filterItemHalf]}>
             <TouchableOpacity
               style={styles.dropdownSelectorBox}
@@ -400,7 +438,7 @@ export default function InquiriesLog() {
               <Text style={styles.dropdownSelectorText} numberOfLines={1}>
                 {typeFilter === 'All' ? 'All Types' : typeFilter}
               </Text>
-              <Text style={styles.dropdownIconText}>{isTypeDropdownOpen ? '▲' : '▼'}</Text>
+              <Icon name={isTypeDropdownOpen ? 'caret-up' : 'caret-down'} size={12} color="#7F1D1D" />
             </TouchableOpacity>
             
             {isTypeDropdownOpen && (
@@ -415,9 +453,7 @@ export default function InquiriesLog() {
                         setIsTypeDropdownOpen(false);
                       }}
                     >
-                      <Text style={[styles.dropdownListItemText, typeFilter === opt && styles.dropdownListItemTextActive]}>
-                        {opt === 'All' ? 'All Types' : opt}
-                      </Text>
+                      <Text style={[styles.dropdownListItemText, typeFilter === opt && styles.dropdownListItemTextActive]}>{opt === 'All' ? 'All Types' : opt}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -425,7 +461,6 @@ export default function InquiriesLog() {
             )}
           </View>
 
-          {/* 3. Priority Dropdown Filter */}
           <View style={[styles.filterItem, { zIndex: 2000 }, isMobile && styles.filterItemHalf]}>
             <TouchableOpacity
               style={styles.dropdownSelectorBox}
@@ -438,7 +473,7 @@ export default function InquiriesLog() {
               <Text style={styles.dropdownSelectorText} numberOfLines={1}>
                 {priorityFilter === 'All' ? 'All Priorities' : priorityFilter}
               </Text>
-              <Text style={styles.dropdownIconText}>{isPriorityDropdownOpen ? '▲' : '▼'}</Text>
+              <Icon name={isPriorityDropdownOpen ? 'caret-up' : 'caret-down'} size={12} color="#7F1D1D" />
             </TouchableOpacity>
             
             {isPriorityDropdownOpen && (
@@ -453,9 +488,7 @@ export default function InquiriesLog() {
                         setIsPriorityDropdownOpen(false);
                       }}
                     >
-                      <Text style={[styles.dropdownListItemText, priorityFilter === opt && styles.dropdownListItemTextActive]}>
-                        {opt === 'All' ? 'All Priorities' : opt}
-                      </Text>
+                      <Text style={[styles.dropdownListItemText, priorityFilter === opt && styles.dropdownListItemTextActive]}>{opt === 'All' ? 'All Priorities' : opt}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -463,7 +496,6 @@ export default function InquiriesLog() {
             )}
           </View>
 
-          {/* 4. Date Picker Filter */}
           <View style={[styles.filterItem, { zIndex: 1000 }, isMobile && styles.filterItemHalf]}>
             <View style={{ position: 'relative', width: '100%' }}>
               {Platform.OS === 'web' ? (
@@ -471,11 +503,11 @@ export default function InquiriesLog() {
                   type="date"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  style={styles.webNativeInputDatePicker}
+                  style={styles.webNativeInputDatePicker as any}
                 />
               ) : (
                 <TextInput
-                  style={styles.formInputBoxControl}
+                  style={styles.globalSearchBox}
                   placeholder="YYYY-MM-DD"
                   placeholderTextColor="#94A3B8"
                   value={dateFilter}
@@ -487,7 +519,6 @@ export default function InquiriesLog() {
 
         </View>
 
-        {/* Status Pills */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabFilterPillsWrapper}>
           {[
             { title: 'All Inquiries', key: 'All' },
@@ -522,9 +553,10 @@ export default function InquiriesLog() {
         contentContainerStyle={[styles.pageScrollContent, { zIndex: 1 }]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={renderHeader}
-        ListHeaderComponentStyle={{ zIndex: 9999 }} // Critical for Web FlatList overlapping
+        ListHeaderComponentStyle={{ zIndex: 9999 }} 
         ListEmptyComponent={
           <View style={styles.emptyStateContainerBox}>
+            <Icon name="info-circle" size={48} color="#B91C1C" style={{ marginBottom: 12 }} />
             <Text style={styles.emptyStateMsg}>No inquiries found matching your filters.</Text>
           </View>
         }
@@ -566,18 +598,28 @@ export default function InquiriesLog() {
               </Text>
 
               <View style={styles.cardFooterLayoutFlex}>
-                <Text style={styles.footerMetaLabel}>📅 {item.date}</Text>
-                <Text style={styles.footerMetaLabel}>🔗 {item.source}</Text>
-                <Text style={styles.footerMetaLabel}>📞 {item.phone}</Text>
-                <Text style={styles.footerMetaLabel}>🔥 Priority: {item.priority}</Text>
+                <View style={styles.footerItem}>
+                  <Icon name="calendar" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                  <Text style={styles.footerMetaLabel}>{item.date}</Text>
+                </View>
+                <View style={styles.footerItem}>
+                  <Icon name="link" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                  <Text style={styles.footerMetaLabel}>{item.source}</Text>
+                </View>
+                <View style={styles.footerItem}>
+                  <Icon name="phone" size={13} color="#9F1239" style={{ marginRight: 6 }} />
+                  <Text style={styles.footerMetaLabel}>{item.phone}</Text>
+                </View>
               </View>
             </TouchableOpacity>
 
             <View style={styles.cardActionButtons}>
               <TouchableOpacity style={styles.actionButtonUpdate} onPress={() => openUpdateModal(item)}>
-                <Text style={styles.actionButtonTextUpdate}>Update</Text>
+                {/* <Icon name="pencil" size={14} color="#7F1D1D" style={{ marginRight: 6 }} /> */}
+                <Text style={styles.actionButtonTextUpdate}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionButtonDelete} onPress={() => setInquiryToDelete(item)}>
+                {/* <Icon name="trash" size={14} color="#B91C1C" style={{ marginRight: 6 }} /> */}
                 <Text style={styles.actionButtonTextDelete}>Delete</Text>
               </TouchableOpacity>
             </View>
@@ -585,7 +627,7 @@ export default function InquiriesLog() {
         )}
       />
 
-      {/* Inquiry Detail View Modal */}
+      {/* Detail View Modal */}
       {selectedInquiry && (
         <Modal
           transparent
@@ -669,6 +711,7 @@ export default function InquiriesLog() {
               </ScrollView>
 
               <TouchableOpacity style={styles.dismissDetailsModalBtn} onPress={() => setSelectedInquiry(null)}>
+                <Icon name="times" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
                 <Text style={styles.dismissDetailsModalBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
@@ -676,7 +719,7 @@ export default function InquiriesLog() {
         </Modal>
       )}
 
-      {/* Resolution Notes Entry Modal */}
+      {/* Resolution Notes Modal */}
       <Modal
         transparent
         visible={resolutionModalVisible}
@@ -684,7 +727,7 @@ export default function InquiriesLog() {
         onRequestClose={() => setResolutionModalVisible(false)}
       >
         <View style={styles.glassviewOverlayScreen}>
-          <View style={[styles.modalBodyCardLayout, { width: '92%', maxWidth: 460 }]}>
+          <View style={[styles.modalBodyCardLayout, { width: '92%', maxWidth: 460, flexShrink: 1 }]}>
             <Text style={styles.modalMainHeaderTitle}>Resolution Notes</Text>
             <Text style={styles.modalMainHeaderSubtitle}>Enter the resolution message for this inquiry</Text>
 
@@ -723,17 +766,20 @@ export default function InquiriesLog() {
         transparent
         visible={isCreateModalOpen}
         animationType="slide"
-        onRequestClose={() => setIsCreateModalOpen(false)}
+        onRequestClose={() => {
+          setIsCreateModalOpen(false);
+          setFormErrors({});
+        }}
       >
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.glassviewOverlayScreen}>
-            <View style={[styles.modalBodyCardLayout, { width: '95%', maxHeight: '95%' }]}>
+            <View style={[styles.modalBodyCardLayout, { width: '95%', maxHeight: '90%' }, isMobile && { margin: 12, width: '94%' }]}>
               <Text style={styles.modalMainHeaderTitle}>New Inquiry</Text>
               <Text style={styles.modalMainHeaderSubtitle}>Record a new prospect inquiry</Text>
 
               <ScrollView
-                style={{ width: '100%' }}
-                contentContainerStyle={{ paddingBottom: 30 }}
+                style={{ flexShrink: 1, width: '100%' }}
+                contentContainerStyle={{ paddingBottom: 24, paddingTop: 10 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
@@ -741,33 +787,50 @@ export default function InquiriesLog() {
                   Prospect Name <Text style={{ color: '#EF4444' }}>*</Text>
                 </Text>
                 <TextInput
-                  style={styles.formInputBoxControl}
+                  style={[styles.formInputBoxControl, formErrors.prospectName && styles.formInputErrorBorder]}
                   placeholder="Full Name"
+                  placeholderTextColor="#B91C1C"
                   value={form.prospectName}
-                  onChangeText={(text) => setForm((prev) => ({ ...prev, prospectName: text }))}
+                  onChangeText={(text) => {
+                    setForm((prev) => ({ ...prev, prospectName: text }));
+                    if (formErrors.prospectName) setFormErrors(prev => ({...prev, prospectName: ''}));
+                  }}
                   returnKeyType="next"
                 />
+                {formErrors.prospectName && <Text style={styles.errorText}>{formErrors.prospectName}</Text>}
 
                 <Text style={styles.formFieldLabelText}>
                   Phone <Text style={{ color: '#EF4444' }}>*</Text>
                 </Text>
                 <TextInput
-                  style={styles.formInputBoxControl}
+                  style={[styles.formInputBoxControl, formErrors.phone && styles.formInputErrorBorder]}
                   placeholder="+91 XXXXXXXXXX"
+                  placeholderTextColor="#B91C1C"
                   keyboardType="phone-pad"
                   value={form.phone}
-                  onChangeText={(text) => setForm((prev) => ({ ...prev, phone: text }))}
+                  onChangeText={(text) => {
+                    setForm((prev) => ({ ...prev, phone: text }));
+                    if (formErrors.phone) setFormErrors(prev => ({...prev, phone: ''}));
+                  }}
                 />
+                {formErrors.phone && <Text style={styles.errorText}>{formErrors.phone}</Text>}
 
-                <Text style={styles.formFieldLabelText}>Email</Text>
+                <Text style={styles.formFieldLabelText}>
+                  Email <Text style={{ color: '#EF4444' }}>*</Text>
+                </Text>
                 <TextInput
-                  style={styles.formInputBoxControl}
-                  placeholder="email@example.com"
+                  style={[styles.formInputBoxControl, formErrors.email && styles.formInputErrorBorder]}
+                  placeholder="email@gmail.com"
+                  placeholderTextColor="#B91C1C"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   value={form.email}
-                  onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
+                  onChangeText={(text) => {
+                    setForm((prev) => ({ ...prev, email: text }));
+                    if (formErrors.email) setFormErrors(prev => ({...prev, email: ''}));
+                  }}
                 />
+                {formErrors.email && <Text style={styles.errorText}>{formErrors.email}</Text>}
 
                 <Text style={styles.formFieldLabelText}>Inquiry Type</Text>
                 <View style={styles.customPickerRowLayout}>
@@ -813,19 +876,27 @@ export default function InquiriesLog() {
                   Details <Text style={{ color: '#EF4444' }}>*</Text>
                 </Text>
                 <TextInput
-                  style={[styles.formInputBoxControl, styles.formMultiLineTextBoxElement]}
+                  style={[styles.formInputBoxControl, styles.formMultiLineTextBoxElement, formErrors.details && styles.formInputErrorBorder]}
                   placeholder="Describe the inquiry..."
+                  placeholderTextColor="#B91C1C"
                   multiline
                   textAlignVertical="top"
                   value={form.details}
-                  onChangeText={(text) => setForm((prev) => ({ ...prev, details: text }))}
+                  onChangeText={(text) => {
+                    setForm((prev) => ({ ...prev, details: text }));
+                    if (formErrors.details) setFormErrors(prev => ({...prev, details: ''}));
+                  }}
                 />
+                {formErrors.details && <Text style={styles.errorText}>{formErrors.details}</Text>}
               </ScrollView>
 
               <View style={styles.formActionLayoutButtonsGroup}>
                 <TouchableOpacity
                   style={[styles.formActionBtnBase, styles.formActionBtnCancel]}
-                  onPress={() => setIsCreateModalOpen(false)}
+                  onPress={() => {
+                    setIsCreateModalOpen(false);
+                    setFormErrors({});
+                  }}
                 >
                   <Text style={styles.formActionBtnTextCancel}>Cancel</Text>
                 </TouchableOpacity>
@@ -851,17 +922,18 @@ export default function InquiriesLog() {
           onRequestClose={() => {
             setIsUpdateModalOpen(false);
             setSelectedInquiry(null);
+            setUpdateFormErrors({});
           }}
         >
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={styles.glassviewOverlayScreen}>
-              <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%', maxHeight: '95%' }]}>
+              <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%', maxHeight: '90%' }, { flexShrink: 1 }]}>
                 <Text style={styles.modalMainHeaderTitle}>Update Inquiry</Text>
                 <Text style={styles.modalMainHeaderSubtitle}>Edit inquiry {selectedInquiry.id}</Text>
 
                 <ScrollView
-                  style={{ width: '100%' }}
-                  contentContainerStyle={{ paddingBottom: 30 }}
+                  style={{ flexShrink: 1, width: '100%' }}
+                  contentContainerStyle={{ paddingBottom: 24, paddingTop: 10 }}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                 >
@@ -869,32 +941,49 @@ export default function InquiriesLog() {
                     Prospect Name <Text style={{ color: '#EF4444' }}>*</Text>
                   </Text>
                   <TextInput
-                    style={styles.formInputBoxControl}
+                    style={[styles.formInputBoxControl, updateFormErrors.prospectName && styles.formInputErrorBorder]}
                     placeholder="Full Name"
+                    placeholderTextColor="#B91C1C"
                     value={updateForm.prospectName}
-                    onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, prospectName: text }))}
+                    onChangeText={(text) => {
+                      setUpdateForm((prev) => ({ ...prev, prospectName: text }));
+                      if (updateFormErrors.prospectName) setUpdateFormErrors(prev => ({...prev, prospectName: ''}));
+                    }}
                   />
+                  {updateFormErrors.prospectName && <Text style={styles.errorText}>{updateFormErrors.prospectName}</Text>}
 
                   <Text style={styles.formFieldLabelText}>
                     Phone <Text style={{ color: '#EF4444' }}>*</Text>
                   </Text>
                   <TextInput
-                    style={styles.formInputBoxControl}
+                    style={[styles.formInputBoxControl, updateFormErrors.phone && styles.formInputErrorBorder]}
                     placeholder="+91 XXXXXXXXXX"
+                    placeholderTextColor="#B91C1C"
                     keyboardType="phone-pad"
                     value={updateForm.phone}
-                    onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, phone: text }))}
+                    onChangeText={(text) => {
+                      setUpdateForm((prev) => ({ ...prev, phone: text }));
+                      if (updateFormErrors.phone) setUpdateFormErrors(prev => ({...prev, phone: ''}));
+                    }}
                   />
+                  {updateFormErrors.phone && <Text style={styles.errorText}>{updateFormErrors.phone}</Text>}
 
-                  <Text style={styles.formFieldLabelText}>Email</Text>
+                  <Text style={styles.formFieldLabelText}>
+                    Email <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
                   <TextInput
-                    style={styles.formInputBoxControl}
-                    placeholder="email@example.com"
+                    style={[styles.formInputBoxControl, updateFormErrors.email && styles.formInputErrorBorder]}
+                    placeholder="email@gmail.com"
+                    placeholderTextColor="#B91C1C"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={updateForm.email}
-                    onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, email: text }))}
+                    onChangeText={(text) => {
+                      setUpdateForm((prev) => ({ ...prev, email: text }));
+                      if (updateFormErrors.email) setUpdateFormErrors(prev => ({...prev, email: ''}));
+                    }}
                   />
+                  {updateFormErrors.email && <Text style={styles.errorText}>{updateFormErrors.email}</Text>}
 
                   <Text style={styles.formFieldLabelText}>Inquiry Type</Text>
                   <View style={styles.customPickerRowLayout}>
@@ -946,13 +1035,18 @@ export default function InquiriesLog() {
                     Details <Text style={{ color: '#EF4444' }}>*</Text>
                   </Text>
                   <TextInput
-                    style={[styles.formInputBoxControl, styles.formMultiLineTextBoxElement]}
+                    style={[styles.formInputBoxControl, styles.formMultiLineTextBoxElement, updateFormErrors.details && styles.formInputErrorBorder]}
                     placeholder="Describe the inquiry..."
+                    placeholderTextColor="#B91C1C"
                     multiline
                     textAlignVertical="top"
                     value={updateForm.details}
-                    onChangeText={(text) => setUpdateForm((prev) => ({ ...prev, details: text }))}
+                    onChangeText={(text) => {
+                      setUpdateForm((prev) => ({ ...prev, details: text }));
+                      if (updateFormErrors.details) setUpdateFormErrors(prev => ({...prev, details: ''}));
+                    }}
                   />
+                  {updateFormErrors.details && <Text style={styles.errorText}>{updateFormErrors.details}</Text>}
                 </ScrollView>
 
                 <View style={styles.formActionLayoutButtonsGroup}>
@@ -961,6 +1055,7 @@ export default function InquiriesLog() {
                     onPress={() => {
                       setIsUpdateModalOpen(false);
                       setSelectedInquiry(null);
+                      setUpdateFormErrors({});
                     }}
                   >
                     <Text style={styles.formActionBtnTextCancel}>Cancel</Text>
@@ -976,11 +1071,14 @@ export default function InquiriesLog() {
         </Modal>
       )}
 
-      {/* Delete Inquiry Confirmation Modal */}
+      {/* Delete Inquiry Modal */}
       {inquiryToDelete && (
         <Modal transparent visible={!!inquiryToDelete} animationType="fade" onRequestClose={() => setInquiryToDelete(null)}>
           <View style={styles.glassviewOverlayScreen}>
             <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%' }, styles.deleteConfirmCard]}>
+              <View style={styles.deleteIconWrapper}>
+                <Icon name="trash-o" size={48} color="#B91C1C" />
+              </View>
               <Text style={styles.deleteConfirmTitle}>Delete Inquiry?</Text>
               <Text style={styles.deleteConfirmSubtitle}>
                 Are you sure you want to delete "{inquiryToDelete.prospectName}" inquiry?
@@ -1006,22 +1104,36 @@ export default function InquiriesLog() {
           </View>
         </Modal>
       )}
+
+      {/* SUCCESS MODAL POPUP */}
+      <Modal transparent visible={successModal.visible} animationType="fade" onRequestClose={() => setSuccessModal((p) => ({...p, visible: false}))}>
+        <View style={styles.glassviewOverlayScreen}>
+          <View style={[styles.modalBodyCardLayout, isMobile && { margin: 12, width: '94%' }, styles.deleteConfirmCard]}>
+            <View style={[styles.deleteIconWrapper, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+              <Icon name="check" size={40} color="#16A34A" />
+            </View>
+            <Text style={styles.deleteConfirmTitle}>{successModal.title}</Text>
+            <Text style={styles.deleteConfirmSubtitle}>{successModal.message}</Text>
+            
+            <View style={styles.deleteConfirmActions}>
+              <TouchableOpacity
+                style={[styles.formActionBtnBase, styles.formActionBtnSubmit, { backgroundColor: '#16A34A' }]}
+                onPress={() => setSuccessModal((p) => ({...p, visible: false}))}
+              >
+                <Text style={styles.formActionBtnTextSubmit}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  fallbackContainer: {
-    flex: 1,
-    backgroundColor: '#FFF1F2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fallbackText: {
-    marginTop: 12,
-    color: '#B91C1C',
-    fontSize: 14,
-  },
+  fallbackContainer: { flex: 1, backgroundColor: '#FFF1F2', justifyContent: 'center', alignItems: 'center' },
+  fallbackText: { marginTop: 12, color: '#B91C1C', fontSize: 14 },
 
   viewRootContainer: { flex: 1, backgroundColor: '#FFF1F2' },
   pageScrollContent: { paddingBottom: 18 },
@@ -1069,7 +1181,7 @@ const styles = StyleSheet.create({
 
   controlFilteringBox: { padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderColor: '#FECACA' },
 
-  // --- NEW RESPONSIVE 4-FILTER ROW STYLES ---
+  // --- RESPONSIVE 4-FILTER ROW STYLES ---
   filterRowWeb: { flexDirection: 'row', alignItems: 'center', gap: 12, zIndex: 9999 },
   filterRowMobile: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, zIndex: 9999 },
   filterItemSearch: { flex: 1.5, position: 'relative', zIndex: 1 },
@@ -1077,33 +1189,34 @@ const styles = StyleSheet.create({
   filterItemHalf: { minWidth: '47%' },
 
   searchInputContainer: { position: 'relative', justifyContent: 'center' },
-  searchIconLabel: { position: 'absolute', left: 14, fontSize: 16, color: '#A16207', zIndex: 2 },
+  searchIcon: { position: 'absolute', left: 14, top: 15, zIndex: 2 },
   globalSearchBox: {
     backgroundColor: '#FFF1F2',
     borderRadius: 12,
-    paddingLeft: 42,
-    paddingRight: 45,
-    paddingVertical: 13,
+    paddingHorizontal: 16,
+    height: 48, 
     fontSize: 14,
-    height: 48,
     borderWidth: 1,
     borderColor: '#FECACA',
     color: '#7F1D1D',
+    paddingRight: 42,
+    paddingLeft: 42,
   },
   clearSearchButton: {
     position: 'absolute',
     right: 12,
+    top: 12,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#FECACA',
     zIndex: 5,
   },
-  clearSearchButtonText: { color: '#DC2626', fontSize: 13, fontWeight: '700' },
+  clearSearchButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
 
   // --- DROPDOWN SELECTOR UI STYLES ---
   dropdownSelectorBox: {
@@ -1121,7 +1234,7 @@ const styles = StyleSheet.create({
   dropdownIconText: { fontSize: 10, color: '#9A3412', marginLeft: 8 },
   floatingDropdownList: {
     position: 'absolute',
-    top: 52, // positioned exactly below the 48px input box
+    top: 54,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
@@ -1132,8 +1245,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     zIndex: 99999,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 6 } },
-      android: { elevation: 10 },
+      ios: { shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10, shadowOffset: { width: 0, height: 5 } },
+      android: { elevation: 15 },
       default: {},
     }),
   },
@@ -1211,7 +1324,9 @@ const styles = StyleSheet.create({
 
   cardBodyExcerptText: { fontSize: 14, color: '#4B5563', lineHeight: 20, marginBottom: 12 },
   cardFooterLayoutFlex: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  footerItem: { flexDirection: 'row', alignItems: 'center' },
   footerMetaLabel: { fontSize: 12.5, color: '#9F1239' },
+  
   cardActionButtons: {
     flexDirection: 'row',
     gap: 10,
@@ -1227,6 +1342,8 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
     paddingVertical: 11,
     borderRadius: 11,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   actionButtonDelete: {
@@ -1236,6 +1353,8 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
     paddingVertical: 11,
     borderRadius: 11,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   actionButtonTextUpdate: { color: '#7F1D1D', fontWeight: '600', fontSize: 14.5 },
@@ -1244,84 +1363,36 @@ const styles = StyleSheet.create({
   emptyStateContainerBox: { alignItems: 'center', paddingVertical: 80 },
   emptyStateMsg: { fontSize: 15, color: '#B91C1C', textAlign: 'center' },
 
-  glassviewOverlayScreen: {
-    flex: 1,
-    backgroundColor: 'rgba(60, 33, 20, 0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
-  },
-  modalBodyCardLayout: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    width: '95%',
-    maxWidth: 520,
-    maxHeight: '95%',
-  },
+  glassviewOverlayScreen: { flex: 1, backgroundColor: 'rgba(60, 33, 20, 0.55)', justifyContent: 'center', alignItems: 'center', padding: 12 },
+  modalBodyCardLayout: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, width: '95%', maxWidth: 520, maxHeight: '95%' },
   modalMainHeaderTitle: { fontSize: 21, fontWeight: '700', color: '#7F1D1D' },
   modalMainHeaderSubtitle: { fontSize: 13.5, color: '#DC2626', marginTop: 4 },
 
   modalFormScrollContainer: { marginVertical: 12 },
   dossierFieldLabel: { fontSize: 12, fontWeight: '600', color: '#9A3412', textTransform: 'uppercase', marginTop: 16 },
   dossierFieldValue: { fontSize: 16, color: '#1F2937', marginTop: 4 },
-  dossierTextAreaDisplay: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#4B5563',
-    backgroundColor: '#FFF7F7',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    marginTop: 8,
-  },
+  dossierTextAreaDisplay: { fontSize: 15, lineHeight: 22, color: '#4B5563', backgroundColor: '#FFF7F7', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#FECACA', marginTop: 8 },
 
-  resolutionActionsBlock: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#FFF1F2',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
+  resolutionActionsBlock: { marginTop: 20, padding: 16, backgroundColor: '#FFF1F2', borderRadius: 12, borderWidth: 1, borderColor: '#FECACA' },
   resolutionActionsBlockLabel: { fontSize: 13.5, fontWeight: '600', color: '#7F1D1D', marginBottom: 12 },
   resolutionButtonLayoutGroupRow: { flexDirection: 'row', gap: 12 },
   workflowActionButtonItem: { flex: 1, paddingVertical: 11, borderRadius: 10, alignItems: 'center' },
-  dismissDetailsModalBtn: {
-    backgroundColor: '#7F1D1D',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
-  },
+  dismissDetailsModalBtn: { backgroundColor: '#7F1D1D', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 24 },
   dismissDetailsModalBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
 
   formFieldLabelText: { fontSize: 13.5, fontWeight: '600', color: '#7F1D1D', marginTop: 14, marginBottom: 6 },
-  formInputBoxControl: {
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    height: 48,
-    backgroundColor: '#FFFFFF',
-  },
+  formInputBoxControl: { borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 15, backgroundColor: '#FFFFFF' },
+  formInputErrorBorder: { borderColor: '#DC2626', borderWidth: 1.5 },
+  errorText: { color: '#DC2626', fontSize: 12, marginTop: 4, marginLeft: 4, fontWeight: '600' },
+  
   customPickerRowLayout: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginVertical: 8 },
-  customPickerItemBadge: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    backgroundColor: '#FFF1F2',
-  },
+  customPickerItemBadge: { paddingVertical: 9, paddingHorizontal: 18, borderRadius: 12, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF1F2', flexDirection: 'row', alignItems: 'center' },
   customPickerItemActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
-  customPickerItemText: { fontSize: 13, color: '#7F1D1D' },
+  customPickerItemText: { fontSize: 13.5, color: '#7F1D1D' },
   customPickerItemTextActive: { color: '#FFFFFF', fontWeight: '600' },
   formMultiLineTextBoxElement: { minHeight: 120, height: 'auto', textAlignVertical: 'top' },
-  formActionLayoutButtonsGroup: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  
+  formActionLayoutButtonsGroup: { flexDirection: 'row', gap: 12, marginTop: 16 },
   formActionBtnBase: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   formActionBtnCancel: { backgroundColor: '#FFF1F2', borderWidth: 1, borderColor: '#FECACA' },
   formActionBtnSubmit: { backgroundColor: '#DC2626' },
@@ -1329,9 +1400,10 @@ const styles = StyleSheet.create({
   formActionBtnTextSubmit: { color: '#FFFFFF', fontWeight: '600', fontSize: 15 },
 
   deleteConfirmCard: { alignItems: 'center', padding: 24 },
+  deleteIconWrapper: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 2, borderColor: '#FECACA' },
   deleteConfirmTitle: { fontSize: 20, fontWeight: '700', color: '#7F1D1D', textAlign: 'center' },
   deleteConfirmSubtitle: { fontSize: 15, color: '#4B5563', textAlign: 'center', marginTop: 12, lineHeight: 22 },
-  deleteConfirmWarning: { fontSize: 13, color: '#DC2626', textAlign: 'center', marginTop: 8, fontWeight: '600' },
+  deleteConfirmWarning: { fontSize: 13, color: '#B91C1C', textAlign: 'center', marginTop: 8, fontWeight: '600' },
   deleteConfirmActions: { flexDirection: 'row', gap: 12, marginTop: 24, width: '100%' },
   deleteConfirmButton: { backgroundColor: '#DC2626' },
 });

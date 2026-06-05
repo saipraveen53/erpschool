@@ -13,6 +13,7 @@ import {
   Platform,
   Pressable,
   useWindowDimensions,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +33,75 @@ type ProfileState = {
   bio: string;
   avatarUri: string | null;
 };
+
+export interface CommunicationLog {
+  id: string;
+  timestamp: string;
+  channel: 'SMS' | 'Email' | 'App Push';
+  targetGroup: string;
+  sender: string;
+  subject: string;
+  status: 'Dispatched' | 'Pending' | 'Failed';
+  body: string;
+}
+
+export interface StaffContact {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+  extension: string;
+  status: 'Available' | 'In Class' | 'On Leave' | 'Busy';
+}
+
+const TARGET_GROUPS = [
+  'Grade 10 Parents',
+  'Grade 8 Parents',
+  'All Faculty & Staff',
+  'Transport Operators Group',
+  'Admissions Team',
+  'Student Council',
+] as const;
+
+const MOCK_LOGS: CommunicationLog[] = [
+  {
+    id: 'COM-2026-901',
+    timestamp: '2026-05-29 11:30 AM',
+    channel: 'App Push',
+    targetGroup: 'Grade 10 Parents',
+    sender: 'Front Desk Admin',
+    subject: 'Delayed Bus Route 4 update Notification',
+    body: 'Notice issued to parents regarding Route 4 delays caused by localized arterial traffic disruptions near the terminal roundabout.',
+    status: 'Dispatched',
+  },
+  {
+    id: 'COM-2026-902',
+    timestamp: '2026-05-29 09:15 AM',
+    channel: 'Email',
+    targetGroup: 'All Faculty & Staff',
+    sender: 'Reception Desk',
+    subject: 'Emergency Maintenance Shutdown Notice',
+    body: 'Water supply lines in the primary block annex will undergo technical repairs starting at 03:00 PM today.',
+    status: 'Dispatched',
+  },
+  {
+    id: 'COM-2026-903',
+    timestamp: '2026-05-28 04:45 PM',
+    channel: 'SMS',
+    targetGroup: 'Transport Operators Group',
+    sender: 'Administrative Lead',
+    subject: 'Mandatory Route Audit Submissions',
+    body: 'Drivers must submit structural logbooks and daily compliance checklists before operating morning routes next week.',
+    status: 'Failed',
+  },
+];
+
+const MOCK_STAFF: StaffContact[] = [
+  { id: 'STF-401', name: 'Dr. Aranya Sen', role: 'Vice Principal', department: 'Administration', extension: 'XT-102', status: 'Available' },
+  { id: 'STF-102', name: 'Ms. Priya Sharma', role: 'Senior Admissions Counselor', department: 'Admissions Office', extension: 'XT-115', status: 'Busy' },
+  { id: 'STF-289', name: 'Mr. Rajesh Nair', role: 'Head of Logistics & Transit', department: 'Transport Wing', extension: 'XT-304', status: 'In Class' },
+  { id: 'STF-504', name: 'Mrs. Caroline Vance', role: 'Grievance Resolution Officer', department: 'Student Welfare', extension: 'XT-108', status: 'Available' },
+];
 
 const SWITCH_ON_TRACK = '#FCA5A5';
 const SWITCH_OFF_TRACK = '#FECACA';
@@ -58,6 +128,7 @@ export default function ReceptionistProfileScreen() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [photoActionOpen, setPhotoActionOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
   const [themeMode, setThemeMode] = useState<ThemeMode>('Light');
   const [language, setLanguage] = useState<Language>('English');
@@ -160,11 +231,16 @@ export default function ReceptionistProfileScreen() {
     notify('Success', 'Password changed successfully.');
   };
 
-  const handleLogout = async () => {
+  const triggerLogoutConfirm = () => {
+    setLogoutModalOpen(true);
+  };
+
+  const executeLogout = async () => {
     try {
       setPhotoActionOpen(false);
       setEditModalOpen(false);
       setPasswordModalOpen(false);
+      setLogoutModalOpen(false);
       if (router.canDismiss?.()) router.dismissAll();
       router.replace('/home' as any);
     } catch {
@@ -365,28 +441,6 @@ export default function ReceptionistProfileScreen() {
               );
             })}
           </View>
-
-          {/* <View style={styles.languageRow}>
-            {(['English', 'Hindi', 'Tamil', 'Telugu'] as Language[]).map((lang) => {
-              const active = language === lang;
-              return (
-                <TouchableOpacity
-                  key={lang}
-                  style={[styles.languageChip, active && styles.languageChipActive]}
-                  onPress={() => setLanguage(lang)}
-                >
-                  <Text
-                    style={[
-                      styles.languageChipText,
-                      active && styles.languageChipTextActive,
-                    ]}
-                  >
-                    {lang}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View> */}
         </View>
 
         <View style={styles.sectionCard}>
@@ -411,12 +465,37 @@ export default function ReceptionistProfileScreen() {
             onPress={() => notify('Support', 'Support section can be connected here.')}
           />
 
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={triggerLogoutConfirm}>
             <Ionicons name="log-out-outline" size={18} color="#DC2626" />
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Logout Confirmation Modal for both Web and Mobile */}
+      <Modal visible={logoutModalOpen} transparent animationType="fade" onRequestClose={() => setLogoutModalOpen(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.modalTitle}>Confirm Logout</Text>
+            <Text style={styles.modalSubtitle}>Are you sure you want to log out of your account?</Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnCancel]}
+                onPress={() => setLogoutModalOpen(false)}
+              >
+                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnSave]}
+                onPress={executeLogout}
+              >
+                <Text style={styles.modalBtnSaveText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={photoActionOpen} transparent animationType="fade" onRequestClose={() => setPhotoActionOpen(false)}>
         <Pressable style={styles.sheetOverlay} onPress={() => setPhotoActionOpen(false)}>
@@ -456,65 +535,75 @@ export default function ReceptionistProfileScreen() {
         </Pressable>
       </Modal>
 
-      <Modal visible={editModalOpen} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
-            <Text style={styles.modalSubtitle}>Update all your personal details</Text>
+      <Modal visible={editModalOpen} transparent animationType="fade" onRequestClose={() => setEditModalOpen(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <Text style={styles.modalSubtitle}>Update all your personal details</Text>
 
-            <Field label="Full Name" value={draftProfile.fullName} onChangeText={(t) => setDraftProfile((p) => ({ ...p, fullName: t }))} />
-            <Field label="Role" value={draftProfile.role} onChangeText={(t) => setDraftProfile((p) => ({ ...p, role: t }))} />
-            <Field label="Email" value={draftProfile.email} onChangeText={(t) => setDraftProfile((p) => ({ ...p, email: t }))} />
-            <Field label="Phone" value={draftProfile.phone} onChangeText={(t) => setDraftProfile((p) => ({ ...p, phone: t }))} />
-            <Field label="Department" value={draftProfile.department} onChangeText={(t) => setDraftProfile((p) => ({ ...p, department: t }))} />
-            <Field label="School" value={draftProfile.school} onChangeText={(t) => setDraftProfile((p) => ({ ...p, school: t }))} />
-            <Field label="Bio" value={draftProfile.bio} onChangeText={(t) => setDraftProfile((p) => ({ ...p, bio: t }))} multiline />
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.editProfileScrollContainer} keyboardShouldPersistTaps="handled">
+                <Field label="Full Name" value={draftProfile.fullName} onChangeText={(t) => setDraftProfile((p) => ({ ...p, fullName: t }))} />
+                <Field label="Role" value={draftProfile.role} onChangeText={(t) => setDraftProfile((p) => ({ ...p, role: t }))} />
+                <Field label="Email" value={draftProfile.email} onChangeText={(t) => setDraftProfile((p) => ({ ...p, email: t }))} />
+                <Field label="Phone" value={draftProfile.phone} onChangeText={(t) => setDraftProfile((p) => ({ ...p, phone: t }))} />
+                <Field label="Department" value={draftProfile.department} onChangeText={(t) => setDraftProfile((p) => ({ ...p, department: t }))} />
+                <Field label="School" value={draftProfile.school} onChangeText={(t) => setDraftProfile((p) => ({ ...p, school: t }))} />
+                <Field label="Bio" value={draftProfile.bio} onChangeText={(t) => setDraftProfile((p) => ({ ...p, bio: t }))} multiline />
+              </ScrollView>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel]}
-                onPress={() => setEditModalOpen(false)}
-              >
-                <Text style={styles.modalBtnCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnSave]}
-                onPress={saveProfile}
-              >
-                <Text style={styles.modalBtnSaveText}>Save</Text>
-              </TouchableOpacity>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnCancel]}
+                  onPress={() => setEditModalOpen(false)}
+                >
+                  <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnSave]}
+                  onPress={saveProfile}
+                >
+                  <Text style={styles.modalBtnSaveText}>Save</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={passwordModalOpen} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Change Password</Text>
-            <Text style={styles.modalSubtitle}>Keep your account secure</Text>
+      {/* FIXED PASSWORD MODAL WITH KEYBOARD AVOIDING VIEW */}
+      <Modal visible={passwordModalOpen} transparent animationType="fade" onRequestClose={() => setPasswordModalOpen(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Change Password</Text>
+              <Text style={styles.modalSubtitle}>Keep your account secure</Text>
 
-            <Field label="Current Password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry />
-            <Field label="New Password" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
-            <Field label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.editProfileScrollContainer} keyboardShouldPersistTaps="handled">
+                <Field label="Current Password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry />
+                <Field label="New Password" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+                <Field label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+              </ScrollView>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel]}
-                onPress={() => setPasswordModalOpen(false)}
-              >
-                <Text style={styles.modalBtnCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnSave]}
-                onPress={handleChangePassword}
-              >
-                <Text style={styles.modalBtnSaveText}>Update</Text>
-              </TouchableOpacity>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnCancel]}
+                  onPress={() => setPasswordModalOpen(false)}
+                >
+                  <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnSave]}
+                  onPress={handleChangePassword}
+                >
+                  <Text style={styles.modalBtnSaveText}>Update</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
+
     </SafeAreaView>
   );
 }
@@ -764,18 +853,6 @@ const styles = StyleSheet.create({
   segmentItemActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
   segmentText: { fontSize: 12.5, color: '#7F1D1D', fontWeight: '700' },
   segmentTextActive: { color: '#FFFFFF' },
-  languageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
-  languageChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    backgroundColor: '#FFF7F7',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  languageChipActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
-  languageChipText: { fontSize: 12.5, color: '#7F1D1D', fontWeight: '700' },
-  languageChipTextActive: { color: '#FFFFFF' },
   quickCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -873,9 +950,23 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 540,
+    maxHeight: '90%', 
+    flexShrink: 1,    
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  editProfileScrollContainer: {
+    flexShrink: 1,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 24,
     borderWidth: 1,
     borderColor: '#FECACA',
   },
