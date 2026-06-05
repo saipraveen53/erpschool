@@ -62,28 +62,6 @@ export default function ExaminationIndex() {
         />
       </View>
 
-      {/* HERO */}
-      <View style={styles.heroCard}>
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>Final Semester Examination 2026</Text>
-          <Text style={styles.heroSubtitle}>Smart examination scheduling and analytics</Text>
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroMiniCard}>
-              <Users size={16} color="#27B3C7" />
-              <Text style={styles.heroMiniText}>1,240 Students</Text>
-            </View>
-            <View style={styles.heroMiniCard}>
-              <BookOpen size={16} color="#27B3C7" />
-              <Text style={styles.heroMiniText}>24 Subjects</Text>
-            </View>
-          </View>
-        </View>
-        <TouchableOpacity style={styles.heroButton} onPress={() => router.push("/admin/examination/schedule")}>
-          <Text style={styles.heroButtonText}>View Schedule</Text>
-          <ArrowRight size={16} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
       {/* STATS */}
       <View style={styles.statsGrid}>
         {[

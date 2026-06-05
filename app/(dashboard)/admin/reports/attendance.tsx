@@ -111,60 +111,6 @@ export default function AttendanceReportsPage() {
         )}
       </View>
 
-      {/* HERO SECTION */}
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroLeft}>
-          <Sparkles
-            size={
-              isMobile ? 30 : 36
-            }
-            color="#fff"
-          />
-
-          <Text style={styles.heroTitle}>
-            Attendance Intelligence
-          </Text>
-
-          <Text
-            style={
-              styles.heroSubtitle
-            }
-          >
-            Monitor student
-            attendance trends with
-            real-time insights
-          </Text>
-
-          <TouchableOpacity
-            style={styles.heroButton}
-          >
-            <Text
-              style={
-                styles.heroButtonText
-              }
-            >
-              Explore Analytics
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.heroBadge}>
-          <ClipboardCheck
-            size={28}
-            color={PRIMARY}
-          />
-
-          <Text
-            style={
-              styles.heroBadgeText
-            }
-          >
-            94% Attendance
-          </Text>
-        </View>
-      </View>
-
       {/* SEARCH */}
 
       <View
