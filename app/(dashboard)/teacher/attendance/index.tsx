@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -23,32 +24,33 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  primaryDark: "#C73E21",
-  secondaryLight: "#FEF0E8",
-  accentLight: "#FFEFB",
-  bgWarm: "#FFF8F2",
-  bgCard: "#FFFFFF",
-  bgCardAlt: "#FFFBF7",
-  bgHeader: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
-  white: "#FFFFFF",
-  border: "#F0E4D8",
-  shadowLight: "#E8D5C4",
-  shadowMedium: "#D4BFA8",
-  present: "#F4A460",
-  absent: "#E35336",
-  presentLight: "#FEF0E8",
-  absentLight: "#FDE8E3",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
+  success: "#10B981",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+  info: "#3B82F6",
+  present: "#10B981",
+  absent: "#EF4444",
+  presentLight: "#D1FAE5",
+  absentLight: "#FEE2E2",
 };
 
-// ✅ Fix: format date using local time (YYYY-MM-DD)
+// Format date as YYYY-MM-DD (local time)
 const formatDateForAPI = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -185,7 +187,10 @@ export default function MarkAttendanceScreen() {
     return (
       <View className="p-4">
         <View className="flex-row justify-between items-center mb-4">
-          <TouchableOpacity onPress={goPrevMonth} className="p-2">
+          <TouchableOpacity
+            onPress={goPrevMonth}
+            className="p-2 rounded-full bg-white/20"
+          >
             <ChevronLeft size={24} color={COLORS.primary} />
           </TouchableOpacity>
           <Text
@@ -197,7 +202,10 @@ export default function MarkAttendanceScreen() {
             })}{" "}
             {currentYear}
           </Text>
-          <TouchableOpacity onPress={goNextMonth} className="p-2">
+          <TouchableOpacity
+            onPress={goNextMonth}
+            className="p-2 rounded-full bg-white/20"
+          >
             <ChevronRight size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
@@ -223,13 +231,7 @@ export default function MarkAttendanceScreen() {
             <View className="flex-1 aspect-square p-1">
               {item.date ? (
                 <TouchableOpacity
-                  className={`flex-1 justify-center items-center rounded-full ${
-                    item.isSelected
-                      ? "bg-primary"
-                      : item.isToday
-                        ? "bg-primaryLight"
-                        : ""
-                  }`}
+                  className="flex-1 justify-center items-center rounded-full"
                   style={[
                     item.isSelected && { backgroundColor: COLORS.primary },
                     item.isToday &&
@@ -240,16 +242,10 @@ export default function MarkAttendanceScreen() {
                   onPress={() => handleDateChange(item.date)}
                 >
                   <Text
-                    className={`text-sm font-semibold ${
-                      item.isSelected
-                        ? "text-white"
-                        : item.isToday
-                          ? "text-primary"
-                          : "text-textPrimary"
-                    }`}
+                    className="text-sm font-semibold"
                     style={{
                       color: item.isSelected
-                        ? COLORS.white
+                        ? COLORS.surface
                         : item.isToday
                           ? COLORS.primary
                           : COLORS.textPrimary,
@@ -406,14 +402,15 @@ export default function MarkAttendanceScreen() {
       value={formatDateForAPI(selectedDate)}
       onChange={(e) => handleDateChange(new Date(e.target.value))}
       style={{
-        padding: 10,
-        borderRadius: 12,
+        padding: 12,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: COLORS.border,
-        backgroundColor: COLORS.white,
+        backgroundColor: COLORS.surface,
         fontSize: 14,
         fontFamily: "system-ui",
         color: COLORS.textPrimary,
+        width: "100%",
       }}
     />
   );
@@ -422,26 +419,26 @@ export default function MarkAttendanceScreen() {
     <View className="flex-row items-center justify-between gap-3">
       <TouchableOpacity
         onPress={() => changeDateByDays(-1)}
-        className="p-2 rounded-full"
+        className="p-3 rounded-full"
         style={{ backgroundColor: COLORS.primaryLight }}
       >
         <ChevronLeft size={20} color={COLORS.primary} />
       </TouchableOpacity>
       <TouchableOpacity
         onPress={resetToToday}
-        className="px-4 py-2 rounded-full"
-        style={{ backgroundColor: COLORS.secondaryLight }}
+        className="px-5 py-2 rounded-full"
+        style={{ backgroundColor: COLORS.secondaryLight || "#D1FAE5" }}
       >
         <Text
           className="text-xs font-semibold"
-          style={{ color: COLORS.primary }}
+          style={{ color: COLORS.secondary }}
         >
           Today
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => changeDateByDays(1)}
-        className="p-2 rounded-full"
+        className="p-3 rounded-full"
         style={{ backgroundColor: COLORS.primaryLight }}
       >
         <ChevronRight size={20} color={COLORS.primary} />
@@ -450,50 +447,53 @@ export default function MarkAttendanceScreen() {
   );
 
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgHeader}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 40,
-          backgroundColor: COLORS.bgHeader,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: Platform.OS === "android" ? 48 : 40,
+          paddingBottom: 20,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.primary }}
-        >
-          Mark Attendance
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.push("/teacher/attendance/history")}
-          className="px-3.5 py-2 rounded-full border"
-          style={{
-            backgroundColor: COLORS.secondaryLight,
-            borderColor: COLORS.secondary,
-          }}
-        >
-          <Text
-            className="font-semibold text-sm"
-            style={{ color: COLORS.primary }}
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
           >
-            History
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Mark Attendance
           </Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            onPress={() => router.push("/teacher/attendance/history")}
+            className="px-4 py-2 rounded-full bg-white/20"
+          >
+            <Text
+              className="font-semibold text-sm"
+              style={{ color: COLORS.surface }}
+            >
+              History
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       <View
         className="flex-1 w-full self-center"
@@ -501,39 +501,55 @@ export default function MarkAttendanceScreen() {
       >
         {/* Teacher Info Bar */}
         <View
-          className="flex-row justify-between px-5 py-3 border-b"
+          className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
           style={{
-            backgroundColor: COLORS.primaryLight,
-            borderBottomColor: COLORS.border,
+            backgroundColor: COLORS.surface,
+            ...Platform.select({
+              ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+              },
+              android: { elevation: 2 },
+              web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+            }),
           }}
         >
           <Text
-            className="text-xs font-bold"
-            style={{ color: COLORS.primaryDark, flex: 1 }}
+            className="text-xs font-medium"
+            style={{ color: COLORS.textSecondary, flex: 1 }}
             numberOfLines={1}
           >
             Teacher: {teacherName || "Loading..."} ({teacherId || "Loading..."})
           </Text>
           <Text
-            className="text-xs font-bold"
-            style={{ color: COLORS.primaryDark }}
+            className="text-xs font-medium"
+            style={{ color: COLORS.textSecondary }}
           >
             Class: {assignedClass || "Loading..."}
           </Text>
         </View>
 
-        {/* ✅ Make whole content scrollable */}
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingBottom: 100, // space for fixed submit button
-          }}
+          contentContainerStyle={{ paddingBottom: 100 }}
         >
+          {/* Assigned Class Card */}
           <View
-            className="px-5 pt-5 pb-5 mb-3 border-b"
+            className="mx-4 mt-5 p-5 rounded-2xl"
             style={{
-              backgroundColor: COLORS.bgCard,
-              borderBottomColor: COLORS.border,
+              backgroundColor: COLORS.surface,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                },
+                android: { elevation: 2 },
+                web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+              }),
             }}
           >
             <Text
@@ -543,11 +559,8 @@ export default function MarkAttendanceScreen() {
               Assigned Class
             </Text>
             <View
-              className="px-4 py-3.5 rounded-xl border"
-              style={{
-                backgroundColor: COLORS.bgWarm,
-                borderColor: COLORS.secondary,
-              }}
+              className="px-4 py-3.5 rounded-xl"
+              style={{ backgroundColor: COLORS.primaryLight }}
             >
               {isLoading ? (
                 <ActivityIndicator size="small" color={COLORS.primary} />
@@ -562,15 +575,24 @@ export default function MarkAttendanceScreen() {
             </View>
           </View>
 
-          {/* Date Picker Section */}
+          {/* Date Picker Card */}
           <View
-            className="mx-5 mb-4 p-4 rounded-xl border"
+            className="mx-4 mb-4 p-5 rounded-2xl"
             style={{
-              backgroundColor: COLORS.bgCard,
-              borderColor: COLORS.border,
+              backgroundColor: COLORS.surface,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                },
+                android: { elevation: 2 },
+                web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+              }),
             }}
           >
-            <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center gap-2">
                 <Calendar size={18} color={COLORS.primary} />
                 <Text
@@ -582,9 +604,8 @@ export default function MarkAttendanceScreen() {
               </View>
               <TouchableOpacity
                 onPress={() => setCalendarVisible(true)}
-                className="px-3 py-1.5 rounded-full border"
+                className="px-4 py-2 rounded-full"
                 style={{
-                  borderColor: COLORS.primary,
                   backgroundColor: COLORS.primaryLight,
                 }}
               >
@@ -603,7 +624,7 @@ export default function MarkAttendanceScreen() {
               <NativeDateNavigator />
             )}
             <Text
-              className="text-center text-base font-bold mt-3"
+              className="text-center text-base font-bold mt-4"
               style={{ color: COLORS.textPrimary }}
             >
               {formatDisplayDate(selectedDate)}
@@ -624,25 +645,32 @@ export default function MarkAttendanceScreen() {
               <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
           ) : (
-            <View className="px-5">
+            <View className="px-4">
               {students.map((student) => (
                 <View
                   key={student.id}
-                  className="flex-row justify-between items-center p-4 rounded-2xl mb-3 border"
+                  className="flex-row justify-between items-center p-4 rounded-2xl mb-3"
                   style={[
                     student.status === "present"
                       ? {
                           backgroundColor: COLORS.presentLight,
-                          borderColor: COLORS.present,
+                          borderWidth: 1,
+                          borderColor: COLORS.success,
                         }
                       : {
                           backgroundColor: COLORS.absentLight,
-                          borderColor: COLORS.absent,
+                          borderWidth: 1,
+                          borderColor: COLORS.danger,
                         },
                   ]}
                 >
                   <View className="flex-row items-center flex-1">
-                    <View className="w-12 h-12 rounded-full justify-center items-center mr-3.5 border bg-white border-secondary">
+                    <View
+                      className="w-12 h-12 rounded-full justify-center items-center mr-3.5"
+                      style={{
+                        backgroundColor: COLORS.primaryLight,
+                      }}
+                    >
                       <Text
                         className="font-bold text-lg"
                         style={{ color: COLORS.primary }}
@@ -659,14 +687,14 @@ export default function MarkAttendanceScreen() {
                       </Text>
                     </View>
                   </View>
-                  <View className="flex-row gap-2">
+                  <View className="flex-row gap-3">
                     <TouchableOpacity
-                      className="px-4 py-2.5 rounded-full"
+                      className="px-5 py-2.5 rounded-full"
                       style={{
                         backgroundColor:
                           student.status === "present"
-                            ? COLORS.present
-                            : COLORS.white,
+                            ? COLORS.success
+                            : COLORS.surface,
                         borderWidth: 1,
                         borderColor: COLORS.border,
                       }}
@@ -677,7 +705,7 @@ export default function MarkAttendanceScreen() {
                         style={{
                           color:
                             student.status === "present"
-                              ? COLORS.white
+                              ? COLORS.surface
                               : COLORS.textSecondary,
                         }}
                       >
@@ -685,12 +713,12 @@ export default function MarkAttendanceScreen() {
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      className="px-4 py-2.5 rounded-full"
+                      className="px-5 py-2.5 rounded-full"
                       style={{
                         backgroundColor:
                           student.status === "absent"
-                            ? COLORS.absent
-                            : COLORS.white,
+                            ? COLORS.danger
+                            : COLORS.surface,
                         borderWidth: 1,
                         borderColor: COLORS.border,
                       }}
@@ -701,7 +729,7 @@ export default function MarkAttendanceScreen() {
                         style={{
                           color:
                             student.status === "absent"
-                              ? COLORS.white
+                              ? COLORS.surface
                               : COLORS.textSecondary,
                         }}
                       >
@@ -716,7 +744,14 @@ export default function MarkAttendanceScreen() {
         </ScrollView>
 
         {/* Fixed Submit Button */}
-        <View className="absolute bottom-0 w-full px-5 pt-4 pb-6 border-t bg-white border-border">
+        <View
+          className="absolute bottom-0 w-full px-5 pt-4 pb-6"
+          style={{
+            backgroundColor: COLORS.surface,
+            borderTopWidth: 1,
+            borderTopColor: COLORS.border,
+          }}
+        >
           <TouchableOpacity
             className="py-4 rounded-2xl items-center"
             style={{ backgroundColor: COLORS.primary }}
@@ -724,7 +759,7 @@ export default function MarkAttendanceScreen() {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color={COLORS.white} />
+              <ActivityIndicator color={COLORS.surface} />
             ) : (
               <Text className="text-white font-bold text-base">
                 Submit Attendance
@@ -744,11 +779,13 @@ export default function MarkAttendanceScreen() {
         <View className="flex-1 justify-center items-center bg-black/50">
           <View
             className="bg-white rounded-3xl w-11/12 max-w-md"
-            style={{ backgroundColor: COLORS.bgWarm }}
+            style={{ backgroundColor: COLORS.surface }}
           >
-            <View
-              className="flex-row justify-between items-center p-4 border-b"
-              style={{ borderColor: COLORS.border }}
+            <LinearGradient
+              colors={[COLORS.primaryLight, COLORS.surface]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="flex-row justify-between items-center p-4 rounded-t-3xl"
             >
               <Text
                 className="text-lg font-bold"
@@ -759,7 +796,7 @@ export default function MarkAttendanceScreen() {
               <TouchableOpacity onPress={() => setCalendarVisible(false)}>
                 <X size={24} color={COLORS.primary} />
               </TouchableOpacity>
-            </View>
+            </LinearGradient>
             {renderCalendar()}
             <View
               className="p-4 border-t"

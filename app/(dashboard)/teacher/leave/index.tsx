@@ -1,53 +1,57 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
-    ArrowLeft,
-    CalendarPlus,
-    CheckCircle,
-    ChevronDown,
-    Clock,
-    XCircle,
+  ArrowLeft,
+  CalendarPlus,
+  CheckCircle,
+  ChevronDown,
+  Clock,
+  XCircle,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  primaryDark: "#C73E21",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   warning: "#F59E0B",
   error: "#EF4444",
-  border: "#F0E4D8",
   white: "#FFFFFF",
-  lightGray: "#F8F9FA",
+  lightGray: "#F3F4F6",
 };
 
-// Dedicated axios instance for leave management endpoints
+// Dedicated axios instance for leave management endpoints (different baseURL)
 const leaveClient = axios.create({
-  baseURL: "http://192.168.88.24:8083",
+  baseURL: "http://192.168.88.20:8081",
   timeout: 10000,
 });
 
@@ -107,15 +111,15 @@ const getStatusDisplay = (status: string) => {
     case "APPROVED":
       return {
         color: COLORS.success,
-        bg: `${COLORS.success}1A`,
+        bg: `${COLORS.success}15`,
         icon: CheckCircle,
       };
     case "REJECTED":
-      return { color: COLORS.error, bg: `${COLORS.error}1A`, icon: XCircle };
+      return { color: COLORS.error, bg: `${COLORS.error}15`, icon: XCircle };
     default:
       return {
         color: COLORS.warning,
-        bg: `${COLORS.warning}1A`,
+        bg: `${COLORS.warning}15`,
         icon: Clock,
       };
   }
@@ -126,7 +130,7 @@ export default function LeaveManagementScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
-  // Teacher info (from original server)
+  // Teacher info (from main server via teacherClient)
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("Loading...");
   const [assignedClass, setAssignedClass] = useState("Loading...");
@@ -149,7 +153,7 @@ export default function LeaveManagementScreen() {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch teacher info (original server)
+  // Fetch teacher info (using class-sections to get teacher's own class)
   useEffect(() => {
     const fetchTeacherInfo = async () => {
       try {
@@ -183,19 +187,17 @@ export default function LeaveManagementScreen() {
     fetchTeacherInfo();
   }, []);
 
-  // Fetch leave stats and history from the new server
+  // Fetch leave stats and history from the leave microservice
   useEffect(() => {
     const fetchLeaveData = async () => {
       setStatsLoading(true);
       setHistoryLoading(true);
       setErrorMsg(null);
       try {
-        // Fetch stats
         const statsRes = await leaveClient.get("/api/teacher/leave/getStats");
         setTotalPendingRequests(statsRes.data.totalPendingRequests || 0);
         setTotalRejectedLeaves(statsRes.data.totalRejectedLeaves || 0);
 
-        // Fetch history
         const historyRes = await leaveClient.get("/api/teacher/leave/history");
         setLeaveHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
       } catch (err: any) {
@@ -230,7 +232,6 @@ export default function LeaveManagementScreen() {
       setEndDate("");
       setReason("");
 
-      // Refresh stats and history
       const statsRes = await leaveClient.get("/api/teacher/leave/getStats");
       setTotalPendingRequests(statsRes.data.totalPendingRequests || 0);
       setTotalRejectedLeaves(statsRes.data.totalRejectedLeaves || 0);
@@ -249,63 +250,82 @@ export default function LeaveManagementScreen() {
     ? getLeaveTypeLabel(selectedTypeValue)
     : "Select Leave Type";
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
-        >
-          Leave Management
-        </Text>
-        <TouchableOpacity
-          className="p-2 rounded-lg"
-          style={{ backgroundColor: `${COLORS.primary}1A` }}
-          onPress={() => setApplyModalVisible(true)}
-        >
-          <CalendarPlus size={20} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Leave Management
+          </Text>
+          <TouchableOpacity
+            className="p-2 rounded-full bg-white/10"
+            onPress={() => setApplyModalVisible(true)}
+          >
+            <CalendarPlus size={20} color={COLORS.surface} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Teacher Info Bar */}
       <View
-        className="flex-row justify-between px-5 py-3 border-b"
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
         style={{
-          backgroundColor: COLORS.primaryLight,
-          borderBottomColor: COLORS.border,
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
         }}
       >
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark, flex: 1 }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
           numberOfLines={1}
         >
           Teacher: {teacherName} ({teacherId})
         </Text>
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
           numberOfLines={1}
         >
           Class: {assignedClass}
@@ -322,7 +342,7 @@ export default function LeaveManagementScreen() {
           paddingBottom: 60,
         }}
       >
-        {/* Leave Stats (replacing old balances) */}
+        {/* Leave Statistics */}
         <Text
           className="text-lg font-bold mb-4"
           style={{ color: COLORS.textPrimary }}
@@ -331,15 +351,20 @@ export default function LeaveManagementScreen() {
         </Text>
         <View className="flex-row gap-4 mb-6">
           <View
-            className="flex-1 bg-white py-5 rounded-2xl items-center border"
+            className="flex-1 items-center p-5 rounded-2xl border"
             style={{
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
               borderColor: COLORS.border,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                },
+                android: { elevation: 2 },
+                web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+              }),
             }}
           >
             {statsLoading ? (
@@ -347,14 +372,14 @@ export default function LeaveManagementScreen() {
             ) : (
               <>
                 <Text
-                  className="text-[28px] font-black"
+                  className="text-3xl font-black"
                   style={{ color: COLORS.warning }}
                 >
                   {totalPendingRequests}
                 </Text>
                 <Text
                   className="text-xs font-bold uppercase mt-1"
-                  style={{ color: COLORS.textPrimary }}
+                  style={{ color: COLORS.textSecondary }}
                 >
                   Pending
                 </Text>
@@ -362,15 +387,20 @@ export default function LeaveManagementScreen() {
             )}
           </View>
           <View
-            className="flex-1 bg-white py-5 rounded-2xl items-center border"
+            className="flex-1 items-center p-5 rounded-2xl border"
             style={{
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
               borderColor: COLORS.border,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                },
+                android: { elevation: 2 },
+                web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+              }),
             }}
           >
             {statsLoading ? (
@@ -378,14 +408,14 @@ export default function LeaveManagementScreen() {
             ) : (
               <>
                 <Text
-                  className="text-[28px] font-black"
+                  className="text-3xl font-black"
                   style={{ color: COLORS.error }}
                 >
                   {totalRejectedLeaves}
                 </Text>
                 <Text
                   className="text-xs font-bold uppercase mt-1"
-                  style={{ color: COLORS.textPrimary }}
+                  style={{ color: COLORS.textSecondary }}
                 >
                   Rejected
                 </Text>
@@ -396,14 +426,19 @@ export default function LeaveManagementScreen() {
 
         {/* Apply New Leave Button */}
         <TouchableOpacity
-          className="py-[18px] rounded-2xl items-center mb-8"
+          className="py-4 rounded-2xl items-center mb-8"
           style={{
             backgroundColor: COLORS.primary,
-            shadowColor: COLORS.primary,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 4,
+            ...Platform.select({
+              ios: {
+                shadowColor: COLORS.primary,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+              },
+              android: { elevation: 4 },
+              web: { boxShadow: `0px 4px 12px ${COLORS.primary}40` },
+            }),
           }}
           activeOpacity={0.9}
           onPress={() => setApplyModalVisible(true)}
@@ -433,8 +468,12 @@ export default function LeaveManagementScreen() {
           </View>
         ) : errorMsg ? (
           <View
-            className="bg-red-50 rounded-2xl p-6 items-center border"
-            style={{ borderColor: COLORS.error }}
+            className="rounded-2xl p-6 items-center"
+            style={{
+              backgroundColor: COLORS.primaryLight,
+              borderWidth: 1,
+              borderColor: COLORS.error,
+            }}
           >
             <Text
               className="text-lg font-bold mb-2"
@@ -489,7 +528,7 @@ export default function LeaveManagementScreen() {
           </View>
         ) : leaveHistory.length === 0 ? (
           <View className="items-center py-12 gap-3">
-            <CalendarPlus size={48} color={COLORS.textSecondary} />
+            <CalendarPlus size={48} color={COLORS.textTertiary} />
             <Text
               className="text-lg font-bold"
               style={{ color: COLORS.textPrimary }}
@@ -524,16 +563,21 @@ export default function LeaveManagementScreen() {
               return (
                 <View
                   key={leave.leaveId}
-                  className="bg-white p-5 rounded-2xl border-l-4"
+                  className="p-5 rounded-2xl border-l-4"
                   style={{
-                    backgroundColor: COLORS.bgWhite,
+                    backgroundColor: COLORS.surface,
                     borderColor: COLORS.border,
-                    borderLeftColor: COLORS.textSecondary,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 4,
-                    elevation: 2,
+                    borderLeftColor: COLORS.textTertiary,
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 4,
+                      },
+                      android: { elevation: 2 },
+                      web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                    }),
                   }}
                 >
                   <View className="flex-row justify-between items-start mb-2">
@@ -565,8 +609,8 @@ export default function LeaveManagementScreen() {
                   </Text>
 
                   <View
-                    className="bg-gray-100 p-3 rounded-lg"
-                    style={{ backgroundColor: COLORS.lightGray }}
+                    className="p-3 rounded-lg"
+                    style={{ backgroundColor: COLORS.background }}
                   >
                     <Text
                       className="text-sm italic"
@@ -582,16 +626,16 @@ export default function LeaveManagementScreen() {
         )}
       </ScrollView>
 
-      {/* Apply Leave Modal (unchanged) */}
+      {/* Apply Leave Modal */}
       <Modal visible={isApplyModalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           className="flex-1 bg-black/50 justify-end"
         >
           <View
-            className="bg-white rounded-t-2xl p-6 max-h-[90%]"
+            className="bg-white rounded-t-3xl p-6 max-h-[90%]"
             style={{
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
               maxWidth: isDesktop ? 600 : "100%",
               width: "100%",
               alignSelf: "center",
@@ -623,14 +667,14 @@ export default function LeaveManagementScreen() {
                 </Text>
                 <TouchableOpacity
                   className="flex-row justify-between items-center px-4 py-3.5 rounded-xl"
-                  style={{ backgroundColor: COLORS.lightGray }}
+                  style={{ backgroundColor: COLORS.background }}
                   onPress={() => setTypeDropdownVisible(!isTypeDropdownVisible)}
                 >
                   <Text
                     className="text-base font-semibold"
                     style={{
                       color: !selectedTypeValue
-                        ? `${COLORS.textSecondary}80`
+                        ? COLORS.textTertiary
                         : COLORS.textPrimary,
                     }}
                   >
@@ -643,11 +687,16 @@ export default function LeaveManagementScreen() {
                     className="bg-white rounded-xl mt-1 border"
                     style={{
                       borderColor: COLORS.border,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 8,
-                      elevation: 4,
+                      ...Platform.select({
+                        ios: {
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 8,
+                        },
+                        android: { elevation: 4 },
+                        web: { boxShadow: "0px 4px 12px rgba(0,0,0,0.1)" },
+                      }),
                     }}
                   >
                     {LEAVE_TYPES.map((type) => (
@@ -684,11 +733,11 @@ export default function LeaveManagementScreen() {
                   <TextInput
                     className="px-4 py-3.5 rounded-xl text-base"
                     style={{
-                      backgroundColor: COLORS.lightGray,
+                      backgroundColor: COLORS.background,
                       color: COLORS.textPrimary,
                     }}
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor={`${COLORS.textSecondary}80`}
+                    placeholderTextColor={COLORS.textTertiary}
                     value={startDate}
                     onChangeText={setStartDate}
                   />
@@ -703,11 +752,11 @@ export default function LeaveManagementScreen() {
                   <TextInput
                     className="px-4 py-3.5 rounded-xl text-base"
                     style={{
-                      backgroundColor: COLORS.lightGray,
+                      backgroundColor: COLORS.background,
                       color: COLORS.textPrimary,
                     }}
                     placeholder="YYYY-MM-DD"
-                    placeholderTextColor={`${COLORS.textSecondary}80`}
+                    placeholderTextColor={COLORS.textTertiary}
                     value={endDate}
                     onChangeText={setEndDate}
                   />
@@ -725,12 +774,12 @@ export default function LeaveManagementScreen() {
                 <TextInput
                   className="px-4 py-3.5 rounded-xl text-base min-h-[100px]"
                   style={{
-                    backgroundColor: COLORS.lightGray,
+                    backgroundColor: COLORS.background,
                     color: COLORS.textPrimary,
                     textAlignVertical: "top",
                   }}
                   placeholder="Explain briefly..."
-                  placeholderTextColor={`${COLORS.textSecondary}80`}
+                  placeholderTextColor={COLORS.textTertiary}
                   multiline
                   numberOfLines={4}
                   value={reason}
@@ -746,7 +795,7 @@ export default function LeaveManagementScreen() {
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator color={COLORS.white} />
+                <ActivityIndicator color={COLORS.surface} />
               ) : (
                 <Text className="text-white font-bold text-base">
                   Submit Application

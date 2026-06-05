@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Clock, MapPin } from "lucide-react-native";
@@ -14,22 +15,26 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  primaryDark: "#C73E21",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  white: "#FFFFFF",
-  lightGray: "#F8F9FA",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
-  border: "#F0E4D8",
-  accentLight: "rgba(227, 83, 54, 0.1)",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
+  success: "#10B981",
+  danger: "#EF4444",
+  warning: "#F59E0B",
+  cardBg: "#FFFFFF",
 };
 
 const DAYS = [
@@ -54,7 +59,8 @@ export default function TimetableScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
-  const [assignedClasses, setAssignedClasses] = useState<any[]>([]);
+  const [assignedClass, setAssignedClass] = useState("Loading...");
+  const [classSectionId, setClassSectionId] = useState("");
 
   // Store the fetched and formatted data
   const [myTimetable, setMyTimetable] = useState<Record<string, any[]>>({});
@@ -95,16 +101,8 @@ export default function TimetableScreen() {
     return formattedData;
   };
 
-  // Format assigned classes for display
-  const getAssignedClassesDisplay = () => {
-    if (assignedClasses.length === 0) return "None";
-    return assignedClasses
-      .map((c) => `${c.className}-${c.sectionName.toUpperCase()}`)
-      .join(", ");
-  };
-
   useEffect(() => {
-    const fetchTimetables = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
         const currentTeacherId =
@@ -120,11 +118,29 @@ export default function TimetableScreen() {
 
         setTeacherId(currentTeacherId);
 
-        // Fetch assigned classes, my timetable, and class timetable concurrently
-        const [classesRes, myRes, classRes] = await Promise.all([
-          teacherClient.get(
-            `/api/student/teacher/assigned-classes/${currentTeacherId}`,
-          ),
+        // 1. Fetch class sections to find the teacher's own class (like dashboard)
+        const classSectionsRes = await teacherClient.get(
+          "/api/student/class-sections",
+        );
+        const fetchedClasses = classSectionsRes.data;
+        const assigned = fetchedClasses.find(
+          (c: any) => c.classTeacherId === currentTeacherId,
+        );
+
+        if (assigned) {
+          const classStr = `${assigned.className}-${assigned.section.toUpperCase()}`;
+          setAssignedClass(classStr);
+          setTeacherName(assigned.classTeacherName.trim());
+          setClassSectionId(assigned.classSectionId);
+        } else {
+          setAssignedClass("None");
+          setTeacherName("Not Found");
+          setClassSectionId("");
+        }
+
+        // 2. Fetch timetables (my timetable and class timetable)
+        // Use the teacher ID for both; the backend will return appropriate data
+        const [myRes, classRes] = await Promise.all([
           teacherClient.get(
             `/api/student/teacher/${currentTeacherId}/weekly-timetable`,
           ),
@@ -132,17 +148,6 @@ export default function TimetableScreen() {
             `/api/student/teacher/${currentTeacherId}/class-timetable`,
           ),
         ]);
-
-        if (classesRes.data && Array.isArray(classesRes.data)) {
-          setAssignedClasses(classesRes.data);
-          // If teacher name not yet set, try to get from first class
-          if (
-            classesRes.data.length > 0 &&
-            classesRes.data[0].classTeacherName
-          ) {
-            setTeacherName(classesRes.data[0].classTeacherName);
-          }
-        }
 
         if (myRes.data) {
           if (myRes.data.teacherName && teacherName === "") {
@@ -161,7 +166,7 @@ export default function TimetableScreen() {
       }
     };
 
-    fetchTimetables();
+    fetchData();
   }, []);
 
   // Determine which dataset to display based on the active tab
@@ -170,81 +175,109 @@ export default function TimetableScreen() {
       ? myTimetable[selectedDay] || []
       : classTimetable[selectedDay] || [];
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.lightGray }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-
-        <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
-        >
-          Timetable
-        </Text>
-
-        <View style={{ width: 40 }} />
-      </View>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Timetable
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
 
       <View
         className="flex-1 w-full self-center"
         style={{ maxWidth: isDesktop ? 800 : "100%" }}
       >
-        {/* Profile Info Banner - Teacher name, ID, and assigned class(es) */}
+        {/* Teacher Info Bar */}
         <View
-          className="flex-row justify-between px-5 py-3 border-b"
+          className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
           style={{
-            backgroundColor: COLORS.primaryLight,
-            borderBottomColor: COLORS.border,
+            backgroundColor: COLORS.surface,
+            ...Platform.select({
+              ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+              },
+              android: { elevation: 2 },
+              web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+            }),
           }}
         >
           <Text
-            className="text-xs font-bold"
-            style={{ color: COLORS.primaryDark, flex: 1 }}
+            className="text-xs font-medium"
+            style={{ color: COLORS.textSecondary, flex: 1 }}
             numberOfLines={1}
           >
-            Teacher: {teacherName || "Loading..."} ({teacherId || "Loading..."})
+            Teacher: {teacherName} ({teacherId})
           </Text>
           <Text
-            className="text-xs font-bold"
-            style={{ color: COLORS.primaryDark }}
+            className="text-xs font-medium"
+            style={{ color: COLORS.textSecondary }}
             numberOfLines={1}
           >
-            Class: {getAssignedClassesDisplay()}
+            Class: {assignedClass}
           </Text>
         </View>
 
-        {/* Tab Switcher (unchanged) */}
-        <View
-          className="flex-row p-4 bg-white border-b"
-          style={{ borderBottomColor: COLORS.border }}
-        >
+        {/* Tab Switcher - modernized */}
+        <View className="flex-row p-4 mt-2 gap-3">
           <TouchableOpacity
-            className="flex-1 py-3 items-center rounded-l-xl border-y border-l"
+            className="flex-1 py-3 items-center rounded-xl"
             style={{
               backgroundColor:
-                activeTab === "MY_TIMETABLE" ? COLORS.primary : COLORS.white,
-              borderColor:
-                activeTab === "MY_TIMETABLE" ? COLORS.primary : COLORS.border,
+                activeTab === "MY_TIMETABLE" ? COLORS.primary : COLORS.surface,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                },
+                android: { elevation: activeTab === "MY_TIMETABLE" ? 2 : 0 },
+                web: {
+                  boxShadow:
+                    activeTab === "MY_TIMETABLE"
+                      ? "0px 2px 4px rgba(0,0,0,0.1)"
+                      : "none",
+                },
+              }),
             }}
             onPress={() => setActiveTab("MY_TIMETABLE")}
             activeOpacity={0.8}
@@ -254,7 +287,7 @@ export default function TimetableScreen() {
               style={{
                 color:
                   activeTab === "MY_TIMETABLE"
-                    ? COLORS.white
+                    ? COLORS.surface
                     : COLORS.textSecondary,
               }}
             >
@@ -263,14 +296,27 @@ export default function TimetableScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 py-3 items-center rounded-r-xl border-y border-r"
+            className="flex-1 py-3 items-center rounded-xl"
             style={{
               backgroundColor:
-                activeTab === "CLASS_TIMETABLE" ? COLORS.primary : COLORS.white,
-              borderColor:
                 activeTab === "CLASS_TIMETABLE"
                   ? COLORS.primary
-                  : COLORS.border,
+                  : COLORS.surface,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                },
+                android: { elevation: activeTab === "CLASS_TIMETABLE" ? 2 : 0 },
+                web: {
+                  boxShadow:
+                    activeTab === "CLASS_TIMETABLE"
+                      ? "0px 2px 4px rgba(0,0,0,0.1)"
+                      : "none",
+                },
+              }),
             }}
             onPress={() => setActiveTab("CLASS_TIMETABLE")}
             activeOpacity={0.8}
@@ -280,7 +326,7 @@ export default function TimetableScreen() {
               style={{
                 color:
                   activeTab === "CLASS_TIMETABLE"
-                    ? COLORS.white
+                    ? COLORS.surface
                     : COLORS.textSecondary,
               }}
             >
@@ -289,11 +335,8 @@ export default function TimetableScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Day Selector (unchanged) */}
-        <View
-          className="bg-white border-b py-3"
-          style={{ borderBottomColor: COLORS.border }}
-        >
+        {/* Day Selector - modernized */}
+        <View className="py-3">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -308,7 +351,11 @@ export default function TimetableScreen() {
                   style={[
                     isActive
                       ? { backgroundColor: COLORS.primary }
-                      : { backgroundColor: COLORS.lightGray },
+                      : {
+                          backgroundColor: COLORS.surface,
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
+                        },
                   ]}
                   onPress={() => setSelectedDay(day)}
                   activeOpacity={0.7}
@@ -316,8 +363,7 @@ export default function TimetableScreen() {
                   <Text
                     className="text-sm font-semibold"
                     style={{
-                      color: isActive ? COLORS.white : COLORS.textSecondary,
-                      fontWeight: isActive ? "800" : "600",
+                      color: isActive ? COLORS.surface : COLORS.textSecondary,
                     }}
                   >
                     {day}
@@ -328,7 +374,7 @@ export default function TimetableScreen() {
           </ScrollView>
         </View>
 
-        {/* Timetable List (unchanged) */}
+        {/* Timetable List */}
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={COLORS.primary} />
@@ -384,23 +430,30 @@ export default function TimetableScreen() {
                       )}
                     </View>
 
-                    {/* Right Details */}
+                    {/* Right Details - Card style */}
                     <View
                       className="flex-1 rounded-2xl p-4 border-l-4"
                       style={[
                         isFree
                           ? {
-                              backgroundColor: `${COLORS.textSecondary}0D`,
-                              borderLeftColor: COLORS.textSecondary,
+                              backgroundColor: COLORS.primaryLight,
+                              borderLeftColor: COLORS.textTertiary,
                             }
                           : {
-                              backgroundColor: COLORS.bgWhite,
+                              backgroundColor: COLORS.surface,
                               borderLeftColor: COLORS.primary,
-                              shadowColor: "#000",
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.05,
-                              shadowRadius: 4,
-                              elevation: 2,
+                              ...Platform.select({
+                                ios: {
+                                  shadowColor: "#000",
+                                  shadowOffset: { width: 0, height: 2 },
+                                  shadowOpacity: 0.05,
+                                  shadowRadius: 4,
+                                },
+                                android: { elevation: 2 },
+                                web: {
+                                  boxShadow: "0px 2px 6px rgba(0,0,0,0.05)",
+                                },
+                              }),
                             },
                       ]}
                     >
@@ -418,7 +471,7 @@ export default function TimetableScreen() {
                         {!isFree && (
                           <View
                             className="px-2.5 py-1 rounded-lg"
-                            style={{ backgroundColor: COLORS.accentLight }}
+                            style={{ backgroundColor: COLORS.primaryLight }}
                           >
                             <Text
                               className="text-xs font-bold"

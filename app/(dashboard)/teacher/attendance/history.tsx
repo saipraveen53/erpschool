@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -7,7 +8,7 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  Search,
+  Filter,
   User,
   Users,
   X,
@@ -27,33 +28,36 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  primaryDark: "#C73E21",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   danger: "#EF4444",
   warning: "#F59E0B",
   successLight: "#D1FAE5",
   dangerLight: "#FEE2E2",
   warningLight: "#FEF3C7",
-  border: "#F0E4D8",
   present: "#10B981",
   absent: "#EF4444",
   holiday: "#F59E0B",
-  notMarked: "#9CA3AF",
+  notMarked: "#94A3B8",
   presentLight: "#D1FAE5",
   absentLight: "#FEE2E2",
   holidayLight: "#FEF3C7",
-  notMarkedLight: "#F3F4F6",
+  notMarkedLight: "#F1F5F9",
 };
 
 const formatDateForAPI = (date: Date) => {
@@ -94,6 +98,9 @@ export default function AttendanceHistoryScreen() {
     return d;
   });
   const [endDate, setEndDate] = useState(new Date());
+
+  // Filter box visibility
+  const [filterVisible, setFilterVisible] = useState(false);
 
   // Date Picker Modal State
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -205,6 +212,8 @@ export default function AttendanceHistoryScreen() {
       } else {
         setHistoryData([]);
       }
+      // Auto-close filter box after successful fetch
+      setFilterVisible(false);
     } catch (err: any) {
       console.error("Fetch error:", err);
       setErrorMsg(
@@ -216,7 +225,7 @@ export default function AttendanceHistoryScreen() {
     }
   };
 
-  // Auto-fetch when classSectionId is ready
+  // Auto-fetch initial data when classSectionId is ready (without showing filter box)
   useEffect(() => {
     if (classSectionId) {
       fetchHistory();
@@ -232,7 +241,6 @@ export default function AttendanceHistoryScreen() {
   // Update animations when historyData changes
   useEffect(() => {
     if (historyData.length === 0) return;
-
     Animated.stagger(
       120,
       fadeAnims.current.map((anim, idx) =>
@@ -270,12 +278,13 @@ export default function AttendanceHistoryScreen() {
           style={{
             width: "100%",
             padding: 12,
-            borderRadius: 12,
+            borderRadius: 16,
             borderWidth: 1,
             borderColor: COLORS.border,
-            backgroundColor: COLORS.bgWhite,
+            backgroundColor: COLORS.surface,
             fontSize: 14,
             color: COLORS.textPrimary,
+            fontFamily: "system-ui",
           }}
         />
       </View>
@@ -293,12 +302,13 @@ export default function AttendanceHistoryScreen() {
           style={{
             width: "100%",
             padding: 12,
-            borderRadius: 12,
+            borderRadius: 16,
             borderWidth: 1,
             borderColor: COLORS.border,
-            backgroundColor: COLORS.bgWhite,
+            backgroundColor: COLORS.surface,
             fontSize: 14,
             color: COLORS.textPrimary,
+            fontFamily: "system-ui",
           }}
         />
       </View>
@@ -316,10 +326,10 @@ export default function AttendanceHistoryScreen() {
           Start Date
         </Text>
         <TouchableOpacity
-          className="flex-row items-center justify-between border rounded-xl p-3.5"
+          className="flex-row items-center justify-between border rounded-2xl p-3.5"
           style={{
             borderColor: COLORS.border,
-            backgroundColor: COLORS.bgWhite,
+            backgroundColor: COLORS.surface,
           }}
           onPress={() => {
             setActivePicker("start");
@@ -345,10 +355,10 @@ export default function AttendanceHistoryScreen() {
           End Date
         </Text>
         <TouchableOpacity
-          className="flex-row items-center justify-between border rounded-xl p-3.5"
+          className="flex-row items-center justify-between border rounded-2xl p-3.5"
           style={{
             borderColor: COLORS.border,
-            backgroundColor: COLORS.bgWhite,
+            backgroundColor: COLORS.surface,
           }}
           onPress={() => {
             setActivePicker("end");
@@ -399,7 +409,7 @@ export default function AttendanceHistoryScreen() {
                 setPickerMonth(pickerMonth - 1);
               }
             }}
-            className="p-2"
+            className="p-2 rounded-full bg-white/20"
           >
             <ChevronLeft size={24} color={COLORS.primary} />
           </TouchableOpacity>
@@ -421,7 +431,7 @@ export default function AttendanceHistoryScreen() {
                 setPickerMonth(pickerMonth + 1);
               }
             }}
-            className="p-2"
+            className="p-2 rounded-full bg-white/20"
           >
             <ChevronRight size={24} color={COLORS.primary} />
           </TouchableOpacity>
@@ -478,7 +488,7 @@ export default function AttendanceHistoryScreen() {
                   <Text
                     className="text-sm font-semibold"
                     style={{
-                      color: isSelected ? COLORS.white : COLORS.textPrimary,
+                      color: isSelected ? COLORS.surface : COLORS.textPrimary,
                     }}
                   >
                     {item.day}
@@ -493,96 +503,152 @@ export default function AttendanceHistoryScreen() {
     );
   };
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text
-          className="text-xl font-bold tracking-tight text-center"
-          style={{ color: COLORS.textPrimary }}
-        >
-          Attendance History
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Attendance History
+          </Text>
+          <TouchableOpacity
+            onPress={() => setFilterVisible(true)}
+            className="p-2 rounded-full bg-white/10"
+          >
+            <Filter size={20} color={COLORS.surface} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Teacher Info Bar */}
       <View
-        className="flex-row justify-between px-5 py-3 border-b"
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
         style={{
-          backgroundColor: COLORS.primaryLight,
-          borderBottomColor: COLORS.border,
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
         }}
       >
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark, flex: 1 }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
           numberOfLines={1}
         >
           Teacher: {teacherName} ({teacherId})
         </Text>
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
           numberOfLines={1}
         >
           Class: {assignedClass}
         </Text>
       </View>
 
-      {/* Date Range Selector */}
-      <View
-        className="px-5 pt-4 pb-4 bg-white border-b"
-        style={{ borderBottomColor: COLORS.border }}
+      {/* Filter Modal */}
+      <Modal
+        visible={filterVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setFilterVisible(false)}
       >
-        {Platform.OS === "web" ? <WebDatePicker /> : <NativeDatePicker />}
-        <View className="flex-row items-center justify-between mt-1">
-          <View className="flex-1 mr-4">
-            <Text
-              className="text-[10px] font-bold uppercase tracking-wider mb-1"
-              style={{ color: COLORS.textSecondary }}
-            >
-              Selected Range
-            </Text>
-            <Text
-              className="text-sm font-semibold"
-              style={{ color: COLORS.textPrimary }}
-            >
-              {formatDisplayDate(startDate)} → {formatDisplayDate(endDate)}
-            </Text>
-          </View>
-          <TouchableOpacity
-            className="px-5 py-3 rounded-full flex-row items-center justify-center gap-2"
-            style={{ backgroundColor: COLORS.primary, minWidth: 100 }}
-            onPress={fetchHistory}
-            disabled={loading}
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View
+            className="bg-white rounded-3xl w-11/12 max-w-md"
+            style={{ backgroundColor: COLORS.surface }}
           >
-            <Search size={16} color={COLORS.white} />
-            <Text className="text-white font-bold text-sm">Fetch</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            <LinearGradient
+              colors={[COLORS.primaryLight, COLORS.surface]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="flex-row justify-between items-center p-4 rounded-t-3xl"
+            >
+              <Text
+                className="text-lg font-bold"
+                style={{ color: COLORS.textPrimary }}
+              >
+                Filter by Date Range
+              </Text>
+              <TouchableOpacity onPress={() => setFilterVisible(false)}>
+                <X size={24} color={COLORS.primary} />
+              </TouchableOpacity>
+            </LinearGradient>
 
+            <View className="p-5">
+              {Platform.OS === "web" ? <WebDatePicker /> : <NativeDatePicker />}
+
+              <View className="flex-row gap-3 mt-2">
+                <TouchableOpacity
+                  className="flex-1 py-3 rounded-xl items-center"
+                  style={{ backgroundColor: COLORS.border }}
+                  onPress={() => setFilterVisible(false)}
+                >
+                  <Text
+                    className="font-semibold"
+                    style={{ color: COLORS.textSecondary }}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="flex-1 py-3 rounded-xl items-center"
+                  style={{ backgroundColor: COLORS.primary }}
+                  onPress={fetchHistory}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={COLORS.surface} size="small" />
+                  ) : (
+                    <Text className="text-white font-semibold">Fetch</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Loading / Error / Content */}
       {loading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -596,8 +662,12 @@ export default function AttendanceHistoryScreen() {
       ) : errorMsg ? (
         <View className="flex-1 justify-center items-center px-6">
           <View
-            className="bg-red-50 rounded-2xl p-6 items-center border"
-            style={{ borderColor: COLORS.danger, backgroundColor: "#FEF2F2" }}
+            className="rounded-2xl p-6 items-center"
+            style={{
+              backgroundColor: COLORS.dangerLight,
+              borderWidth: 1,
+              borderColor: COLORS.danger,
+            }}
           >
             <AlertCircle size={40} color={COLORS.danger} />
             <Text
@@ -615,9 +685,9 @@ export default function AttendanceHistoryScreen() {
             <TouchableOpacity
               className="px-6 py-3 rounded-full"
               style={{ backgroundColor: COLORS.primary }}
-              onPress={fetchHistory}
+              onPress={() => setFilterVisible(true)}
             >
-              <Text className="text-white font-semibold">Retry</Text>
+              <Text className="text-white font-semibold">Open Filter</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -634,7 +704,7 @@ export default function AttendanceHistoryScreen() {
             className="text-sm mt-2"
             style={{ color: COLORS.textSecondary }}
           >
-            Select a date range and tap Fetch
+            Tap the filter icon to select a date range
           </Text>
         </View>
       ) : (
@@ -660,13 +730,18 @@ export default function AttendanceHistoryScreen() {
               <View
                 className="rounded-2xl p-5 border"
                 style={{
-                  backgroundColor: COLORS.bgWhite,
+                  backgroundColor: COLORS.surface,
                   borderColor: COLORS.border,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 6,
-                  elevation: 2,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 6,
+                    },
+                    android: { elevation: 3 },
+                    web: { boxShadow: "0px 4px 12px rgba(0,0,0,0.05)" },
+                  }),
                 }}
               >
                 {/* Header row: date badge + status badges */}
@@ -690,11 +765,11 @@ export default function AttendanceHistoryScreen() {
                     {record.isHoliday ? (
                       <View
                         className="px-2 py-1 rounded-md"
-                        style={{ backgroundColor: COLORS.secondaryLight }}
+                        style={{ backgroundColor: COLORS.warningLight }}
                       >
                         <Text
                           className="text-[10px] font-bold"
-                          style={{ color: COLORS.secondary }}
+                          style={{ color: COLORS.warning }}
                         >
                           Holiday
                         </Text>
@@ -719,9 +794,9 @@ export default function AttendanceHistoryScreen() {
                 <View className="flex-row items-center gap-3 mb-4">
                   <View
                     className="w-11 h-11 rounded-xl justify-center items-center"
-                    style={{ backgroundColor: COLORS.textPrimary }}
+                    style={{ backgroundColor: COLORS.navy }}
                   >
-                    <Users size={20} color={COLORS.white} />
+                    <Users size={20} color={COLORS.surface} />
                   </View>
                   <View>
                     <Text
@@ -739,7 +814,7 @@ export default function AttendanceHistoryScreen() {
                   </View>
                 </View>
 
-                {/* Summary stats row (if not holiday and not all not marked) */}
+                {/* Summary stats row */}
                 {!record.isHoliday &&
                   record.presentCount + record.absentCount > 0 && (
                     <View className="flex-row gap-3 mb-4">
@@ -829,7 +904,10 @@ export default function AttendanceHistoryScreen() {
                 {/* Message when no students data */}
                 {(!record.students || record.students.length === 0) &&
                   !record.isHoliday && (
-                    <View className="py-3 items-center rounded-xl bg-gray-100">
+                    <View
+                      className="py-3 items-center rounded-xl"
+                      style={{ backgroundColor: COLORS.notMarkedLight }}
+                    >
                       <Text
                         className="text-sm font-semibold"
                         style={{ color: COLORS.textSecondary }}
@@ -859,7 +937,7 @@ export default function AttendanceHistoryScreen() {
         </ScrollView>
       )}
 
-      {/* Custom Calendar Modal */}
+      {/* Custom Calendar Modal for Native Picker */}
       <Modal
         visible={datePickerVisible}
         animationType="fade"
@@ -869,11 +947,13 @@ export default function AttendanceHistoryScreen() {
         <View className="flex-1 justify-center items-center bg-black/50">
           <View
             className="bg-white rounded-3xl w-11/12 max-w-md"
-            style={{ backgroundColor: COLORS.bgWhite }}
+            style={{ backgroundColor: COLORS.surface }}
           >
-            <View
-              className="flex-row justify-between items-center p-4 border-b"
-              style={{ borderColor: COLORS.border }}
+            <LinearGradient
+              colors={[COLORS.primaryLight, COLORS.surface]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="flex-row justify-between items-center p-4 rounded-t-3xl"
             >
               <Text
                 className="text-lg font-bold"
@@ -882,9 +962,9 @@ export default function AttendanceHistoryScreen() {
                 Select {activePicker === "start" ? "Start" : "End"} Date
               </Text>
               <TouchableOpacity onPress={() => setDatePickerVisible(false)}>
-                <X size={24} color={COLORS.textSecondary} />
+                <X size={24} color={COLORS.primary} />
               </TouchableOpacity>
-            </View>
+            </LinearGradient>
             {renderCalendar()}
             <View
               className="p-4 border-t"

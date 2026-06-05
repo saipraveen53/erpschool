@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -32,22 +33,25 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  primaryDark: "#C73E21",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   warning: "#F59E0B",
   error: "#EF4444",
-  border: "#F0E4D8",
   white: "#FFFFFF",
 };
 
@@ -79,7 +83,7 @@ export default function AssignmentsListScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [teacherId, setTeacherId] = useState("");
   const [teacherName, setTeacherName] = useState("");
-  const [assignedClass, setAssignedClass] = useState("");
+  const [assignedClass, setAssignedClass] = useState("Loading...");
   const [classSectionId, setClassSectionId] = useState("");
 
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -145,23 +149,7 @@ export default function AssignmentsListScreen() {
 
         setTeacherId(currentTeacherId);
 
-        // 1. Fetch teacher's classes & subjects
-        try {
-          const classesRes = await teacherClient.get(
-            `/api/student/teacher/${currentTeacherId}/classes-subjects`,
-          );
-          if (classesRes.data && classesRes.data.classes) {
-            setTeacherClasses(classesRes.data.classes);
-            if (classesRes.data.teacherName) {
-              setTeacherName(classesRes.data.teacherName);
-            }
-          }
-        } catch (err) {
-          console.error("Error loading teacher classes:", err);
-          setErrorMessage("Failed to load class/subject data.");
-        }
-
-        // 2. Fetch assigned class for display
+        // 1. Fetch class-sections to get teacher's own class (like dashboard)
         try {
           const classSectionsRes = await teacherClient.get(
             "/api/student/class-sections",
@@ -174,12 +162,26 @@ export default function AssignmentsListScreen() {
             const classStr = `${assigned.className}-${assigned.section.toUpperCase()}`;
             setAssignedClass(classStr);
             setClassSectionId(assigned.classSectionId);
-            if (!teacherName) setTeacherName(assigned.classTeacherName.trim());
+            setTeacherName(assigned.classTeacherName.trim());
           } else {
             setAssignedClass("None");
+            setTeacherName("Not Found");
           }
         } catch (err) {
           console.error("Error fetching class-sections:", err);
+          setAssignedClass("None");
+        }
+
+        // 2. Fetch teacher's classes & subjects (for create modal)
+        try {
+          const classesRes = await teacherClient.get(
+            `/api/student/teacher/${currentTeacherId}/classes-subjects`,
+          );
+          if (classesRes.data && classesRes.data.classes) {
+            setTeacherClasses(classesRes.data.classes);
+          }
+        } catch (err) {
+          console.error("Error loading teacher classes:", err);
         }
 
         // 3. Fetch assignments list
@@ -334,67 +336,85 @@ export default function AssignmentsListScreen() {
     return COLORS.secondary;
   };
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <View className="items-center">
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
           <Text
             className="text-xl font-bold tracking-tight"
-            style={{ color: COLORS.textPrimary }}
+            style={{ color: COLORS.surface }}
           >
             All Assignments
           </Text>
+          <TouchableOpacity
+            className="p-2 rounded-full bg-white/10"
+            onPress={() => setIsFilterVisible(!isFilterVisible)}
+          >
+            <Filter size={20} color={COLORS.surface} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          className="p-2 -mr-2"
-          onPress={() => setIsFilterVisible(!isFilterVisible)}
-        >
-          <Filter size={20} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {/* Teacher Info Bar */}
       <View
-        className="flex-row justify-between px-5 py-3 border-b"
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
         style={{
-          backgroundColor: COLORS.primaryLight,
-          borderBottomColor: COLORS.border,
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
         }}
       >
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark, flex: 1 }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
           numberOfLines={1}
         >
-          Teacher: {teacherName || "Loading..."} ({teacherId})
+          Teacher: {teacherName} ({teacherId})
         </Text>
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
           numberOfLines={1}
         >
-          Class: {assignedClass || "Loading..."}
+          Class: {assignedClass}
         </Text>
       </View>
 
@@ -411,8 +431,12 @@ export default function AssignmentsListScreen() {
       ) : errorMessage ? (
         <View className="flex-1 justify-center items-center px-6">
           <View
-            className="bg-red-50 rounded-2xl p-6 items-center border"
-            style={{ borderColor: COLORS.error, backgroundColor: "#FEF2F2" }}
+            className="rounded-2xl p-6 items-center"
+            style={{
+              backgroundColor: COLORS.primaryLight,
+              borderWidth: 1,
+              borderColor: COLORS.error,
+            }}
           >
             <Text
               className="text-lg font-bold mb-2"
@@ -480,15 +504,21 @@ export default function AssignmentsListScreen() {
         >
           {/* Stats Overview */}
           <View
-            className="flex-row bg-white rounded-2xl p-4 mb-6 justify-around border"
+            className="flex-row bg-white rounded-2xl p-4 mb-6 justify-around"
             style={{
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
+              borderWidth: 1,
               borderColor: COLORS.border,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 2,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 6,
+                },
+                android: { elevation: 2 },
+                web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+              }),
             }}
           >
             {[
@@ -496,21 +526,21 @@ export default function AssignmentsListScreen() {
                 icon: BookOpen,
                 label: "Total",
                 value: stats.total,
-                bg: `${COLORS.primary}1A`,
+                bg: `${COLORS.primary}15`,
                 iconColor: COLORS.primary,
               },
               {
                 icon: Clock,
                 label: "Active",
                 value: stats.active,
-                bg: `${COLORS.secondary}1A`,
+                bg: `${COLORS.secondary}15`,
                 iconColor: COLORS.secondary,
               },
               {
                 icon: CheckCircle,
                 label: "Completed",
                 value: stats.completed,
-                bg: `${COLORS.success}1A`,
+                bg: `${COLORS.success}15`,
                 iconColor: COLORS.success,
               },
             ].map((stat, idx) => (
@@ -548,7 +578,10 @@ export default function AssignmentsListScreen() {
           {/* Search Bar */}
           <View
             className="flex-row items-center bg-white rounded-xl px-4 mb-4 border"
-            style={{ borderColor: COLORS.border }}
+            style={{
+              borderColor: COLORS.border,
+              backgroundColor: COLORS.surface,
+            }}
           >
             <Search
               size={20}
@@ -590,7 +623,7 @@ export default function AssignmentsListScreen() {
                             borderColor: COLORS.primary,
                           }
                         : {
-                            backgroundColor: COLORS.bgWhite,
+                            backgroundColor: COLORS.surface,
                             borderColor: COLORS.border,
                           },
                     ]}
@@ -601,7 +634,7 @@ export default function AssignmentsListScreen() {
                       style={{
                         color:
                           activeFilter === filter
-                            ? COLORS.white
+                            ? COLORS.surface
                             : COLORS.textSecondary,
                       }}
                     >
@@ -617,7 +650,7 @@ export default function AssignmentsListScreen() {
           <View className="gap-4 mb-6">
             {filteredAssignments.length === 0 ? (
               <View className="items-center justify-center py-12 gap-3">
-                <BookOpen size={48} color={COLORS.textSecondary} />
+                <BookOpen size={48} color={COLORS.textTertiary} />
                 <Text
                   className="text-lg font-bold mt-2"
                   style={{ color: COLORS.textPrimary }}
@@ -658,19 +691,24 @@ export default function AssignmentsListScreen() {
                     <View
                       className="bg-white p-5 rounded-2xl border"
                       style={{
-                        backgroundColor: COLORS.bgWhite,
+                        backgroundColor: COLORS.surface,
                         borderColor: COLORS.border,
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 6,
-                        elevation: 2,
+                        ...Platform.select({
+                          ios: {
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 6,
+                          },
+                          android: { elevation: 2 },
+                          web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                        }),
                       }}
                     >
                       <View className="flex-row justify-between items-center mb-3">
                         <View
                           className="flex-row items-center px-2.5 py-1 rounded-md gap-1.5"
-                          style={{ backgroundColor: `${COLORS.primary}1A` }}
+                          style={{ backgroundColor: COLORS.primaryLight }}
                         >
                           <GraduationCap size={12} color={COLORS.primary} />
                           <Text
@@ -786,11 +824,11 @@ export default function AssignmentsListScreen() {
           onPress={() => setIsCreateModalVisible(true)}
           activeOpacity={0.8}
         >
-          <Plus size={24} color={COLORS.white} />
+          <Plus size={24} color={COLORS.surface} />
         </TouchableOpacity>
       )}
 
-      {/* CREATE ASSIGNMENT MODAL (with calendar picker) */}
+      {/* CREATE ASSIGNMENT MODAL */}
       <Modal
         visible={isCreateModalVisible}
         transparent
@@ -800,7 +838,7 @@ export default function AssignmentsListScreen() {
         <View className="flex-1 justify-end bg-black/50">
           <View
             className="rounded-t-3xl px-6 pt-6 pb-8"
-            style={{ backgroundColor: COLORS.bgWhite, maxHeight: "90%" }}
+            style={{ backgroundColor: COLORS.surface, maxHeight: "90%" }}
           >
             <View className="flex-row justify-between items-center mb-6">
               <Text
@@ -837,7 +875,7 @@ export default function AssignmentsListScreen() {
                         style={{
                           backgroundColor: isSelected
                             ? COLORS.primary
-                            : COLORS.bgWhite,
+                            : COLORS.surface,
                           borderColor: isSelected
                             ? COLORS.primary
                             : COLORS.border,
@@ -851,7 +889,7 @@ export default function AssignmentsListScreen() {
                           className="font-semibold text-sm"
                           style={{
                             color: isSelected
-                              ? COLORS.white
+                              ? COLORS.surface
                               : COLORS.textSecondary,
                           }}
                         >
@@ -895,7 +933,7 @@ export default function AssignmentsListScreen() {
                           backgroundColor:
                             selectedSubject?.subjectId === sub.subjectId
                               ? COLORS.primary
-                              : COLORS.bgWhite,
+                              : COLORS.surface,
                           borderColor:
                             selectedSubject?.subjectId === sub.subjectId
                               ? COLORS.primary
@@ -908,7 +946,7 @@ export default function AssignmentsListScreen() {
                           style={{
                             color:
                               selectedSubject?.subjectId === sub.subjectId
-                                ? COLORS.white
+                                ? COLORS.surface
                                 : COLORS.textSecondary,
                           }}
                         >
@@ -933,7 +971,7 @@ export default function AssignmentsListScreen() {
                   style={{
                     borderColor: COLORS.border,
                     color: COLORS.textPrimary,
-                    backgroundColor: COLORS.bgWarm,
+                    backgroundColor: COLORS.background,
                   }}
                   placeholder="Ex: Chapter 1 Homework"
                   placeholderTextColor={COLORS.textTertiary}
@@ -955,7 +993,7 @@ export default function AssignmentsListScreen() {
                   style={{
                     borderColor: COLORS.border,
                     color: COLORS.textPrimary,
-                    backgroundColor: COLORS.bgWarm,
+                    backgroundColor: COLORS.background,
                     minHeight: 100,
                   }}
                   placeholder="Enter assignment details..."
@@ -967,7 +1005,7 @@ export default function AssignmentsListScreen() {
                 />
               </View>
 
-              {/* Due Date – button opens calendar modal (FIXED: uses local date format) */}
+              {/* Due Date */}
               <View>
                 <Text
                   className="text-sm font-semibold mb-2"
@@ -979,7 +1017,7 @@ export default function AssignmentsListScreen() {
                   className="flex-row items-center px-4 py-3 rounded-xl border"
                   style={{
                     borderColor: COLORS.border,
-                    backgroundColor: COLORS.bgWarm,
+                    backgroundColor: COLORS.background,
                   }}
                   onPress={() => setDatePickerModalVisible(true)}
                 >
@@ -1013,7 +1051,7 @@ export default function AssignmentsListScreen() {
                   className="flex-row items-center justify-center px-4 py-3 rounded-xl border"
                   style={{
                     borderColor: COLORS.border,
-                    backgroundColor: COLORS.bgWarm,
+                    backgroundColor: COLORS.background,
                     gap: 8,
                   }}
                   onPress={handleFilePick}
@@ -1026,7 +1064,7 @@ export default function AssignmentsListScreen() {
               </View>
             </ScrollView>
 
-            {/* Calendar Picker Modal – FIXED: uses local date formatting */}
+            {/* Calendar Picker Modal */}
             <Modal
               visible={datePickerModalVisible}
               transparent={true}
@@ -1036,7 +1074,7 @@ export default function AssignmentsListScreen() {
               <View className="flex-1 justify-center items-center bg-black/50">
                 <View
                   className="bg-white rounded-3xl w-11/12 max-w-md"
-                  style={{ backgroundColor: COLORS.bgWhite }}
+                  style={{ backgroundColor: COLORS.surface }}
                 >
                   <View
                     className="flex-row justify-between items-center p-4 border-b"
@@ -1056,7 +1094,6 @@ export default function AssignmentsListScreen() {
                   </View>
 
                   <View className="p-4">
-                    {/* Month header */}
                     <View className="flex-row justify-between items-center mb-4">
                       <TouchableOpacity
                         onPress={() => {
@@ -1096,7 +1133,6 @@ export default function AssignmentsListScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    {/* Weekday headers */}
                     <View className="flex-row mb-2">
                       {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                         (day) => (
@@ -1112,7 +1148,6 @@ export default function AssignmentsListScreen() {
                       )}
                     </View>
 
-                    {/* Days grid – using local date format */}
                     <FlatList
                       data={(() => {
                         const daysInMonth = getDaysInMonth(
@@ -1133,7 +1168,7 @@ export default function AssignmentsListScreen() {
                             pickerCurrentMonth,
                             d,
                           );
-                          const dateStr = formatLocalDate(dateObj); // FIXED: local format
+                          const dateStr = formatLocalDate(dateObj);
                           daysArray.push({
                             date: dateObj,
                             day: d,
@@ -1157,7 +1192,7 @@ export default function AssignmentsListScreen() {
                                     : "transparent",
                               }}
                               onPress={() => {
-                                setNewDueDate(item.dateStr); // stores local YYYY-MM-DD
+                                setNewDueDate(item.dateStr);
                                 setDatePickerModalVisible(false);
                               }}
                             >
@@ -1166,7 +1201,7 @@ export default function AssignmentsListScreen() {
                                 style={{
                                   color:
                                     newDueDate === item.dateStr
-                                      ? COLORS.white
+                                      ? COLORS.surface
                                       : COLORS.textPrimary,
                                 }}
                               >
@@ -1219,10 +1254,10 @@ export default function AssignmentsListScreen() {
                 disabled={isCreating}
               >
                 {isCreating ? (
-                  <ActivityIndicator color={COLORS.white} />
+                  <ActivityIndicator color={COLORS.surface} />
                 ) : (
                   <>
-                    <Plus size={18} color={COLORS.white} />
+                    <Plus size={18} color={COLORS.surface} />
                     <Text className="text-white font-bold text-base">
                       Post Assignment
                     </Text>
@@ -1255,11 +1290,11 @@ export default function AssignmentsListScreen() {
             style={{ position: "absolute", top: 40, right: 20, zIndex: 10 }}
             onPress={() => setImageModalVisible(false)}
           >
-            <X size={30} color={COLORS.white} />
+            <X size={30} color={COLORS.surface} />
           </TouchableOpacity>
           {imageLoadError ? (
             <View style={{ alignItems: "center" }}>
-              <Text style={{ color: COLORS.white, marginBottom: 10 }}>
+              <Text style={{ color: COLORS.surface, marginBottom: 10 }}>
                 Failed to load image
               </Text>
               <TouchableOpacity
@@ -1274,7 +1309,7 @@ export default function AssignmentsListScreen() {
                   borderRadius: 8,
                 }}
               >
-                <Text style={{ color: COLORS.white }}>Retry</Text>
+                <Text style={{ color: COLORS.surface }}>Retry</Text>
               </TouchableOpacity>
             </View>
           ) : (

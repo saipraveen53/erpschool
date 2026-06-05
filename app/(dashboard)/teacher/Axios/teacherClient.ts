@@ -4,7 +4,7 @@ import axios from "axios";
 import { Platform } from "react-native";
 
 // Replace this with your actual backend base URL
-const BASE_URL = "http://192.168.88.24:8083";
+const BASE_URL = "http://192.168.88.20:8081";
 
 export const teacherClient = axios.create({
   baseURL: BASE_URL,

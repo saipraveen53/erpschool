@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, ChevronDown } from "lucide-react-native";
@@ -17,53 +17,30 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
-  border: "#F0E4D8",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
+  success: "#10B981",
+  warning: "#F59E0B",
+  error: "#EF4444",
   white: "#FFFFFF",
   lightGray: "#F3F4F6",
-  error: "#EF4444",
 };
-
-// 1. Isolated Axios instance for the exams microservice
-const examClient = axios.create({
-  baseURL: "http://192.168.88.24:8083",
-  timeout: 10000,
-});
-
-// 2. Request Interceptor: Automatically attaches the token to ALL requests
-examClient.interceptors.request.use(
-  async (config) => {
-    let token = null;
-    try {
-      if (Platform.OS === "web") {
-        token = localStorage.getItem("userToken");
-      } else {
-        token = await AsyncStorage.getItem("userToken");
-      }
-    } catch (error) {
-      console.error("Error retrieving token from storage:", error);
-    }
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
 
 // Helper for cross-platform alerts
 const showAlert = (title: string, message: string, onOk?: () => void) => {
@@ -80,6 +57,11 @@ export default function MarksEntryScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
+  // Teacher info state (for display bar)
+  const [teacherId, setTeacherId] = useState("");
+  const [teacherName, setTeacherName] = useState("Loading...");
+  const [assignedClass, setAssignedClass] = useState("Loading...");
+
   const [exams, setExams] = useState<any[]>([]);
   const [selectedExam, setSelectedExam] = useState<any | null>(null);
   const [students, setStudents] = useState<any[]>([]);
@@ -89,16 +71,48 @@ export default function MarksEntryScreen() {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 3. Fetch Assigned Exams on Mount (Token is handled automatically now)
+  // Fetch teacher info (using class-sections to get teacher's own class)
+  useEffect(() => {
+    const fetchTeacherInfo = async () => {
+      try {
+        const currentTeacherId =
+          Platform.OS === "web"
+            ? localStorage.getItem("userUsername")
+            : await AsyncStorage.getItem("userUsername");
+        if (!currentTeacherId) return;
+        setTeacherId(currentTeacherId);
+
+        const classSectionsRes = await teacherClient.get(
+          "/api/student/class-sections",
+        );
+        const fetchedClasses = classSectionsRes.data;
+        const assigned = fetchedClasses.find(
+          (c: any) => c.classTeacherId === currentTeacherId,
+        );
+        if (assigned) {
+          setTeacherName(assigned.classTeacherName.trim());
+          setAssignedClass(
+            `${assigned.className}-${assigned.section.toUpperCase()}`,
+          );
+        } else {
+          setTeacherName("Not Found");
+          setAssignedClass("None");
+        }
+      } catch (err) {
+        console.error("Failed to load teacher info:", err);
+      }
+    };
+    fetchTeacherInfo();
+  }, []);
+
+  // Fetch assigned exams on mount (using teacherClient)
   useEffect(() => {
     const fetchExams = async () => {
       try {
         setLoadingExams(true);
-        const res = await examClient.get("/api/exams/my-subjects");
+        const res = await teacherClient.get("/api/exams/my-subjects");
         const fetchedExams = res.data;
-
         setExams(fetchedExams);
-
         if (fetchedExams.length > 0) {
           setSelectedExam(fetchedExams[0]);
         }
@@ -112,30 +126,25 @@ export default function MarksEntryScreen() {
         setLoadingExams(false);
       }
     };
-
     fetchExams();
   }, []);
 
-  // 4. Fetch Students when selectedExam changes
+  // Fetch students when selectedExam changes
   useEffect(() => {
     const fetchStudents = async () => {
       if (!selectedExam) return;
 
       try {
         setLoadingStudents(true);
-        setStudents([]); // Clear current list while loading
-
-        const res = await examClient.get(
+        setStudents([]);
+        const res = await teacherClient.get(
           `/api/exams/my-subjects/${selectedExam.examSubjectId}/students`,
         );
-
-        // Map API response and add local 'marks' and 'remarks' fields for state management
         const mappedStudents = res.data.map((student: any) => ({
           ...student,
           marks: "",
           remarks: "",
         }));
-
         setStudents(mappedStudents);
       } catch (error) {
         console.error("Failed to load students:", error);
@@ -144,14 +153,11 @@ export default function MarksEntryScreen() {
         setLoadingStudents(false);
       }
     };
-
     fetchStudents();
   }, [selectedExam]);
 
   const updateMarks = (studentId: string, value: string) => {
     const numericValue = value.replace(/[^0-9]/g, "");
-
-    // Prevent entering marks higher than maxMarks
     if (
       numericValue &&
       selectedExam &&
@@ -159,7 +165,6 @@ export default function MarksEntryScreen() {
     ) {
       return;
     }
-
     setStudents((prev) =>
       prev.map((student) =>
         student.studentId === studentId
@@ -181,8 +186,6 @@ export default function MarksEntryScreen() {
 
   const handleSave = async () => {
     if (!selectedExam) return;
-
-    // Filter out students who don't have marks entered yet
     const marksData = students
       .filter((s) => s.marks !== "")
       .map((s) => ({
@@ -190,7 +193,6 @@ export default function MarksEntryScreen() {
         obtainedMarks: parseInt(s.marks, 10),
         remarks: s.remarks.trim(),
       }));
-
     if (marksData.length === 0) {
       showAlert(
         "Notice",
@@ -198,17 +200,13 @@ export default function MarksEntryScreen() {
       );
       return;
     }
-
     setIsSaving(true);
-
     try {
       const payload = {
         examSubjectId: selectedExam.examSubjectId,
         marks: marksData,
       };
-
-      await examClient.post("/api/exams/marks", payload);
-
+      await teacherClient.post("/api/exams/marks", payload);
       showAlert("Success", "Marks saved successfully!", () => {
         router.back();
       });
@@ -220,41 +218,85 @@ export default function MarksEntryScreen() {
     }
   };
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1"
-      style={{ backgroundColor: COLORS.bgWarm }}
+      style={{ backgroundColor: COLORS.background }}
     >
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: Platform.OS === "android" ? 50 : 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Enter Marks
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
+
+      {/* Teacher Info Bar */}
+      <View
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
+        style={{
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
+        }}
+      >
         <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
+          numberOfLines={1}
         >
-          Enter Marks
+          Teacher: {teacherName} ({teacherId})
         </Text>
-        <View style={{ width: 40 }} />
+        <Text
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
+          numberOfLines={1}
+        >
+          Class: {assignedClass}
+        </Text>
       </View>
 
       {loadingExams ? (
@@ -269,42 +311,63 @@ export default function MarksEntryScreen() {
         </View>
       ) : exams.length === 0 ? (
         <View className="flex-1 justify-center items-center px-6">
-          <Text
-            className="text-lg font-bold text-center mb-2"
-            style={{ color: COLORS.textPrimary }}
+          <View
+            className="p-6 rounded-2xl items-center"
+            style={{
+              backgroundColor: COLORS.primaryLight,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+            }}
           >
-            No Exams Assigned
-          </Text>
-          <Text
-            className="text-sm text-center"
-            style={{ color: COLORS.textSecondary }}
-          >
-            You do not have any subjects assigned for marks entry at the moment.
-          </Text>
+            <Text
+              className="text-lg font-bold text-center mb-2"
+              style={{ color: COLORS.textPrimary }}
+            >
+              No Exams Assigned
+            </Text>
+            <Text
+              className="text-sm text-center"
+              style={{ color: COLORS.textSecondary }}
+            >
+              You do not have any subjects assigned for marks entry at the
+              moment.
+            </Text>
+          </View>
         </View>
       ) : (
         <View
           className="flex-1 w-full self-center"
           style={{ maxWidth: isDesktop ? 800 : "100%" }}
         >
-          {/* Exam Selector */}
+          {/* Exam Selector Card */}
           <View
-            className="p-6 bg-white mb-4 border-b"
+            className="mx-4 mt-5 p-5 rounded-2xl"
             style={{
-              backgroundColor: COLORS.bgWhite,
-              borderBottomColor: COLORS.border,
+              backgroundColor: COLORS.surface,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 6,
+                },
+                android: { elevation: 2 },
+                web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+              }),
             }}
           >
             <Text
-              className="text-sm font-semibold mb-2 uppercase tracking-wider"
+              className="text-xs font-bold uppercase tracking-wider mb-2"
               style={{ color: COLORS.textSecondary }}
             >
               Select Exam & Subject
             </Text>
             <TouchableOpacity
-              className="flex-row justify-between items-center px-4 py-4 rounded-xl border"
+              className="flex-row justify-between items-center px-4 py-3.5 rounded-xl border"
               style={{
-                backgroundColor: COLORS.lightGray,
+                backgroundColor: COLORS.background,
                 borderColor: COLORS.border,
               }}
               activeOpacity={0.8}
@@ -321,7 +384,7 @@ export default function MarksEntryScreen() {
           </View>
 
           {/* List Header */}
-          <View className="flex-row justify-between px-8 pb-3">
+          <View className="flex-row justify-between px-8 pt-5 pb-2">
             <Text
               className="text-xs font-bold uppercase tracking-wider"
               style={{ color: COLORS.textSecondary }}
@@ -355,24 +418,29 @@ export default function MarksEntryScreen() {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
                 paddingHorizontal: 20,
-                paddingBottom: 100,
+                paddingBottom: 120,
               }}
             >
               {students.map((student) => (
                 <View
                   key={student.studentId}
-                  className="bg-white p-4 rounded-2xl mb-4 border"
+                  className="p-5 rounded-2xl mb-4 border"
                   style={{
-                    backgroundColor: COLORS.bgWhite,
+                    backgroundColor: COLORS.surface,
                     borderColor: COLORS.border,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 4,
-                    elevation: 2,
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 6,
+                      },
+                      android: { elevation: 2 },
+                      web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                    }),
                   }}
                 >
-                  <View className="flex-row justify-between items-center mb-3">
+                  <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-1 pr-3">
                       <Text
                         className="text-base font-bold mb-1"
@@ -389,9 +457,9 @@ export default function MarksEntryScreen() {
                     </View>
                     <View className="items-end">
                       <TextInput
-                        className="w-[75px] text-center text-lg font-bold py-2 rounded-lg border"
+                        className="w-[80px] text-center text-lg font-bold py-2.5 rounded-xl border"
                         style={{
-                          backgroundColor: COLORS.lightGray,
+                          backgroundColor: COLORS.background,
                           color: COLORS.primary,
                           borderColor: COLORS.border,
                           ...Platform.select({
@@ -401,7 +469,7 @@ export default function MarksEntryScreen() {
                         keyboardType="numeric"
                         maxLength={3}
                         placeholder="--"
-                        placeholderTextColor={`${COLORS.textSecondary}80`}
+                        placeholderTextColor={COLORS.textTertiary}
                         value={student.marks}
                         onChangeText={(val) =>
                           updateMarks(student.studentId, val)
@@ -413,9 +481,9 @@ export default function MarksEntryScreen() {
                   {/* Remarks Input */}
                   <View>
                     <TextInput
-                      className="w-full text-sm py-2.5 px-3 rounded-lg border"
+                      className="w-full text-sm py-2.5 px-4 rounded-xl border"
                       style={{
-                        backgroundColor: COLORS.bgWhite,
+                        backgroundColor: COLORS.background,
                         color: COLORS.textPrimary,
                         borderColor: COLORS.border,
                         ...Platform.select({
@@ -423,7 +491,7 @@ export default function MarksEntryScreen() {
                         }),
                       }}
                       placeholder="Add remarks (optional)..."
-                      placeholderTextColor={`${COLORS.textSecondary}80`}
+                      placeholderTextColor={COLORS.textTertiary}
                       value={student.remarks}
                       onChangeText={(val) =>
                         updateRemarks(student.studentId, val)
@@ -435,27 +503,27 @@ export default function MarksEntryScreen() {
             </ScrollView>
           )}
 
-          {/* Bottom Bar */}
+          {/* Bottom Bar (fixed) */}
           <View
-            className="absolute bottom-0 w-full p-6 bg-white border-t"
+            className="absolute bottom-0 w-full px-5 py-4 border-t"
             style={{
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
               borderTopColor: COLORS.border,
             }}
           >
             <TouchableOpacity
-              className="py-4 rounded-xl items-center flex-row justify-center gap-2"
+              className="py-3.5 rounded-xl items-center flex-row justify-center gap-2"
               style={{
                 backgroundColor:
                   isSaving || loadingStudents || students.length === 0
-                    ? COLORS.textSecondary
+                    ? COLORS.textTertiary
                     : COLORS.primary,
               }}
               onPress={handleSave}
               disabled={isSaving || loadingStudents || students.length === 0}
             >
               {isSaving && (
-                <ActivityIndicator size="small" color={COLORS.white} />
+                <ActivityIndicator size="small" color={COLORS.surface} />
               )}
               <Text className="text-white font-bold text-base tracking-wide">
                 {isSaving ? "Saving..." : "Save Marks"}
@@ -474,7 +542,7 @@ export default function MarksEntryScreen() {
         >
           <View
             className="bg-white rounded-t-3xl p-6 pb-10"
-            style={{ backgroundColor: COLORS.bgWhite }}
+            style={{ backgroundColor: COLORS.surface }}
           >
             <Text
               className="text-xl font-black mb-5"
@@ -482,47 +550,53 @@ export default function MarksEntryScreen() {
             >
               Choose Assessment
             </Text>
-            {exams.map((exam) => {
-              const isSelected =
-                selectedExam?.examSubjectId === exam.examSubjectId;
-              return (
-                <TouchableOpacity
-                  key={exam.examSubjectId}
-                  className="py-4 px-4 border-b rounded-xl mb-2"
-                  style={[
-                    isSelected && {
-                      backgroundColor: `${COLORS.primary}1A`,
-                      borderColor: COLORS.primary,
-                      borderWidth: 1,
-                    },
-                    !isSelected && { borderBottomColor: COLORS.border },
-                  ]}
-                  onPress={() => {
-                    setSelectedExam(exam);
-                    setDropdownVisible(false);
-                  }}
-                >
-                  <Text
-                    className="text-base font-bold mb-1"
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {exams.map((exam) => {
+                const isSelected =
+                  selectedExam?.examSubjectId === exam.examSubjectId;
+                return (
+                  <TouchableOpacity
+                    key={exam.examSubjectId}
+                    className="py-4 px-4 rounded-xl mb-2 border"
                     style={[
-                      { color: COLORS.textSecondary },
-                      isSelected && {
-                        color: COLORS.primary,
-                        fontWeight: "900",
-                      },
+                      isSelected
+                        ? {
+                            backgroundColor: COLORS.primaryLight,
+                            borderColor: COLORS.primary,
+                            borderWidth: 1,
+                          }
+                        : {
+                            backgroundColor: COLORS.surface,
+                            borderColor: COLORS.border,
+                            borderWidth: 1,
+                          },
                     ]}
+                    onPress={() => {
+                      setSelectedExam(exam);
+                      setDropdownVisible(false);
+                    }}
                   >
-                    {exam.examName}
-                  </Text>
-                  <Text
-                    className="text-xs font-semibold"
-                    style={{ color: COLORS.textTertiary }}
-                  >
-                    Subject ID: {exam.subjectId} • Max Marks: {exam.maxMarks}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+                    <Text
+                      className="text-base font-bold mb-1"
+                      style={[
+                        { color: COLORS.textSecondary },
+                        isSelected && {
+                          color: COLORS.primary,
+                        },
+                      ]}
+                    >
+                      {exam.examName}
+                    </Text>
+                    <Text
+                      className="text-xs font-semibold"
+                      style={{ color: COLORS.textTertiary }}
+                    >
+                      Subject ID: {exam.subjectId} • Max Marks: {exam.maxMarks}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>

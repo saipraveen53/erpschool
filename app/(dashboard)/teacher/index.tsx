@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -34,38 +35,40 @@ import { teacherClient } from "./Axios/teacherClient";
 
 const isWeb = Platform.OS === "web";
 
+// Modern, vibrant color palette
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FDE8E3",
-  primaryDark: "#C73E21",
-  secondaryLight: "#FEF0E8",
-  accentLight: "#FEFCE8",
-  bgWhite: "#FFFFFF",
-  darkBg: "#2A1308",
-  cardDark: "#3E1F0D",
-  cardLight: "#FFFCF8",
-  textTertiary: "#B8956E",
-  textSecondary: "#8B5E3C",
-  textPrimary: "#5C2E14",
-  white: "#FFFFFF",
-  lightGray: "#F8F9FA",
-  border: "#F0E4D8",
-  shadowLight: "#E8D5C4",
-  gradientStart: "#FFF8F2",
-  gradientEnd: "#FEE2DB",
+  primary: "#F59E0B", // Amber - warm, energetic
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald - fresh, calm
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue - trustworthy
+  navy: "#0F172A", // Deep navy for dark elements
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  cardBg: "#FFFFFF",
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
+  success: "#10B981",
+  warning: "#F59E0B",
+  danger: "#EF4444",
+  info: "#3B82F6",
 };
 
-// --- Cross-Platform Shadow Helper ---
 const platformShadow = Platform.select({
-  web: { boxShadow: "0px 4px 16px rgba(0,0,0,0.04)" } as any,
+  web: {
+    boxShadow:
+      "0px 10px 25px -5px rgba(0,0,0,0.05), 0px 8px 10px -6px rgba(0,0,0,0.02)",
+  } as any,
   default: {
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 4,
   },
 });
 
@@ -75,48 +78,64 @@ const teacherModules = [
     route: "/teacher/attendance",
     icon: ClipboardCheck,
     desc: "Mark & view history",
+    color: "#F59E0B",
+    bgLight: "#FEF3C7",
   },
   {
     title: "Timetable",
     route: "/teacher/timetable",
     icon: Calendar,
     desc: "View daily schedule",
+    color: "#3B82F6",
+    bgLight: "#EFF6FF",
   },
   {
     title: "Homework",
     route: "/teacher/homework",
     icon: BookOpen,
     desc: "Assign & upload work",
+    color: "#8B5CF6",
+    bgLight: "#F3E8FF",
   },
   {
     title: "Lesson Plan",
     route: "/teacher/lesson-plan",
     icon: ClipboardEdit,
     desc: "Manage curriculum",
+    color: "#EC4899",
+    bgLight: "#FCE7F3",
   },
   {
     title: "Examination",
     route: "/teacher/examination",
     icon: GraduationCap,
     desc: "Grades & marks entry",
+    color: "#14B8A6",
+    bgLight: "#CCFBF1",
   },
   {
     title: "Communication",
     route: "/teacher/communication",
     icon: MessageSquare,
     desc: "Notices & parents",
+    color: "#F97316",
+    bgLight: "#FFEDD5",
   },
   {
     title: "Leave",
     route: "/teacher/leave",
     icon: CalendarCheck,
     desc: "Apply & track leaves",
+    color: "#6366F1",
+    bgLight: "#E0E7FF",
   },
   {
     title: "My Attendance",
     route: "/teacher/reports",
     icon: PieChart,
     desc: "View attendance reports",
+    color: "#EF4444",
+    bgLight: "#FEE2E2",
   },
 ];
 
@@ -129,7 +148,7 @@ export default function TeacherDashboard() {
   const isTablet = width >= 768 && width < 1024;
   const numColumns = isDesktop ? 4 : isTablet ? 3 : 2;
   const containerWidth = Math.min(width, 1200);
-  const cardWidth = (containerWidth - 48 - (numColumns - 1) * 16) / numColumns;
+  const cardWidth = (containerWidth - 48 - (numColumns - 1) * 20) / numColumns;
 
   // Teacher info
   const [teacherId, setTeacherId] = useState("");
@@ -152,7 +171,7 @@ export default function TeacherDashboard() {
   });
   const [assignedLoading, setAssignedLoading] = useState(true);
 
-  // Attendance summary state (present, absent, half-day)
+  // Attendance summary state
   const [attendanceSummary, setAttendanceSummary] = useState({
     presentCount: 0,
     absentCount: 0,
@@ -203,7 +222,7 @@ export default function TeacherDashboard() {
     return dates;
   }, []);
 
-  // Fetch teacher info (using teacherClient)
+  // Fetch teacher info
   useEffect(() => {
     const fetchTeacherInfo = async () => {
       try {
@@ -238,10 +257,9 @@ export default function TeacherDashboard() {
     fetchTeacherInfo();
   }, []);
 
-  // Fetch Teacher Dashboard Stats
+  // Fetch Dashboard Stats
   useEffect(() => {
     if (!teacherId) return;
-
     const fetchDashboardStats = async () => {
       try {
         setStatsLoading(true);
@@ -261,11 +279,10 @@ export default function TeacherDashboard() {
         setStatsLoading(false);
       }
     };
-
     fetchDashboardStats();
   }, [teacherId]);
 
-  // Fetch Assigned Subjects & Assignment Counts
+  // Fetch Assigned Stats
   useEffect(() => {
     const fetchAssignedStats = async () => {
       try {
@@ -285,28 +302,20 @@ export default function TeacherDashboard() {
         setAssignedLoading(false);
       }
     };
-
     fetchAssignedStats();
   }, []);
 
   // Fetch attendance summary
   useEffect(() => {
     if (!teacherId) return;
-
     const fetchAttendanceSummary = async () => {
       setAttendanceLoading(true);
-      const month = selectedDate.getMonth() + 1; // getMonth() is 0-indexed
+      const month = selectedDate.getMonth() + 1;
       const year = selectedDate.getFullYear();
       try {
         const res = await teacherClient.get(
           "/api/student/teacher/dashboard/attendance",
-          {
-            params: {
-              teacherId,
-              month,
-              year,
-            },
-          },
+          { params: { teacherId, month, year } },
         );
         const data = res.data;
         setAttendanceSummary({
@@ -325,11 +334,10 @@ export default function TeacherDashboard() {
         setAttendanceLoading(false);
       }
     };
-
     fetchAttendanceSummary();
   }, [teacherId, selectedDate]);
 
-  // Fetch campus feed (using teacherClient)
+  // Fetch campus feed
   useEffect(() => {
     const fetchFeed = async () => {
       try {
@@ -344,7 +352,7 @@ export default function TeacherDashboard() {
     fetchFeed();
   }, []);
 
-  // Fetch school notices (using teacherClient)
+  // Fetch notices
   useEffect(() => {
     const fetchNotices = async () => {
       try {
@@ -359,7 +367,6 @@ export default function TeacherDashboard() {
     fetchNotices();
   }, []);
 
-  // Helper for feed image URL
   const getFeedImageUrl = (path: string) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
@@ -367,7 +374,6 @@ export default function TeacherDashboard() {
     return `${baseURL}${path.startsWith("/") ? path : `/${path}`}`;
   };
 
-  // Fetch unread count (using teacherClient)
   const fetchUnreadCount = async () => {
     if (!teacherId) return;
     try {
@@ -380,7 +386,6 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Fetch notifications (with pagination) (using teacherClient)
   const fetchNotifications = async (reset = false) => {
     if (!teacherId) return;
     const currentPage = reset ? 0 : page;
@@ -408,7 +413,6 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Mark notification as read (using teacherClient)
   const markAsRead = async (notificationId: number) => {
     try {
       await teacherClient.post(
@@ -425,29 +429,19 @@ export default function TeacherDashboard() {
     }
   };
 
-  // Open dropdown
   const openDropdown = () => {
-    if (notifications.length === 0) {
-      fetchNotifications(true);
-    }
+    if (notifications.length === 0) fetchNotifications(true);
     setDropdownVisible(true);
   };
 
-  // Load more
   const handleLoadMore = () => {
-    if (!loadingMore && hasMore && !notificationsLoading) {
-      fetchNotifications();
-    }
+    if (!loadingMore && hasMore && !notificationsLoading) fetchNotifications();
   };
 
-  // Initial unread count fetch
   useEffect(() => {
-    if (teacherId) {
-      fetchUnreadCount();
-    }
+    if (teacherId) fetchUnreadCount();
   }, [teacherId]);
 
-  // Module entrance animations
   useEffect(() => {
     Animated.stagger(
       100,
@@ -473,14 +467,12 @@ export default function TeacherDashboard() {
     await logout();
   };
 
-  // Platform-specific dropdown width & offset
   const dropdownWidth =
     Platform.OS === "android"
       ? Math.min(width - 32, 340)
       : Math.min(width - 40, 400);
   const dropdownRightOffset = Platform.OS === "android" ? 16 : 20;
 
-  // Helper to format month name
   const monthNames = [
     "January",
     "February",
@@ -496,69 +488,66 @@ export default function TeacherDashboard() {
     "December",
   ];
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 28;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.lightGray }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Modern Header */}
-      <View
+      {/* Modern Gradient Header - Reduced height on web */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          backgroundColor: COLORS.bgWhite,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
-          paddingTop: Platform.OS === "android" ? 48 : 40,
-          paddingBottom: 20,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
           paddingHorizontal: 24,
-          ...Platform.select({
-            android: {
-              elevation: 6,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.08,
-              shadowRadius: 8,
-            },
-            web: {
-              boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
-            },
-          }),
         }}
       >
         <View className="flex-row justify-between items-center">
           <View>
             <Text
               className="text-sm font-semibold"
-              style={{ color: COLORS.textSecondary }}
+              style={{ color: COLORS.primaryLight, opacity: 0.9 }}
             >
               Welcome back,
             </Text>
             <Text
-              className="text-2xl font-extrabold tracking-tight"
-              style={{ color: COLORS.textPrimary }}
+              className="text-2xl font-extrabold tracking-tight mt-1"
+              style={{ color: COLORS.surface }}
             >
               {teacherName}
             </Text>
-            <View className="flex-row items-center mt-1 flex-wrap gap-1">
-              <View className="bg-primaryLight px-2 py-0.5 rounded-full">
-                <Text className="text-xs" style={{ color: COLORS.primaryDark }}>
+            <View className="flex-row items-center mt-2 gap-2">
+              <View className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                <Text
+                  className="text-xs font-medium"
+                  style={{ color: COLORS.primaryLight }}
+                >
                   ID: {teacherId}
                 </Text>
               </View>
-              <Text className="text-xs" style={{ color: COLORS.textSecondary }}>
-                •
-              </Text>
-              <View className="bg-primaryLight px-2 py-0.5 rounded-full">
-                <Text className="text-xs" style={{ color: COLORS.primaryDark }}>
+              <View className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                <Text
+                  className="text-xs font-medium"
+                  style={{ color: COLORS.primaryLight }}
+                >
                   Class: {assignedClass}
                 </Text>
               </View>
             </View>
           </View>
           <View className="flex-row items-center gap-4">
-            {/* Bell Icon with Badge */}
             <View
               onLayout={(event) => {
                 const { y, height } = event.nativeEvent.layout;
@@ -568,14 +557,11 @@ export default function TeacherDashboard() {
               <TouchableOpacity
                 onPress={openDropdown}
                 activeOpacity={0.7}
-                className="relative"
+                className="relative bg-white/10 p-2 rounded-full"
               >
-                <Bell size={24} color={COLORS.textPrimary} />
+                <Bell size={22} color={COLORS.surface} />
                 {unreadCount > 0 && (
-                  <View
-                    className="absolute -top-2 -right-2 bg-red-500 rounded-full min-w-[20px] h-[20px] justify-center items-center px-1"
-                    style={{ backgroundColor: COLORS.primary }}
-                  >
+                  <View className="absolute -top-1 -right-1 bg-amber-500 rounded-full min-w-[20px] h-[20px] justify-center items-center px-1 border-2 border-white">
                     <Text className="text-white text-[10px] font-bold">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </Text>
@@ -583,10 +569,8 @@ export default function TeacherDashboard() {
                 )}
               </TouchableOpacity>
             </View>
-
             <TouchableOpacity
-              className="w-12 h-12 rounded-full justify-center items-center"
-              style={{ backgroundColor: COLORS.primary }}
+              className="w-10 h-10 rounded-full justify-center items-center bg-white/20"
               activeOpacity={0.8}
             >
               <Text className="text-white font-bold text-lg">
@@ -594,18 +578,17 @@ export default function TeacherDashboard() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="p-2 rounded-full"
-              style={{ backgroundColor: COLORS.primaryLight }}
+              className="p-2 rounded-full bg-white/10"
               onPress={handleLogout}
               activeOpacity={0.7}
             >
-              <LogOut size={22} color={COLORS.primary} />
+              <LogOut size={20} color={COLORS.surface} />
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </LinearGradient>
 
-      {/* Dropdown Backdrop */}
+      {/* Notifications Dropdown */}
       {dropdownVisible && (
         <TouchableOpacity
           activeOpacity={1}
@@ -621,8 +604,6 @@ export default function TeacherDashboard() {
           }}
         />
       )}
-
-      {/* Notifications Dropdown */}
       {dropdownVisible && (
         <Animated.View
           style={{
@@ -631,13 +612,13 @@ export default function TeacherDashboard() {
             top: bellPosition.y + bellPosition.height + 10,
             width: dropdownWidth,
             maxHeight: 520,
-            backgroundColor: COLORS.bgWhite,
-            borderRadius: 24,
+            backgroundColor: COLORS.surface,
+            borderRadius: 28,
             shadowColor: "#000",
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.15,
-            shadowRadius: 20,
-            elevation: 12,
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.2,
+            shadowRadius: 24,
+            elevation: 20,
             zIndex: 20,
             borderWidth: 1,
             borderColor: COLORS.border,
@@ -645,23 +626,19 @@ export default function TeacherDashboard() {
           }}
         >
           <View
-            className="flex-row justify-between items-center p-4 border-b"
+            className="flex-row justify-between items-center p-5 border-b"
             style={{
               borderBottomColor: COLORS.border,
               backgroundColor: COLORS.primaryLight,
             }}
           >
-            <Text
-              className="text-lg font-bold"
-              style={{ color: COLORS.textPrimary }}
-            >
+            <Text className="text-lg font-bold" style={{ color: COLORS.navy }}>
               Notifications
             </Text>
             <TouchableOpacity onPress={() => setDropdownVisible(false)}>
               <X size={22} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
-
           {notificationsLoading && notifications.length === 0 ? (
             <View className="py-12 items-center">
               <ActivityIndicator size="large" color={COLORS.primary} />
@@ -675,9 +652,8 @@ export default function TeacherDashboard() {
                 if (
                   layoutMeasurement.height + contentOffset.y >=
                   contentSize.height - 30
-                ) {
+                )
                   handleLoadMore();
-                }
               }}
               scrollEventThrottle={400}
               showsVerticalScrollIndicator={false}
@@ -705,8 +681,8 @@ export default function TeacherDashboard() {
                       style={{
                         borderBottomColor: COLORS.border,
                         backgroundColor: notif.readFlag
-                          ? COLORS.bgWhite
-                          : `${COLORS.primaryLight}40`,
+                          ? COLORS.surface
+                          : `${COLORS.primaryLight}30`,
                       }}
                       onPress={() => {
                         if (!notif.readFlag) markAsRead(notif.id);
@@ -778,22 +754,19 @@ export default function TeacherDashboard() {
           alignSelf: "center",
         }}
       >
-        {/* Horizontal Calendar - modernized */}
+        {/* Horizontal Calendar - Modern Glass Card */}
         <View
-          className="p-5 rounded-3xl mb-8 bg-white"
+          className="p-5 rounded-3xl mb-8"
           style={{
-            borderColor: COLORS.border,
+            backgroundColor: COLORS.surface,
+            ...platformShadow,
             borderWidth: 1,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.05,
-            shadowRadius: 12,
-            elevation: 4,
+            borderColor: COLORS.border,
           }}
         >
           <View className="flex-row justify-between items-center mb-5 px-2">
-            <TouchableOpacity activeOpacity={0.7}>
-              <ChevronLeft size={22} color={COLORS.textPrimary} />
+            <TouchableOpacity>
+              <ChevronLeft size={24} color={COLORS.textPrimary} />
             </TouchableOpacity>
             <Text
               className="text-base font-bold"
@@ -804,8 +777,8 @@ export default function TeacherDashboard() {
                 year: "numeric",
               })}
             </Text>
-            <TouchableOpacity activeOpacity={0.7}>
-              <ChevronRight size={22} color={COLORS.textPrimary} />
+            <TouchableOpacity>
+              <ChevronRight size={24} color={COLORS.textPrimary} />
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -821,28 +794,43 @@ export default function TeacherDashboard() {
                   key={index}
                   onPress={() => setSelectedDate(date)}
                   activeOpacity={0.8}
-                  className="w-[65px] h-[90px] justify-center items-center"
+                  className="w-[70px] h-[96px] justify-center items-center"
                   style={{
-                    borderRadius: 30,
-                    backgroundColor: isSelected ? COLORS.primary : "#FFFFFF",
+                    borderRadius: 32,
+                    backgroundColor: isSelected
+                      ? COLORS.primary
+                      : COLORS.surface,
                     borderWidth: isSelected ? 0 : 1,
                     borderColor: COLORS.border,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: isSelected ? 0.15 : 0.02,
-                    shadowRadius: 4,
-                    elevation: isSelected ? 4 : 1,
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 4,
+                      },
+                      android: { elevation: isSelected ? 4 : 1 },
+                      web: {
+                        boxShadow: isSelected
+                          ? "0 8px 20px rgba(0,0,0,0.1)"
+                          : "none",
+                      },
+                    }),
                   }}
                 >
                   <Text
                     className="text-[11px] mb-1 font-semibold uppercase tracking-wider"
-                    style={{ color: isSelected ? "#FFFFFF" : "#9CA3AF" }}
+                    style={{
+                      color: isSelected ? COLORS.surface : COLORS.textTertiary,
+                    }}
                   >
                     {date.toLocaleDateString("en-US", { weekday: "short" })}
                   </Text>
                   <Text
                     className="text-[22px] font-extrabold"
-                    style={{ color: isSelected ? "#FFFFFF" : "#1F2937" }}
+                    style={{
+                      color: isSelected ? COLORS.surface : COLORS.textPrimary,
+                    }}
                   >
                     {date.getDate()}
                   </Text>
@@ -852,144 +840,83 @@ export default function TeacherDashboard() {
           </ScrollView>
         </View>
 
-        {/* Banner - updated with dynamic API data */}
-        <View
+        {/* Stats Banner - Vibrant Gradient */}
+        <LinearGradient
+          colors={["#1E293B", "#0F172A"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           className="p-6 rounded-3xl mb-8 overflow-hidden"
-          style={{
-            backgroundColor: COLORS.darkBg,
-            shadowColor: COLORS.textPrimary,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.15,
-            shadowRadius: 16,
-            elevation: 8,
-          }}
+          style={{ ...platformShadow }}
         >
           <Text className="text-white text-2xl font-black mb-6">
             Your Teaching Dashboard
           </Text>
           <View className="flex-row flex-wrap gap-4">
-            <View
-              className="flex-1 min-w-[100px] p-4 rounded-xl"
-              style={{
-                backgroundColor: "rgba(244, 164, 96, 0.2)",
-                borderWidth: 1,
-                borderColor: "rgba(244, 164, 96, 0.4)",
-              }}
-            >
-              <Text
-                className="text-3xl font-black mb-1"
-                style={{ color: COLORS.secondary }}
-              >
-                {statsLoading ? "-" : dashboardStats.totalClassSections}
-              </Text>
-              <Text
-                className="text-xs font-medium"
-                style={{ color: COLORS.cardLight }}
-              >
-                Class Sections
-              </Text>
-            </View>
-            <View
-              className="flex-1 min-w-[100px] p-4 rounded-xl"
-              style={{
-                backgroundColor: "rgba(244, 164, 96, 0.2)",
-                borderWidth: 1,
-                borderColor: "rgba(244, 164, 96, 0.4)",
-              }}
-            >
-              <Text
-                className="text-3xl font-black mb-1"
-                style={{ color: COLORS.secondary }}
-              >
-                {statsLoading ? "-" : dashboardStats.totalActiveStudents}
-              </Text>
-              <Text
-                className="text-xs font-medium"
-                style={{ color: COLORS.cardLight }}
-              >
-                Active Students
-              </Text>
-            </View>
-            <View
-              className="flex-1 min-w-[100px] p-4 rounded-xl"
-              style={{
-                backgroundColor: "rgba(244, 164, 96, 0.2)",
-                borderWidth: 1,
-                borderColor: "rgba(244, 164, 96, 0.4)",
-              }}
-            >
-              <Text
-                className="text-3xl font-black mb-1"
-                style={{ color: COLORS.secondary }}
-              >
-                {statsLoading
+            {[
+              {
+                label: "Class Sections",
+                value: statsLoading ? "-" : dashboardStats.totalClassSections,
+                color: "#F59E0B",
+              },
+              {
+                label: "Active Students",
+                value: statsLoading ? "-" : dashboardStats.totalActiveStudents,
+                color: "#10B981",
+              },
+              {
+                label: "Pass %",
+                value: statsLoading
                   ? "-"
-                  : `${dashboardStats.overallPassPercentage}%`}
-              </Text>
-              <Text
-                className="text-xs font-medium"
-                style={{ color: COLORS.cardLight }}
+                  : `${dashboardStats.overallPassPercentage}%`,
+                color: "#3B82F6",
+              },
+              {
+                label: "Subjects",
+                value: assignedLoading
+                  ? "-"
+                  : assignedStats.assignedSubjectCount,
+                color: "#8B5CF6",
+              },
+              {
+                label: "Assignments",
+                value: assignedLoading ? "-" : assignedStats.assignmentCount,
+                color: "#EC4899",
+              },
+            ].map((stat, idx) => (
+              <View
+                key={idx}
+                className="flex-1 min-w-[100px] p-4 rounded-2xl"
+                style={{
+                  backgroundColor: `${stat.color}20`,
+                  borderWidth: 1,
+                  borderColor: `${stat.color}40`,
+                }}
               >
-                Pass Percentage
-              </Text>
-            </View>
-
-            {/* Assigned Stats Cards */}
-            <View
-              className="flex-1 min-w-[100px] p-4 rounded-xl"
-              style={{
-                backgroundColor: "rgba(244, 164, 96, 0.2)",
-                borderWidth: 1,
-                borderColor: "rgba(244, 164, 96, 0.4)",
-              }}
-            >
-              <Text
-                className="text-3xl font-black mb-1"
-                style={{ color: COLORS.secondary }}
-              >
-                {assignedLoading ? "-" : assignedStats.assignedSubjectCount}
-              </Text>
-              <Text
-                className="text-xs font-medium"
-                style={{ color: COLORS.cardLight }}
-              >
-                Assigned Subjects
-              </Text>
-            </View>
-            <View
-              className="flex-1 min-w-[100px] p-4 rounded-xl"
-              style={{
-                backgroundColor: "rgba(244, 164, 96, 0.2)",
-                borderWidth: 1,
-                borderColor: "rgba(244, 164, 96, 0.4)",
-              }}
-            >
-              <Text
-                className="text-3xl font-black mb-1"
-                style={{ color: COLORS.secondary }}
-              >
-                {assignedLoading ? "-" : assignedStats.assignmentCount}
-              </Text>
-              <Text
-                className="text-xs font-medium"
-                style={{ color: COLORS.cardLight }}
-              >
-                Assignments
-              </Text>
-            </View>
+                <Text
+                  className="text-3xl font-black mb-1"
+                  style={{ color: stat.color }}
+                >
+                  {stat.value}
+                </Text>
+                <Text className="text-xs font-medium text-white/80">
+                  {stat.label}
+                </Text>
+              </View>
+            ))}
           </View>
-        </View>
+        </LinearGradient>
 
-        {/* Attendance Summary Card (Present, Absent, Half-Day) */}
+        {/* Attendance Summary */}
         <View
-          className="p-5 rounded-3xl mb-8 bg-white"
+          className="p-6 rounded-3xl mb-8"
           style={{
-            borderColor: COLORS.border,
-            borderWidth: 1,
+            backgroundColor: COLORS.surface,
             ...platformShadow,
+            borderWidth: 1,
+            borderColor: COLORS.border,
           }}
         >
-          <View className="flex-row justify-between items-center mb-4">
+          <View className="flex-row justify-between items-center mb-5">
             <Text
               className="text-xl font-extrabold"
               style={{ color: COLORS.textPrimary }}
@@ -1003,7 +930,6 @@ export default function TeacherDashboard() {
               {monthNames[selectedDate.getMonth()]} {selectedDate.getFullYear()}
             </Text>
           </View>
-
           {attendanceLoading ? (
             <View className="py-8 items-center">
               <ActivityIndicator size="small" color={COLORS.primary} />
@@ -1011,59 +937,48 @@ export default function TeacherDashboard() {
                 className="text-sm mt-2"
                 style={{ color: COLORS.textSecondary }}
               >
-                Loading attendance...
+                Loading...
               </Text>
             </View>
           ) : (
             <View className="flex-row flex-wrap gap-4">
               <View
-                className="flex-1 min-w-[100px] p-4 rounded-xl items-center justify-center"
-                style={{ backgroundColor: `${COLORS.primaryLight}60` }}
+                className="flex-1 min-w-[100px] p-4 rounded-2xl items-center"
+                style={{ backgroundColor: "#FEF3C7" }}
               >
                 <Text
                   className="text-3xl font-black mb-1"
-                  style={{ color: COLORS.primaryDark }}
+                  style={{ color: "#D97706" }}
                 >
                   {attendanceSummary.presentCount}
                 </Text>
-                <Text
-                  className="text-xs font-bold"
-                  style={{ color: COLORS.primaryDark }}
-                >
+                <Text className="text-xs font-bold text-amber-700">
                   Present
                 </Text>
               </View>
               <View
-                className="flex-1 min-w-[100px] p-4 rounded-xl items-center justify-center"
-                style={{ backgroundColor: `${COLORS.textTertiary}20` }}
+                className="flex-1 min-w-[100px] p-4 rounded-2xl items-center"
+                style={{ backgroundColor: "#FEE2E2" }}
               >
                 <Text
                   className="text-3xl font-black mb-1"
-                  style={{ color: COLORS.textTertiary }}
+                  style={{ color: "#DC2626" }}
                 >
                   {attendanceSummary.absentCount}
                 </Text>
-                <Text
-                  className="text-xs font-bold"
-                  style={{ color: COLORS.textTertiary }}
-                >
-                  Absent
-                </Text>
+                <Text className="text-xs font-bold text-red-700">Absent</Text>
               </View>
               <View
-                className="flex-1 min-w-[100px] p-4 rounded-xl items-center justify-center"
-                style={{ backgroundColor: `${COLORS.secondary}20` }}
+                className="flex-1 min-w-[100px] p-4 rounded-2xl items-center"
+                style={{ backgroundColor: "#E0E7FF" }}
               >
                 <Text
                   className="text-3xl font-black mb-1"
-                  style={{ color: COLORS.secondary }}
+                  style={{ color: "#4F46E5" }}
                 >
                   {attendanceSummary.leaveCount}
                 </Text>
-                <Text
-                  className="text-xs font-bold"
-                  style={{ color: COLORS.secondary }}
-                >
+                <Text className="text-xs font-bold text-indigo-700">
                   Half Day / Leave
                 </Text>
               </View>
@@ -1072,7 +987,7 @@ export default function TeacherDashboard() {
         </View>
 
         {/* Quick Access */}
-        <View className="mb-5">
+        <View className="mb-6">
           <Text
             className="text-2xl font-extrabold tracking-tight"
             style={{ color: COLORS.textPrimary }}
@@ -1086,8 +1001,7 @@ export default function TeacherDashboard() {
             Your frequently used tools
           </Text>
         </View>
-
-        <View className="flex-row flex-wrap gap-4 mb-8 items-start">
+        <View className="flex-row flex-wrap gap-5 mb-8 items-start">
           {teacherModules.map((module, index) => {
             const Icon = module.icon;
             return (
@@ -1097,38 +1011,24 @@ export default function TeacherDashboard() {
                   opacity: fadeAnims[index],
                   transform: [{ translateY: slideAnims[index] }],
                   width: cardWidth,
-                  marginBottom: 16,
+                  marginBottom: 20,
                 }}
               >
                 <TouchableOpacity
-                  className="bg-white p-5 rounded-2xl border"
+                  className="p-5 rounded-2xl border"
                   style={{
-                    backgroundColor: COLORS.bgWhite,
+                    backgroundColor: COLORS.surface,
                     borderColor: COLORS.border,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 10,
-                    elevation: 3,
-                    ...Platform.select({
-                      web: {
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        ":hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
-                        },
-                      },
-                    }),
+                    ...platformShadow,
                   }}
                   activeOpacity={0.8}
                   onPress={() => router.push(module.route as any)}
                 >
                   <View
                     className="w-12 h-12 rounded-xl justify-center items-center mb-4"
-                    style={{ backgroundColor: COLORS.primaryLight }}
+                    style={{ backgroundColor: module.bgLight }}
                   >
-                    <Icon size={26} color={COLORS.primary} strokeWidth={1.8} />
+                    <Icon size={26} color={module.color} strokeWidth={1.8} />
                   </View>
                   <Text
                     className="text-base font-extrabold mb-1"
@@ -1148,7 +1048,7 @@ export default function TeacherDashboard() {
           })}
         </View>
 
-        {/* Dynamic Wrapper for Web Side-by-Side Layout */}
+        {/* Two-Column Layout for Campus & Notices */}
         <View
           style={
             Platform.OS === "web"
@@ -1156,10 +1056,8 @@ export default function TeacherDashboard() {
               : { flexDirection: "column" }
           }
         >
-          {/* Left side: Campus Happenings */}
-          <View
-            style={Platform.OS === "web" ? { flex: 1, overflow: "hidden" } : {}}
-          >
+          {/* Campus Happenings */}
+          <View style={Platform.OS === "web" ? { flex: 1 } : {}}>
             <View className={Platform.OS === "web" ? "mb-5" : "mt-8 mb-5"}>
               <Text
                 className="text-2xl font-extrabold tracking-tight"
@@ -1174,12 +1072,10 @@ export default function TeacherDashboard() {
                 Latest updates from the campus
               </Text>
             </View>
-
-            {/* Campus Happenings Box */}
             <View
               className="rounded-3xl border overflow-hidden"
               style={{
-                backgroundColor: COLORS.bgWhite,
+                backgroundColor: COLORS.surface,
                 borderColor: COLORS.border,
                 height: 400,
                 ...platformShadow,
@@ -1192,7 +1088,7 @@ export default function TeacherDashboard() {
                     className="mt-2 text-sm"
                     style={{ color: COLORS.textSecondary }}
                   >
-                    Loading happenings...
+                    Loading...
                   </Text>
                 </View>
               ) : feedItems.length === 0 ? (
@@ -1201,13 +1097,7 @@ export default function TeacherDashboard() {
                     className="text-base font-semibold"
                     style={{ color: COLORS.textPrimary }}
                   >
-                    No updates available
-                  </Text>
-                  <Text
-                    className="text-sm mt-1 text-center"
-                    style={{ color: COLORS.textSecondary }}
-                  >
-                    Check back later for campus news
+                    No updates
                   </Text>
                 </View>
               ) : (
@@ -1229,9 +1119,9 @@ export default function TeacherDashboard() {
                             setFeedImageModalVisible(true);
                           }
                         }}
-                        className="w-full bg-white rounded-2xl border overflow-hidden"
+                        className="w-full rounded-2xl border overflow-hidden"
                         style={{
-                          backgroundColor: COLORS.bgWhite,
+                          backgroundColor: COLORS.surface,
                           borderColor: COLORS.border,
                         }}
                       >
@@ -1305,14 +1195,12 @@ export default function TeacherDashboard() {
             </View>
           </View>
 
-          {/* Right side: School Notices */}
-          <View
-            style={Platform.OS === "web" ? { flex: 1, overflow: "hidden" } : {}}
-          >
+          {/* School Notices */}
+          <View style={Platform.OS === "web" ? { flex: 1 } : {}}>
             <View
               className={`flex-row justify-between items-end ${Platform.OS === "web" ? "mb-5" : "mt-8 mb-5"}`}
             >
-              <View className="flex-1">
+              <View>
                 <Text
                   className="text-2xl font-extrabold tracking-tight"
                   style={{ color: COLORS.textPrimary }}
@@ -1323,7 +1211,7 @@ export default function TeacherDashboard() {
                   className="text-sm mt-1"
                   style={{ color: COLORS.textSecondary }}
                 >
-                  Important announcements and updates
+                  Important announcements
                 </Text>
               </View>
               <TouchableOpacity
@@ -1339,12 +1227,10 @@ export default function TeacherDashboard() {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Notice Box */}
             <View
               className="rounded-3xl border overflow-hidden"
               style={{
-                backgroundColor: COLORS.bgWhite,
+                backgroundColor: COLORS.surface,
                 borderColor: COLORS.border,
                 height: 400,
                 ...platformShadow,
@@ -1357,7 +1243,7 @@ export default function TeacherDashboard() {
                     className="mt-2 text-sm"
                     style={{ color: COLORS.textSecondary }}
                   >
-                    Loading notices...
+                    Loading...
                   </Text>
                 </View>
               ) : notices.length === 0 ? (
@@ -1374,9 +1260,9 @@ export default function TeacherDashboard() {
                   {notices.slice(0, 2).map((notice) => (
                     <View
                       key={notice.id}
-                      className="w-full bg-white rounded-2xl border p-5"
+                      className="w-full rounded-2xl border p-5"
                       style={{
-                        backgroundColor: COLORS.bgWhite,
+                        backgroundColor: COLORS.surface,
                         borderColor: COLORS.border,
                       }}
                     >
@@ -1393,9 +1279,9 @@ export default function TeacherDashboard() {
                           style={{
                             backgroundColor:
                               notice.noticeType === "EMERGENCY"
-                                ? `${COLORS.primary}20`
+                                ? "#FEE2E2"
                                 : notice.noticeType === "ACADEMIC"
-                                  ? `${COLORS.secondary}20`
+                                  ? "#FEF3C7"
                                   : COLORS.primaryLight,
                           }}
                         >
@@ -1404,9 +1290,9 @@ export default function TeacherDashboard() {
                             style={{
                               color:
                                 notice.noticeType === "EMERGENCY"
-                                  ? COLORS.primaryDark
+                                  ? "#DC2626"
                                   : notice.noticeType === "ACADEMIC"
-                                    ? COLORS.secondary
+                                    ? "#D97706"
                                     : COLORS.primary,
                             }}
                           >
@@ -1432,11 +1318,7 @@ export default function TeacherDashboard() {
                         >
                           {new Date(notice.noticeDate).toLocaleDateString(
                             undefined,
-                            {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            },
+                            { month: "short", day: "numeric", year: "numeric" },
                           )}
                         </Text>
                       </View>
@@ -1449,7 +1331,7 @@ export default function TeacherDashboard() {
         </View>
       </ScrollView>
 
-      {/* Image preview modal for feed images */}
+      {/* Image Preview Modal */}
       <Modal
         visible={feedImageModalVisible}
         transparent={true}
@@ -1470,7 +1352,7 @@ export default function TeacherDashboard() {
             style={{ position: "absolute", top: 40, right: 20, zIndex: 10 }}
             onPress={() => setFeedImageModalVisible(false)}
           >
-            <X size={30} color={COLORS.white} />
+            <X size={30} color={COLORS.surface} />
           </TouchableOpacity>
           <Image
             source={{ uri: feedPreviewImage }}

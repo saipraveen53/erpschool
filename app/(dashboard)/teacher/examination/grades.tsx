@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -27,22 +27,27 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   warning: "#F59E0B",
   error: "#EF4444",
-  border: "#F0E4D8",
   white: "#FFFFFF",
   lightGray: "#F3F4F6",
 };
@@ -59,39 +64,6 @@ const platformShadow = Platform.select({
   },
 });
 
-// 1. Isolated Axios instance for the exams microservice
-const examClient = axios.create({
-  baseURL: "http://192.168.88.24:8083",
-  timeout: 10000,
-});
-
-// 2. Request Interceptor: Automatically attaches the token to ALL requests
-examClient.interceptors.request.use(
-  async (config) => {
-    let token = null;
-    try {
-      if (Platform.OS === "web") {
-        token =
-          localStorage.getItem("userToken") ||
-          localStorage.getItem("token") ||
-          localStorage.getItem("authToken");
-      } else {
-        token =
-          (await AsyncStorage.getItem("userToken")) ||
-          (await AsyncStorage.getItem("token")) ||
-          (await AsyncStorage.getItem("authToken"));
-      }
-    } catch (error) {
-      console.error("Error retrieving token:", error);
-    }
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
-
 type SortBy = "avg" | "date" | "passRate";
 type SortOrder = "asc" | "desc";
 
@@ -105,8 +77,12 @@ export default function ViewGradesScreen() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [showFilters, setShowFilters] = useState(false);
 
+  // Teacher info state (for display bar)
+  const [teacherId, setTeacherId] = useState("");
+  const [teacherName, setTeacherName] = useState("Loading...");
+  const [assignedClass, setAssignedClass] = useState("Loading...");
+
   // Data States
-  const [teacherId, setTeacherId] = useState<string>("");
   const [exams, setExams] = useState<any[]>([]);
   const [loadingExams, setLoadingExams] = useState(true);
 
@@ -133,23 +109,61 @@ export default function ViewGradesScreen() {
   const filterAnim = useRef(new Animated.Value(0)).current;
   const filterSlideAnim = useRef(new Animated.Value(20)).current;
 
-  // 3. Fetch Exams on Mount
+  // Fetch teacher info (using class-sections to get teacher's own class)
+  useEffect(() => {
+    const fetchTeacherInfo = async () => {
+      try {
+        const currentTeacherId =
+          Platform.OS === "web"
+            ? localStorage.getItem("userUsername")
+            : await AsyncStorage.getItem("userUsername");
+        if (!currentTeacherId) return;
+        setTeacherId(currentTeacherId);
+
+        const classSectionsRes = await teacherClient.get(
+          "/api/student/class-sections",
+        );
+        const fetchedClasses = classSectionsRes.data;
+        const assigned = fetchedClasses.find(
+          (c: any) => c.classTeacherId === currentTeacherId,
+        );
+        if (assigned) {
+          setTeacherName(assigned.classTeacherName.trim());
+          setAssignedClass(
+            `${assigned.className}-${assigned.section.toUpperCase()}`,
+          );
+        } else {
+          setTeacherName("Not Found");
+          setAssignedClass("None");
+        }
+      } catch (err) {
+        console.error("Failed to load teacher info:", err);
+      }
+    };
+    fetchTeacherInfo();
+  }, []);
+
+  // 3. Fetch Exams on Mount (using teacherClient)
   useEffect(() => {
     const fetchExams = async () => {
       try {
         setLoadingExams(true);
-        let currentTeacherId = "TCH2026001"; // Fallback
+        let currentTeacherId = "";
         if (Platform.OS === "web") {
-          currentTeacherId =
-            localStorage.getItem("userUsername") || currentTeacherId;
+          currentTeacherId = localStorage.getItem("userUsername") || "";
         } else {
-          currentTeacherId =
-            (await AsyncStorage.getItem("userUsername")) || currentTeacherId;
+          currentTeacherId = (await AsyncStorage.getItem("userUsername")) || "";
         }
-        setTeacherId(currentTeacherId);
-
-        const res = await examClient.get(`/api/teacher/${currentTeacherId}`);
-        setExams(res.data || []);
+        if (currentTeacherId) {
+          setTeacherId(currentTeacherId);
+          const res = await teacherClient.get(
+            `/api/teacher/${currentTeacherId}`,
+          );
+          setExams(res.data || []);
+        } else {
+          console.error("No teacher ID found");
+          setExams([]);
+        }
       } catch (error) {
         console.error("Failed to load exams:", error);
       } finally {
@@ -171,7 +185,7 @@ export default function ViewGradesScreen() {
           url += `&subjectId=${selectedSubjectId}`;
         }
 
-        const res = await examClient.get(url);
+        const res = await teacherClient.get(url);
         const data = res.data || [];
         setMarksData(data);
         calculateStats(data);
@@ -315,48 +329,92 @@ export default function ViewGradesScreen() {
         const dateB = new Date(b.startDate).getTime();
         return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
       }
-      return 0; // Other sorts can be implemented if needed
+      return 0;
     });
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: Platform.OS === "android" ? 50 : 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Class Results
+          </Text>
+          <TouchableOpacity
+            className="p-2 rounded-full bg-white/10"
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Filter
+              size={20}
+              color={showFilters ? COLORS.primaryLight : COLORS.surface}
+            />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* Teacher Info Bar */}
+      <View
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
+        style={{
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
+        }}
+      >
         <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
+          numberOfLines={1}
         >
-          Class Results
+          Teacher: {teacherName} ({teacherId})
         </Text>
-        <TouchableOpacity
-          className="p-2 -mr-2"
-          onPress={() => setShowFilters(!showFilters)}
+        <Text
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
+          numberOfLines={1}
         >
-          <Filter
-            size={20}
-            color={showFilters ? COLORS.primary : COLORS.textSecondary}
-          />
-        </TouchableOpacity>
+          Class: {assignedClass}
+        </Text>
       </View>
 
       <ScrollView
@@ -370,49 +428,61 @@ export default function ViewGradesScreen() {
         }}
       >
         <View className="flex-col gap-6 w-full">
-          {/* Overall Stats Cards */}
+          {/* Overall Stats Cards - Properly aligned for web and mobile */}
           <View
-            className={
+            style={[
               Platform.OS === "web"
-                ? "flex-row flex-wrap w-full gap-4"
-                : `flex-row flex-wrap justify-between w-full ${isDesktop ? "gap-6" : "gap-3"}`
-            }
+                ? {
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    gap: 16,
+                  }
+                : { flexDirection: "row", flexWrap: "wrap", gap: 16 },
+            ]}
           >
             {[
               {
                 icon: BarChart3,
                 label: "Total Exams",
                 value: exams.length,
-                bg: COLORS.primaryLight,
+                bg: `${COLORS.primary}15`,
                 iconColor: COLORS.primary,
               },
               {
                 icon: TrendingUp,
                 label: "Active Terms",
                 value: "2",
-                bg: `${COLORS.secondary}1A`,
+                bg: `${COLORS.secondary}15`,
                 iconColor: COLORS.secondary,
               },
               {
                 icon: Users,
                 label: "Your Classes",
                 value: "3",
-                bg: `${COLORS.success}1A`,
+                bg: `${COLORS.success}15`,
                 iconColor: COLORS.success,
               },
             ].map((stat, idx) => (
               <Animated.View
                 key={idx}
-                className="flex-1 min-w-[100px] flex-col items-center justify-center rounded-2xl border"
-                style={{
-                  ...(Platform.OS === "web" ? { flex: 1 } : {}),
-                  padding: isDesktop ? 24 : 16,
-                  opacity: statAnims[idx],
-                  transform: [{ translateY: statSlideAnims[idx] }],
-                  backgroundColor: COLORS.bgWhite,
-                  borderColor: COLORS.border,
-                  ...platformShadow,
-                }}
+                style={[
+                  {
+                    flex: Platform.OS === "web" ? 1 : undefined,
+                    minWidth: Platform.OS === "web" ? 0 : 100,
+                    backgroundColor: COLORS.surface,
+                    borderColor: COLORS.border,
+                    borderRadius: 16,
+                    padding: isDesktop ? 24 : 16,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    ...platformShadow,
+                  },
+                  {
+                    opacity: statAnims[idx],
+                    transform: [{ translateY: statSlideAnims[idx] }],
+                  },
+                ]}
               >
                 <View
                   className="rounded-full justify-center items-center mb-3"
@@ -456,14 +526,14 @@ export default function ViewGradesScreen() {
               style={{
                 opacity: filterAnim,
                 transform: [{ translateY: filterSlideAnim }],
-                backgroundColor: COLORS.bgWhite,
+                backgroundColor: COLORS.surface,
                 borderColor: COLORS.border,
                 ...platformShadow,
               }}
             >
               <View
                 className="flex-row items-center rounded-xl px-4 py-2 mb-5"
-                style={{ backgroundColor: COLORS.lightGray }}
+                style={{ backgroundColor: COLORS.background }}
               >
                 <Search size={18} color={COLORS.textSecondary} />
                 <TextInput
@@ -472,14 +542,7 @@ export default function ViewGradesScreen() {
                   placeholderTextColor={COLORS.textSecondary}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  style={
-                    Platform.OS === "web"
-                      ? ({
-                          color: COLORS.textPrimary,
-                          outlineStyle: "none",
-                        } as any)
-                      : { color: COLORS.textPrimary }
-                  }
+                  style={{ color: COLORS.textPrimary }}
                 />
                 {searchQuery !== "" && (
                   <TouchableOpacity
@@ -510,7 +573,7 @@ export default function ViewGradesScreen() {
                       style={[
                         sortBy === sort
                           ? { backgroundColor: COLORS.primary }
-                          : { backgroundColor: COLORS.lightGray },
+                          : { backgroundColor: COLORS.background },
                       ]}
                       onPress={() => setSortBy(sort)}
                     >
@@ -518,7 +581,9 @@ export default function ViewGradesScreen() {
                         className="text-xs font-bold"
                         style={{
                           color:
-                            sortBy === sort ? COLORS.white : COLORS.textPrimary,
+                            sortBy === sort
+                              ? COLORS.surface
+                              : COLORS.textPrimary,
                         }}
                       >
                         Date
@@ -527,7 +592,7 @@ export default function ViewGradesScreen() {
                   ))}
                   <TouchableOpacity
                     className="p-2.5 rounded-full ml-auto"
-                    style={{ backgroundColor: COLORS.lightGray }}
+                    style={{ backgroundColor: COLORS.background }}
                     onPress={() =>
                       setSortOrder(sortOrder === "desc" ? "asc" : "desc")
                     }
@@ -578,11 +643,10 @@ export default function ViewGradesScreen() {
               {filteredExams.map((exam) => (
                 <View
                   key={exam.examId}
-                  className="rounded-2xl border"
+                  className="rounded-2xl border p-5"
                   style={{
-                    backgroundColor: COLORS.bgWhite,
+                    backgroundColor: COLORS.surface,
                     borderColor: COLORS.border,
-                    padding: isDesktop ? 24 : 20,
                     ...platformShadow,
                   }}
                 >
@@ -603,7 +667,7 @@ export default function ViewGradesScreen() {
                     </View>
                     <View
                       className="flex-row items-center gap-1.5 px-3 py-2 rounded-lg"
-                      style={{ backgroundColor: COLORS.lightGray }}
+                      style={{ backgroundColor: COLORS.background }}
                     >
                       <Calendar size={14} color={COLORS.textSecondary} />
                       <Text
@@ -636,7 +700,7 @@ export default function ViewGradesScreen() {
                     className="py-3.5 rounded-xl items-center border-2"
                     style={{
                       borderColor: COLORS.primaryLight,
-                      backgroundColor: COLORS.bgWhite,
+                      backgroundColor: COLORS.surface,
                     }}
                     activeOpacity={0.7}
                     onPress={() => handleOpenReport(exam)}
@@ -660,7 +724,7 @@ export default function ViewGradesScreen() {
         <View className="flex-1 justify-end bg-black/50">
           <View
             className="bg-white rounded-t-3xl pt-6 pb-10"
-            style={{ height: "90%", backgroundColor: COLORS.bgWhite }}
+            style={{ height: "90%", backgroundColor: COLORS.surface }}
           >
             {/* Modal Header */}
             <View className="flex-row justify-between items-center px-6 mb-6">
@@ -674,8 +738,8 @@ export default function ViewGradesScreen() {
               </View>
               <TouchableOpacity
                 onPress={closeReport}
-                className="p-2 bg-gray-100 rounded-full"
-                style={{ backgroundColor: COLORS.lightGray }}
+                className="p-2 rounded-full"
+                style={{ backgroundColor: COLORS.background }}
               >
                 <X size={24} color={COLORS.textPrimary} />
               </TouchableOpacity>
@@ -704,7 +768,7 @@ export default function ViewGradesScreen() {
                         backgroundColor:
                           selectedClassId === classId
                             ? COLORS.primary
-                            : COLORS.white,
+                            : COLORS.surface,
                         borderColor:
                           selectedClassId === classId
                             ? COLORS.primary
@@ -716,7 +780,7 @@ export default function ViewGradesScreen() {
                         style={{
                           color:
                             selectedClassId === classId
-                              ? COLORS.white
+                              ? COLORS.surface
                               : COLORS.textPrimary,
                         }}
                       >
@@ -735,20 +799,11 @@ export default function ViewGradesScreen() {
               </Text>
               <TextInput
                 className="border rounded-xl p-3.5 text-sm font-medium mb-2"
-                style={
-                  Platform.OS === "web"
-                    ? ({
-                        borderColor: COLORS.border,
-                        color: COLORS.textPrimary,
-                        backgroundColor: COLORS.white,
-                        outlineStyle: "none",
-                      } as any)
-                    : {
-                        borderColor: COLORS.border,
-                        color: COLORS.textPrimary,
-                        backgroundColor: COLORS.white,
-                      }
-                }
+                style={{
+                  borderColor: COLORS.border,
+                  color: COLORS.textPrimary,
+                  backgroundColor: COLORS.surface,
+                }}
                 placeholder="Enter Subject ID (e.g. SUB2026003)"
                 placeholderTextColor={COLORS.textTertiary}
                 value={selectedSubjectId}
@@ -786,7 +841,7 @@ export default function ViewGradesScreen() {
                 {/* Main Stats Row */}
                 <View
                   className="flex-row justify-between items-center rounded-xl p-4 mb-6"
-                  style={{ backgroundColor: COLORS.lightGray }}
+                  style={{ backgroundColor: COLORS.background }}
                 >
                   <View className="flex-1 items-center">
                     <Text
@@ -802,14 +857,17 @@ export default function ViewGradesScreen() {
                       {stats.avg}%
                     </Text>
                     <Text
-                      className="text-[10px] font-black uppercase mt-1 px-2 py-0.5 rounded-md bg-white/60"
-                      style={{ color: COLORS.textSecondary }}
+                      className="text-[10px] font-black uppercase mt-1 px-2 py-0.5 rounded-md"
+                      style={{
+                        backgroundColor: `${COLORS.surface}80`,
+                        color: COLORS.textSecondary,
+                      }}
                     >
                       Grade {getGradeLetter(stats.avg)}
                     </Text>
                   </View>
                   <View
-                    className="w-px h-12 bg-gray-200 mx-2"
+                    className="w-px h-12 mx-2"
                     style={{ backgroundColor: COLORS.border }}
                   />
                   <View className="flex-1 items-center">
@@ -827,7 +885,7 @@ export default function ViewGradesScreen() {
                     </Text>
                   </View>
                   <View
-                    className="w-px h-12 bg-gray-200 mx-2"
+                    className="w-px h-12 mx-2"
                     style={{ backgroundColor: COLORS.border }}
                   />
                   <View className="flex-1 items-center">
@@ -882,7 +940,7 @@ export default function ViewGradesScreen() {
                           </Text>
                           <View
                             className="flex-1 h-2.5 rounded-full overflow-hidden"
-                            style={{ backgroundColor: COLORS.lightGray }}
+                            style={{ backgroundColor: COLORS.background }}
                           >
                             <View
                               className="h-full rounded-full"
@@ -914,13 +972,16 @@ export default function ViewGradesScreen() {
                 {marksData.map((mark) => (
                   <View
                     key={mark.markId}
-                    className="flex-row items-center justify-between p-4 bg-white border rounded-xl mb-3"
-                    style={{ borderColor: COLORS.border }}
+                    className="flex-row items-center justify-between p-4 border rounded-xl mb-3"
+                    style={{
+                      borderColor: COLORS.border,
+                      backgroundColor: COLORS.surface,
+                    }}
                   >
                     <View className="flex-row items-center gap-3 flex-1">
                       <View
-                        className="w-10 h-10 rounded-full justify-center items-center bg-gray-100"
-                        style={{ backgroundColor: COLORS.lightGray }}
+                        className="w-10 h-10 rounded-full justify-center items-center"
+                        style={{ backgroundColor: COLORS.background }}
                       >
                         <User size={18} color={COLORS.textSecondary} />
                       </View>

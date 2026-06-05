@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -21,23 +22,27 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  lightGray: "#F8F9FA",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   warning: "#F59E0B",
   danger: "#EF4444",
-  border: "#F0E4D8",
   white: "#FFFFFF",
+  lightGray: "#F3F4F6",
 };
 
 const platformShadow = Platform.select({
@@ -56,37 +61,77 @@ export default function TeacherAttendanceHistoryScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
+  // Teacher info state
+  const [teacherId, setTeacherId] = useState("");
+  const [teacherName, setTeacherName] = useState("Loading...");
+  const [assignedClass, setAssignedClass] = useState("Loading...");
+
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ present: 0, absent: 0, halfDay: 0 });
 
+  // Fetch teacher info (using class-sections to get teacher's own class)
+  useEffect(() => {
+    const fetchTeacherInfo = async () => {
+      try {
+        const currentTeacherId =
+          Platform.OS === "web"
+            ? localStorage.getItem("userUsername")
+            : await AsyncStorage.getItem("userUsername");
+        if (!currentTeacherId) return;
+        setTeacherId(currentTeacherId);
+
+        const classSectionsRes = await teacherClient.get(
+          "/api/student/class-sections",
+        );
+        const fetchedClasses = classSectionsRes.data;
+        const assigned = fetchedClasses.find(
+          (c: any) => c.classTeacherId === currentTeacherId,
+        );
+        if (assigned) {
+          setTeacherName(assigned.classTeacherName.trim());
+          setAssignedClass(
+            `${assigned.className}-${assigned.section.toUpperCase()}`,
+          );
+        } else {
+          setTeacherName("Not Found");
+          setAssignedClass("None");
+        }
+      } catch (err) {
+        console.error("Failed to load teacher info:", err);
+      }
+    };
+    fetchTeacherInfo();
+  }, []);
+
+  // Fetch attendance history
   useEffect(() => {
     const fetchAttendanceHistory = async () => {
       setLoading(true);
       try {
-        let teacherId = "TCH2026001"; // Fallback ID
+        let currentTeacherId = "";
         if (Platform.OS === "web") {
-          teacherId = localStorage.getItem("userUsername") || teacherId;
+          currentTeacherId = localStorage.getItem("userUsername") || "";
         } else {
-          teacherId = (await AsyncStorage.getItem("userUsername")) || teacherId;
+          currentTeacherId = (await AsyncStorage.getItem("userUsername")) || "";
+        }
+        if (!currentTeacherId) {
+          setLoading(false);
+          return;
         }
 
         const res = await teacherClient.get(
-          `/api/student/teacher/teacher/${teacherId}/attendance`,
+          `/api/student/teacher/teacher/${currentTeacherId}/attendance`,
         );
-
         const data = res.data || [];
 
-        // Sort records by date (newest first)
         const sortedData = data.sort(
           (a: any, b: any) =>
             new Date(b.attendanceDate).getTime() -
             new Date(a.attendanceDate).getTime(),
         );
-
         setRecords(sortedData);
 
-        // Calculate basic stats for the summary cards
         let present = 0,
           absent = 0,
           halfDay = 0;
@@ -96,7 +141,6 @@ export default function TeacherAttendanceHistoryScreen() {
           else if (status === "ABSENT") absent++;
           else if (status === "HALF_DAY") halfDay++;
         });
-
         setStats({ present, absent, halfDay });
       } catch (error) {
         console.error("Failed to load attendance history:", error);
@@ -154,37 +198,81 @@ export default function TeacherAttendanceHistoryScreen() {
     }
   };
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: Platform.OS === "android" ? 50 : 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            My Attendance
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
+
+      {/* Teacher Info Bar */}
+      <View
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
+        style={{
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
+        }}
+      >
         <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
+          numberOfLines={1}
         >
-          My Attendance
+          Teacher: {teacherName} ({teacherId})
         </Text>
-        <View style={{ width: 40 }} />
+        <Text
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
+          numberOfLines={1}
+        >
+          Class: {assignedClass}
+        </Text>
       </View>
 
       <ScrollView
@@ -200,12 +288,16 @@ export default function TeacherAttendanceHistoryScreen() {
         {/* Quick Stats Summary */}
         <View className="flex-row justify-between gap-4 mb-6">
           <View
-            className="flex-1 bg-white p-4 rounded-2xl border items-center"
-            style={{ borderColor: COLORS.border, ...platformShadow }}
+            className="flex-1 items-center p-4 rounded-2xl border"
+            style={{
+              backgroundColor: COLORS.surface,
+              borderColor: COLORS.border,
+              ...platformShadow,
+            }}
           >
             <View
               className="w-10 h-10 rounded-full items-center justify-center mb-2"
-              style={{ backgroundColor: `${COLORS.success}1A` }}
+              style={{ backgroundColor: `${COLORS.success}15` }}
             >
               <CalendarCheck size={20} color={COLORS.success} />
             </View>
@@ -224,12 +316,16 @@ export default function TeacherAttendanceHistoryScreen() {
           </View>
 
           <View
-            className="flex-1 bg-white p-4 rounded-2xl border items-center"
-            style={{ borderColor: COLORS.border, ...platformShadow }}
+            className="flex-1 items-center p-4 rounded-2xl border"
+            style={{
+              backgroundColor: COLORS.surface,
+              borderColor: COLORS.border,
+              ...platformShadow,
+            }}
           >
             <View
               className="w-10 h-10 rounded-full items-center justify-center mb-2"
-              style={{ backgroundColor: `${COLORS.danger}1A` }}
+              style={{ backgroundColor: `${COLORS.danger}15` }}
             >
               <CalendarX size={20} color={COLORS.danger} />
             </View>
@@ -248,12 +344,16 @@ export default function TeacherAttendanceHistoryScreen() {
           </View>
 
           <View
-            className="flex-1 bg-white p-4 rounded-2xl border items-center"
-            style={{ borderColor: COLORS.border, ...platformShadow }}
+            className="flex-1 items-center p-4 rounded-2xl border"
+            style={{
+              backgroundColor: COLORS.surface,
+              borderColor: COLORS.border,
+              ...platformShadow,
+            }}
           >
             <View
               className="w-10 h-10 rounded-full items-center justify-center mb-2"
-              style={{ backgroundColor: `${COLORS.warning}1A` }}
+              style={{ backgroundColor: `${COLORS.warning}15` }}
             >
               <Clock size={20} color={COLORS.warning} />
             </View>
@@ -291,8 +391,12 @@ export default function TeacherAttendanceHistoryScreen() {
           </View>
         ) : records.length === 0 ? (
           <View
-            className="bg-white p-8 rounded-2xl border items-center"
-            style={{ borderColor: COLORS.border, ...platformShadow }}
+            className="p-8 rounded-2xl border items-center"
+            style={{
+              backgroundColor: COLORS.surface,
+              borderColor: COLORS.border,
+              ...platformShadow,
+            }}
           >
             <Calendar size={40} color={COLORS.textTertiary} strokeWidth={1.5} />
             <Text
@@ -315,9 +419,9 @@ export default function TeacherAttendanceHistoryScreen() {
               return (
                 <View
                   key={record.id}
-                  className="bg-white p-5 rounded-2xl border"
+                  className="p-5 rounded-2xl border"
                   style={{
-                    backgroundColor: COLORS.bgWhite,
+                    backgroundColor: COLORS.surface,
                     borderColor: COLORS.border,
                     ...platformShadow,
                   }}
@@ -326,7 +430,7 @@ export default function TeacherAttendanceHistoryScreen() {
                     <View className="flex-row items-center gap-3">
                       <View
                         className="w-12 h-12 rounded-xl items-center justify-center"
-                        style={{ backgroundColor: COLORS.lightGray }}
+                        style={{ backgroundColor: COLORS.background }}
                       >
                         <Calendar size={22} color={COLORS.textSecondary} />
                       </View>
@@ -373,7 +477,10 @@ export default function TeacherAttendanceHistoryScreen() {
                         className="text-sm leading-5 flex-1"
                         style={{ color: COLORS.textSecondary }}
                       >
-                        <Text className="font-semibold text-textPrimary">
+                        <Text
+                          className="font-semibold"
+                          style={{ color: COLORS.textPrimary }}
+                        >
                           Remarks:{" "}
                         </Text>
                         {record.remarks}

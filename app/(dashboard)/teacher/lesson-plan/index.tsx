@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -31,21 +32,25 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   warning: "#F59E0B",
   pending: "#6B7280",
-  border: "#F0E4D8",
   white: "#FFFFFF",
   lightGray: "#F3F4F6",
 };
@@ -116,6 +121,8 @@ export default function LessonPlanScreen() {
   const isDesktop = width >= 1024;
 
   const [teacherId, setTeacherId] = useState<string>("");
+  const [teacherName, setTeacherName] = useState("Loading...");
+  const [assignedClass, setAssignedClass] = useState("Loading...");
   const [teacherClasses, setTeacherClasses] = useState<TeacherClass[]>([]);
   const [selectedClass, setSelectedClass] = useState<TeacherClass | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
@@ -138,6 +145,38 @@ export default function LessonPlanScreen() {
     chapter: "",
     plannedDate: "",
   });
+
+  // Fetch teacher's own class info (like dashboard)
+  useEffect(() => {
+    const fetchTeacherInfo = async () => {
+      try {
+        const currentTeacherId =
+          Platform.OS === "web"
+            ? localStorage.getItem("userUsername")
+            : await AsyncStorage.getItem("userUsername");
+        if (!currentTeacherId) return;
+        const classSectionsRes = await teacherClient.get(
+          "/api/student/class-sections",
+        );
+        const fetchedClasses = classSectionsRes.data;
+        const assigned = fetchedClasses.find(
+          (c: any) => c.classTeacherId === currentTeacherId,
+        );
+        if (assigned) {
+          setTeacherName(assigned.classTeacherName.trim());
+          setAssignedClass(
+            `${assigned.className}-${assigned.section.toUpperCase()}`,
+          );
+        } else {
+          setTeacherName("Not Found");
+          setAssignedClass("None");
+        }
+      } catch (err) {
+        console.error("Failed to load teacher info:", err);
+      }
+    };
+    fetchTeacherInfo();
+  }, []);
 
   useEffect(() => {
     fetchClassesAndSubjects();
@@ -244,13 +283,13 @@ export default function LessonPlanScreen() {
       case "Completed":
         return {
           color: COLORS.success,
-          bg: `${COLORS.success}1A`,
+          bg: `${COLORS.success}15`,
           icon: CheckCircle2,
         };
       default:
         return {
           color: COLORS.pending,
-          bg: `${COLORS.pending}1A`,
+          bg: `${COLORS.pending}15`,
           icon: BookOpen,
         };
     }
@@ -476,59 +515,107 @@ export default function LessonPlanScreen() {
     viewMode === "ALL" ||
     (viewMode === "SPECIFIC" && selectedClass && selectedSubject);
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: Platform.OS === "android" ? 50 : 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Lesson Plans
+          </Text>
+          <TouchableOpacity
+            className="p-2 rounded-full bg-white/10"
+            onPress={() => {
+              if (viewMode === "ALL" || !selectedClass || !selectedSubject) {
+                showAlert(
+                  "Notice",
+                  "Please select a specific class and subject below to create a new plan.",
+                );
+                return;
+              }
+              resetForm();
+              setIsModalVisible(true);
+            }}
+          >
+            <Plus size={20} color={COLORS.surface} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* Teacher Info Bar */}
+      <View
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
+        style={{
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
+        }}
+      >
         <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
+          numberOfLines={1}
         >
-          Lesson Plans
+          Teacher: {teacherName} ({teacherId})
         </Text>
-        <TouchableOpacity
-          className="p-2 rounded-lg"
-          style={{ backgroundColor: `${COLORS.primary}1A` }}
-          onPress={() => {
-            if (viewMode === "ALL" || !selectedClass || !selectedSubject) {
-              showAlert(
-                "Notice",
-                "Please select a specific class and subject below to create a new plan.",
-              );
-              return;
-            }
-            resetForm();
-            setIsModalVisible(true);
-          }}
+        <Text
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
+          numberOfLines={1}
         >
-          <Plus size={20} color={COLORS.primary} />
-        </TouchableOpacity>
+          Class: {assignedClass}
+        </Text>
       </View>
 
       {/* Class & Subject Selector */}
       <View
-        className="bg-white border-b px-5 py-4"
-        style={{ borderBottomColor: COLORS.border }}
+        className="mx-4 mt-5 p-5 rounded-2xl"
+        style={{
+          backgroundColor: COLORS.surface,
+          borderWidth: 1,
+          borderColor: COLORS.border,
+          ...platformShadow,
+        }}
       >
         {isLoadingClasses ? (
           <ActivityIndicator size="small" color={COLORS.primary} />
@@ -553,7 +640,7 @@ export default function LessonPlanScreen() {
                 className="px-3 py-1.5 rounded-lg border"
                 style={{
                   backgroundColor:
-                    viewMode === "ALL" ? COLORS.primary : COLORS.white,
+                    viewMode === "ALL" ? COLORS.primary : COLORS.surface,
                   borderColor:
                     viewMode === "ALL" ? COLORS.primary : COLORS.border,
                 }}
@@ -562,7 +649,7 @@ export default function LessonPlanScreen() {
                   className="font-bold text-xs"
                   style={{
                     color:
-                      viewMode === "ALL" ? COLORS.white : COLORS.textPrimary,
+                      viewMode === "ALL" ? COLORS.surface : COLORS.textPrimary,
                   }}
                 >
                   Show All Plans
@@ -592,7 +679,7 @@ export default function LessonPlanScreen() {
                       style={{
                         backgroundColor: isSelected
                           ? COLORS.primary
-                          : COLORS.white,
+                          : COLORS.surface,
                         borderColor: isSelected
                           ? COLORS.primary
                           : COLORS.border,
@@ -601,7 +688,9 @@ export default function LessonPlanScreen() {
                       <Text
                         className="font-semibold text-sm"
                         style={{
-                          color: isSelected ? COLORS.white : COLORS.textPrimary,
+                          color: isSelected
+                            ? COLORS.surface
+                            : COLORS.textPrimary,
                         }}
                       >
                         {cls.className}-{cls.section}
@@ -638,7 +727,7 @@ export default function LessonPlanScreen() {
                           style={{
                             backgroundColor: isSelected
                               ? COLORS.secondary
-                              : COLORS.white,
+                              : COLORS.surface,
                             borderColor: isSelected
                               ? COLORS.secondary
                               : COLORS.border,
@@ -648,7 +737,7 @@ export default function LessonPlanScreen() {
                             className="font-semibold text-sm"
                             style={{
                               color: isSelected
-                                ? COLORS.white
+                                ? COLORS.surface
                                 : COLORS.textPrimary,
                             }}
                           >
@@ -676,75 +765,58 @@ export default function LessonPlanScreen() {
       >
         {/* Stats Cards */}
         {!isLoadingPlans && shouldShowData && lessonPlans.length > 0 && (
-          <View
-            className={
-              Platform.OS === "web"
-                ? "flex-row flex-wrap w-full gap-4 mb-6"
-                : `flex-row flex-wrap justify-between w-full mb-6 ${isDesktop ? "gap-6" : "gap-3"}`
-            }
-          >
+          <View className="flex-row flex-wrap gap-4 mb-6">
             {[
               {
                 icon: BookOpen,
                 label: "Total Plans",
                 value: stats.total,
-                bg: `${COLORS.primary}1A`,
+                bg: `${COLORS.primary}15`,
                 iconColor: COLORS.primary,
               },
               {
                 icon: Target,
                 label: "Pending",
                 value: stats.pending,
-                bg: `${COLORS.warning}1A`,
+                bg: `${COLORS.warning}15`,
                 iconColor: COLORS.warning,
               },
               {
                 icon: CheckCircle2,
                 label: "Completed",
                 value: stats.completed,
-                bg: `${COLORS.success}1A`,
+                bg: `${COLORS.success}15`,
                 iconColor: COLORS.success,
               },
             ].map((stat, idx) => (
               <View
                 key={idx}
-                className="flex-1 min-w-[30%] flex-col items-center justify-center rounded-2xl border"
+                className="flex-1 min-w-[100px] items-center rounded-2xl p-4 border"
                 style={{
-                  ...(Platform.OS === "web" ? { flex: 1 } : {}),
-                  padding: isDesktop ? 24 : 16,
-                  backgroundColor: COLORS.bgWhite,
+                  backgroundColor: COLORS.surface,
                   borderColor: COLORS.border,
                   ...platformShadow,
                 }}
               >
                 <View
-                  className="rounded-full justify-center items-center mb-3"
+                  className="rounded-full justify-center items-center mb-2"
                   style={{
                     backgroundColor: stat.bg,
-                    width: isDesktop ? 56 : 44,
-                    height: isDesktop ? 56 : 44,
+                    width: 44,
+                    height: 44,
                   }}
                 >
-                  <stat.icon
-                    size={isDesktop ? 28 : 24}
-                    color={stat.iconColor}
-                  />
+                  <stat.icon size={24} color={stat.iconColor} />
                 </View>
                 <Text
                   className="font-black text-center mb-1"
-                  style={{
-                    color: COLORS.textPrimary,
-                    fontSize: isDesktop ? 28 : 22,
-                  }}
+                  style={{ color: COLORS.textPrimary, fontSize: 22 }}
                 >
                   {stat.value}
                 </Text>
                 <Text
                   className="font-bold text-center uppercase tracking-wider"
-                  style={{
-                    color: COLORS.textSecondary,
-                    fontSize: isDesktop ? 12 : 10,
-                  }}
+                  style={{ color: COLORS.textSecondary, fontSize: 10 }}
                 >
                   {stat.label}
                 </Text>
@@ -759,7 +831,7 @@ export default function LessonPlanScreen() {
             <View
               className="flex-row items-center rounded-xl px-4 py-1.5 mb-5 border"
               style={{
-                backgroundColor: COLORS.bgWhite,
+                backgroundColor: COLORS.surface,
                 borderColor: COLORS.border,
               }}
             >
@@ -774,14 +846,7 @@ export default function LessonPlanScreen() {
                 placeholderTextColor={COLORS.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                style={
-                  Platform.OS === "web"
-                    ? ({
-                        color: COLORS.textPrimary,
-                        outlineStyle: "none",
-                      } as any)
-                    : { color: COLORS.textPrimary }
-                }
+                style={{ color: COLORS.textPrimary }}
               />
               {searchQuery !== "" && (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -835,7 +900,7 @@ export default function LessonPlanScreen() {
                                 borderColor: COLORS.primary,
                               }
                             : {
-                                backgroundColor: COLORS.bgWhite,
+                                backgroundColor: COLORS.surface,
                                 borderColor: COLORS.border,
                               },
                         ]}
@@ -844,14 +909,14 @@ export default function LessonPlanScreen() {
                         {IconComponent && (
                           <IconComponent
                             size={14}
-                            color={isActive ? COLORS.white : iconColor}
+                            color={isActive ? COLORS.surface : iconColor}
                           />
                         )}
                         <Text
                           className="text-xs font-bold capitalize"
                           style={{
                             color: isActive
-                              ? COLORS.white
+                              ? COLORS.surface
                               : COLORS.textSecondary,
                           }}
                         >
@@ -924,7 +989,7 @@ export default function LessonPlanScreen() {
                   setIsModalVisible(true);
                 }}
               >
-                <Plus size={20} color={COLORS.white} />
+                <Plus size={20} color={COLORS.surface} />
                 <Text className="font-bold text-white">Create New Plan</Text>
               </TouchableOpacity>
             )}
@@ -943,7 +1008,7 @@ export default function LessonPlanScreen() {
                   key={plan.id}
                   className="p-5 rounded-2xl border"
                   style={{
-                    backgroundColor: COLORS.bgWhite,
+                    backgroundColor: COLORS.surface,
                     borderColor: COLORS.border,
                     ...platformShadow,
                   }}
@@ -951,7 +1016,7 @@ export default function LessonPlanScreen() {
                   <View className="flex-row justify-between items-center flex-wrap gap-2 mb-4">
                     <View
                       className="flex-row items-center gap-2 px-3 py-1.5 rounded-lg"
-                      style={{ backgroundColor: `${COLORS.primary}1A` }}
+                      style={{ backgroundColor: COLORS.primaryLight }}
                     >
                       <Users size={14} color={COLORS.primary} />
                       <Text
@@ -1003,7 +1068,7 @@ export default function LessonPlanScreen() {
                           onPress={() => handleMarkAsComplete(plan)}
                           className="flex-row items-center px-3 py-1.5 rounded-lg gap-1 border"
                           style={{
-                            backgroundColor: COLORS.white,
+                            backgroundColor: COLORS.surface,
                             borderColor: COLORS.success,
                           }}
                         >
@@ -1050,7 +1115,7 @@ export default function LessonPlanScreen() {
             className="rounded-2xl p-6 max-h-[90%]"
             style={{
               width: isDesktop ? 600 : "90%",
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
               ...platformShadow,
             }}
           >
@@ -1066,7 +1131,7 @@ export default function LessonPlanScreen() {
               </Text>
               <TouchableOpacity
                 onPress={resetForm}
-                className="p-2 bg-gray-100 rounded-full"
+                className="p-2 rounded-full"
                 style={{ backgroundColor: COLORS.lightGray }}
               >
                 <X size={20} color={COLORS.textPrimary} />
@@ -1083,21 +1148,12 @@ export default function LessonPlanScreen() {
                     Topic Name *
                   </Text>
                   <TextInput
-                    className="border-2 rounded-xl p-3.5 text-sm font-medium"
-                    style={
-                      Platform.OS === "web"
-                        ? ({
-                            borderColor: COLORS.lightGray,
-                            color: COLORS.textPrimary,
-                            backgroundColor: COLORS.white,
-                            outlineStyle: "none",
-                          } as any)
-                        : {
-                            borderColor: COLORS.lightGray,
-                            color: COLORS.textPrimary,
-                            backgroundColor: COLORS.white,
-                          }
-                    }
+                    className="border rounded-xl p-3.5 text-sm font-medium"
+                    style={{
+                      borderColor: COLORS.border,
+                      color: COLORS.textPrimary,
+                      backgroundColor: COLORS.surface,
+                    }}
                     placeholder="e.g., Quadratic Equations"
                     placeholderTextColor={COLORS.textTertiary}
                     value={formData.chapter}
@@ -1115,21 +1171,12 @@ export default function LessonPlanScreen() {
                     Planned Date
                   </Text>
                   <TextInput
-                    className="border-2 rounded-xl p-3.5 text-sm font-medium"
-                    style={
-                      Platform.OS === "web"
-                        ? ({
-                            borderColor: COLORS.lightGray,
-                            color: COLORS.textPrimary,
-                            backgroundColor: COLORS.white,
-                            outlineStyle: "none",
-                          } as any)
-                        : {
-                            borderColor: COLORS.lightGray,
-                            color: COLORS.textPrimary,
-                            backgroundColor: COLORS.white,
-                          }
-                    }
+                    className="border rounded-xl p-3.5 text-sm font-medium"
+                    style={{
+                      borderColor: COLORS.border,
+                      color: COLORS.textPrimary,
+                      backgroundColor: COLORS.surface,
+                    }}
                     placeholder="YYYY-MM-DD"
                     placeholderTextColor={COLORS.textTertiary}
                     value={formData.plannedDate}
@@ -1140,7 +1187,7 @@ export default function LessonPlanScreen() {
                 </View>
 
                 <TouchableOpacity
-                  className="flex-row items-center justify-center gap-2 py-4 rounded-xl mt-4 mb-2 shadow-sm"
+                  className="flex-row items-center justify-center gap-2 py-4 rounded-xl mt-4 mb-2"
                   style={{
                     backgroundColor: isSubmitting
                       ? COLORS.textSecondary
@@ -1150,10 +1197,10 @@ export default function LessonPlanScreen() {
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
-                    <ActivityIndicator size="small" color={COLORS.white} />
+                    <ActivityIndicator size="small" color={COLORS.surface} />
                   ) : (
                     <>
-                      <Save size={20} color={COLORS.white} />
+                      <Save size={20} color={COLORS.surface} />
                       <Text className="font-black text-white text-base tracking-wide">
                         {editingPlan ? "UPDATE PLAN" : "SAVE PLAN"}
                       </Text>

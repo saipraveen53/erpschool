@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -25,23 +26,27 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   warning: "#F59E0B",
   error: "#EF4444",
-  border: "#F0E4D8",
   white: "#FFFFFF",
-  primaryDark: "#C73E21",
+  lightGray: "#F3F4F6",
 };
 
 type FilterType = "all" | "urgent" | "event" | "meeting" | "academic";
@@ -80,7 +85,7 @@ export default function NoticesScreen() {
         }
         setTeacherId(currentTeacherId);
 
-        // Fetch teacher info (class and name)
+        // Fetch teacher info (class and name) from class-sections
         try {
           const classSectionsRes = await teacherClient.get(
             "/api/student/class-sections",
@@ -106,7 +111,6 @@ export default function NoticesScreen() {
         const res = await teacherClient.get("/api/student/notice/all");
         const data = res.data;
         if (Array.isArray(data)) {
-          // Map API fields to our expected structure
           const mapped = data.map((item: any) => ({
             id: item.id,
             title: item.noticeName,
@@ -120,7 +124,6 @@ export default function NoticesScreen() {
                 day: "numeric",
               },
             ),
-            // Determine category from noticeType or fallback
             category:
               item.noticeType === "GENERAL"
                 ? "General"
@@ -130,8 +133,8 @@ export default function NoticesScreen() {
                     ? "Event"
                     : "General",
             isUrgent: item.noticeType === "EMERGENCY",
-            audience: "All", // API doesn't provide, we can set a default
-            isPinned: false, // API doesn't support pinning yet
+            audience: "All",
+            isPinned: false,
           }));
           setNotices(mapped);
         } else {
@@ -189,13 +192,12 @@ export default function NoticesScreen() {
   const pinnedNotices = filteredNotices.filter((n) => n.isPinned);
   const regularNotices = filteredNotices.filter((n) => !n.isPinned);
 
-  // Animation refs (updated to support dynamic updates)
+  // Animation refs
   const pinnedAnims = useRef<Animated.Value[]>([]);
   const pinnedSlideAnims = useRef<Animated.Value[]>([]);
   const regularAnims = useRef<Animated.Value[]>([]);
   const regularSlideAnims = useRef<Animated.Value[]>([]);
 
-  // Sync lengths during render to prevent undefined crashes on Android
   if (pinnedAnims.current.length !== pinnedNotices.length) {
     pinnedAnims.current = pinnedNotices.map(() => new Animated.Value(0));
     pinnedSlideAnims.current = pinnedNotices.map(() => new Animated.Value(20));
@@ -210,7 +212,6 @@ export default function NoticesScreen() {
   useEffect(() => {
     if (pinnedNotices.length === 0 && regularNotices.length === 0) return;
 
-    // Animate pinned notices
     Animated.stagger(
       100,
       pinnedAnims.current.map((anim, idx) =>
@@ -230,7 +231,6 @@ export default function NoticesScreen() {
       ),
     ).start();
 
-    // Animate regular notices
     Animated.stagger(
       100,
       regularAnims.current.map((anim, idx) =>
@@ -252,67 +252,85 @@ export default function NoticesScreen() {
   }, [pinnedNotices, regularNotices]);
 
   const handleDeleteAll = async () => {
-    // Placeholder – you'd need an API endpoint for bulk delete
     alert("Delete all notices functionality not implemented in API yet.");
   };
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
-        >
-          Notices
-        </Text>
-        <TouchableOpacity
-          className="p-2 rounded-lg"
-          style={{ backgroundColor: COLORS.primaryLight }}
-          onPress={() => router.push("/teacher/communication/notices/create")}
-        >
-          <Plus size={20} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Notices
+          </Text>
+          <TouchableOpacity
+            className="p-2 rounded-full bg-white/10"
+            onPress={() => router.push("/teacher/communication/notices/create")}
+          >
+            <Plus size={20} color={COLORS.surface} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Teacher Info Bar */}
       <View
-        className="flex-row justify-between px-5 py-3 border-b"
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
         style={{
-          backgroundColor: COLORS.primaryLight,
-          borderBottomColor: COLORS.border,
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
         }}
       >
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark, flex: 1 }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
           numberOfLines={1}
         >
           Teacher: {teacherName} ({teacherId})
         </Text>
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
           numberOfLines={1}
         >
           Class: {assignedClass}
@@ -332,8 +350,12 @@ export default function NoticesScreen() {
       ) : errorMsg ? (
         <View className="flex-1 justify-center items-center px-6">
           <View
-            className="bg-red-50 rounded-2xl p-6 items-center border"
-            style={{ borderColor: COLORS.error, backgroundColor: "#FEF2F2" }}
+            className="rounded-2xl p-6 items-center"
+            style={{
+              backgroundColor: COLORS.primaryLight,
+              borderWidth: 1,
+              borderColor: COLORS.error,
+            }}
           >
             <Text
               className="text-lg font-bold mb-2"
@@ -411,13 +433,18 @@ export default function NoticesScreen() {
           <View
             className="flex-row rounded-2xl p-4 justify-around items-center border"
             style={{
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
               borderColor: COLORS.border,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 2,
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 6,
+                },
+                android: { elevation: 2 },
+                web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+              }),
             }}
           >
             <View className="items-center gap-1.5">
@@ -485,7 +512,7 @@ export default function NoticesScreen() {
           <View
             className="flex-row items-center px-4 rounded-xl border"
             style={{
-              backgroundColor: COLORS.bgWhite,
+              backgroundColor: COLORS.surface,
               borderColor: COLORS.border,
             }}
           >
@@ -537,7 +564,7 @@ export default function NoticesScreen() {
                         borderColor: COLORS.primary,
                       }
                     : {
-                        backgroundColor: COLORS.bgWhite,
+                        backgroundColor: COLORS.surface,
                         borderColor: COLORS.border,
                       },
                 ]}
@@ -548,7 +575,7 @@ export default function NoticesScreen() {
                   style={{
                     color:
                       activeFilter === "all"
-                        ? COLORS.white
+                        ? COLORS.surface
                         : COLORS.textSecondary,
                   }}
                 >
@@ -565,7 +592,7 @@ export default function NoticesScreen() {
                         borderColor: COLORS.primary,
                       }
                     : {
-                        backgroundColor: COLORS.bgWhite,
+                        backgroundColor: COLORS.surface,
                         borderColor: COLORS.border,
                       },
                 ]}
@@ -574,7 +601,7 @@ export default function NoticesScreen() {
                 <AlertCircle
                   size={14}
                   color={
-                    activeFilter === "urgent" ? COLORS.white : COLORS.error
+                    activeFilter === "urgent" ? COLORS.surface : COLORS.error
                   }
                 />
                 <Text
@@ -582,7 +609,7 @@ export default function NoticesScreen() {
                   style={{
                     color:
                       activeFilter === "urgent"
-                        ? COLORS.white
+                        ? COLORS.surface
                         : COLORS.textSecondary,
                   }}
                 >
@@ -601,7 +628,7 @@ export default function NoticesScreen() {
                           borderColor: COLORS.primary,
                         }
                       : {
-                          backgroundColor: COLORS.bgWhite,
+                          backgroundColor: COLORS.surface,
                           borderColor: COLORS.border,
                         },
                   ]}
@@ -612,7 +639,7 @@ export default function NoticesScreen() {
                     style={{
                       color:
                         activeFilter === filter
-                          ? COLORS.white
+                          ? COLORS.surface
                           : COLORS.textSecondary,
                     }}
                   >
@@ -646,18 +673,22 @@ export default function NoticesScreen() {
                     className="relative p-5 rounded-2xl border"
                     style={[
                       {
-                        backgroundColor: COLORS.bgWhite,
+                        backgroundColor: COLORS.surface,
                         borderColor: COLORS.border,
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 6,
-                        elevation: 2,
+                        ...Platform.select({
+                          ios: {
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 6,
+                          },
+                          android: { elevation: 2 },
+                          web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                        }),
                       },
                       notice.isUrgent && {
                         borderLeftWidth: 4,
                         borderLeftColor: COLORS.primary,
-                        backgroundColor: "rgba(227, 83, 54, 0.02)",
                       },
                     ]}
                     activeOpacity={1}
@@ -711,7 +742,7 @@ export default function NoticesScreen() {
                     <View className="flex-row justify-between items-center mt-1">
                       <View
                         className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-md"
-                        style={{ backgroundColor: "rgba(160, 82, 45, 0.1)" }}
+                        style={{ backgroundColor: COLORS.background }}
                       >
                         <Users size={12} color={COLORS.textSecondary} />
                         <Text
@@ -725,8 +756,8 @@ export default function NoticesScreen() {
                         className="px-2.5 py-1 rounded-md"
                         style={{
                           backgroundColor: notice.isUrgent
-                            ? "rgba(227, 83, 54, 0.1)"
-                            : "rgba(92, 46, 20, 0.1)",
+                            ? `${COLORS.primary}15`
+                            : `${COLORS.textPrimary}10`,
                         }}
                       >
                         <Text
@@ -770,18 +801,22 @@ export default function NoticesScreen() {
                     className="p-5 rounded-2xl border"
                     style={[
                       {
-                        backgroundColor: COLORS.bgWhite,
+                        backgroundColor: COLORS.surface,
                         borderColor: COLORS.border,
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 6,
-                        elevation: 2,
+                        ...Platform.select({
+                          ios: {
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 6,
+                          },
+                          android: { elevation: 2 },
+                          web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                        }),
                       },
                       notice.isUrgent && {
                         borderLeftWidth: 4,
                         borderLeftColor: COLORS.primary,
-                        backgroundColor: "rgba(227, 83, 54, 0.02)",
                       },
                     ]}
                     activeOpacity={1}
@@ -827,7 +862,7 @@ export default function NoticesScreen() {
                     <View className="flex-row justify-between items-center mt-1">
                       <View
                         className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-md"
-                        style={{ backgroundColor: "rgba(160, 82, 45, 0.1)" }}
+                        style={{ backgroundColor: COLORS.background }}
                       >
                         <Users size={12} color={COLORS.textSecondary} />
                         <Text
@@ -841,8 +876,8 @@ export default function NoticesScreen() {
                         className="px-2.5 py-1 rounded-md"
                         style={{
                           backgroundColor: notice.isUrgent
-                            ? "rgba(227, 83, 54, 0.1)"
-                            : "rgba(92, 46, 20, 0.1)",
+                            ? `${COLORS.primary}15`
+                            : `${COLORS.textPrimary}10`,
                         }}
                       >
                         <Text
@@ -866,7 +901,7 @@ export default function NoticesScreen() {
           {/* Empty state */}
           {filteredNotices.length === 0 && (
             <View className="items-center justify-center py-12 gap-3">
-              <Megaphone size={48} color={COLORS.textSecondary} />
+              <Megaphone size={48} color={COLORS.textTertiary} />
               <Text
                 className="text-lg font-bold mt-2"
                 style={{ color: COLORS.textPrimary }}

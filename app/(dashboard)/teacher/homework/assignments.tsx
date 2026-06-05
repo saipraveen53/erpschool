@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -24,21 +25,25 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  primaryLight: "#FEE2DB",
-  primaryDark: "#C73E21",
-  secondary: "#F4A460",
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   error: "#EF4444",
   warning: "#F59E0B",
-  border: "#F0E4D8",
   white: "#FFFFFF",
   lightGray: "#F8F9FA",
 };
@@ -104,7 +109,7 @@ export default function AssignmentDetailsScreen() {
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState("");
 
-  // Fetch teacher info (reuse same logic as other screens)
+  // Fetch teacher info (using class-sections to get teacher's own class)
   useEffect(() => {
     const fetchTeacherInfo = async () => {
       try {
@@ -168,71 +173,91 @@ export default function AssignmentDetailsScreen() {
     fetchSubmissions();
   }, [assignmentId, subjectId]);
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View className="flex-1" style={{ backgroundColor: COLORS.bgWarm }}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View
-        className="flex-row items-center justify-between px-5 pb-4 border-b"
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
-          paddingTop: 40,
-          backgroundColor: COLORS.bgWhite,
-          borderBottomColor: COLORS.border,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="p-2 -ml-2 rounded-xl"
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text
-          className="text-xl font-bold tracking-tight"
-          style={{ color: COLORS.textPrimary }}
-        >
-          Submissions
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Submissions
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
 
       {/* Teacher Info Bar */}
       <View
-        className="flex-row justify-between px-5 py-3 border-b"
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
         style={{
-          backgroundColor: COLORS.primaryLight,
-          borderBottomColor: COLORS.border,
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
         }}
       >
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark, flex: 1 }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
           numberOfLines={1}
         >
           Teacher: {teacherName} ({teacherId})
         </Text>
         <Text
-          className="text-xs font-bold"
-          style={{ color: COLORS.primaryDark }}
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
           numberOfLines={1}
         >
           Class: {assignedClass}
         </Text>
       </View>
 
-      {/* Assignment ID & Subject ID (optional info) */}
+      {/* Assignment ID & Subject ID info */}
       <View
-        className="px-5 py-3 bg-white border-b"
-        style={{ borderBottomColor: COLORS.border }}
+        className="mx-4 mt-4 px-4 py-3 rounded-xl"
+        style={{ backgroundColor: COLORS.primaryLight }}
       >
         <Text
           className="text-xs font-semibold"
-          style={{ color: COLORS.textSecondary }}
+          style={{ color: COLORS.primaryDark }}
         >
           Assignment ID: {assignmentId} • Subject ID: {subjectId}
         </Text>
@@ -251,8 +276,12 @@ export default function AssignmentDetailsScreen() {
       ) : errorMsg ? (
         <View className="flex-1 justify-center items-center px-6">
           <View
-            className="bg-red-50 rounded-2xl p-6 items-center border"
-            style={{ borderColor: COLORS.error, backgroundColor: "#FEF2F2" }}
+            className="rounded-2xl p-6 items-center"
+            style={{
+              backgroundColor: COLORS.primaryLight,
+              borderWidth: 1,
+              borderColor: COLORS.error,
+            }}
           >
             <Text
               className="text-lg font-bold mb-2"
@@ -328,15 +357,20 @@ export default function AssignmentDetailsScreen() {
             return (
               <View
                 key={idx}
-                className="bg-white rounded-2xl p-5 border"
+                className="rounded-2xl p-5 border"
                 style={{
-                  backgroundColor: COLORS.bgWhite,
+                  backgroundColor: COLORS.surface,
                   borderColor: COLORS.border,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 6,
-                  elevation: 2,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 6,
+                    },
+                    android: { elevation: 2 },
+                    web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                  }),
                 }}
               >
                 {/* Header: Student name and status */}
@@ -384,7 +418,7 @@ export default function AssignmentDetailsScreen() {
                 {sub.note ? (
                   <View
                     className="mb-3 p-3 rounded-xl"
-                    style={{ backgroundColor: COLORS.secondaryLight }}
+                    style={{ backgroundColor: COLORS.primaryLight }}
                   >
                     <Text
                       className="text-xs font-semibold mb-1"
@@ -466,7 +500,6 @@ export default function AssignmentDetailsScreen() {
                             className="flex-row items-center gap-1 p-2 rounded-lg border"
                             style={{ borderColor: COLORS.border }}
                             onPress={() => {
-                              // Optionally open link in browser or show a message
                               alert(`File: ${link}`);
                             }}
                           >
@@ -489,7 +522,7 @@ export default function AssignmentDetailsScreen() {
         </ScrollView>
       )}
 
-      {/* Image Preview Modal (same as in assignments list) */}
+      {/* Image Preview Modal */}
       <Modal
         visible={imageModalVisible}
         transparent={true}

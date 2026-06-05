@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -18,7 +18,6 @@ import {
   Animated,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -26,60 +25,27 @@ import {
 } from "react-native";
 import { teacherClient } from "../Axios/teacherClient";
 
+// Modern, vibrant color palette (matches dashboard)
 const COLORS = {
-  primary: "#E35336",
-  accent: "#F5F50C",
-  secondary: "#F4A460",
-  primaryLight: "#FEE2DB",
-  primaryDark: "#C73E21", // Added for the info bar text
-  secondaryLight: "#FEF0E8",
-  bgWarm: "#FFF8F2",
-  bgWhite: "#FFFFFF",
-  textPrimary: "#3B2A1F",
-  textSecondary: "#8B5E3C",
-  textTertiary: "#B8956E",
+  primary: "#F59E0B", // Amber
+  primaryDark: "#D97706",
+  primaryLight: "#FEF3C7",
+  secondary: "#10B981", // Emerald
+  secondaryDark: "#059669",
+  accent: "#3B82F6", // Blue
+  navy: "#0F172A",
+  navyLight: "#1E293B",
+  surface: "#FFFFFF",
+  background: "#F1F5F9", // Slate-100
+  textPrimary: "#0F172A",
+  textSecondary: "#475569",
+  textTertiary: "#94A3B8",
+  border: "#E2E8F0",
   success: "#10B981",
   warning: "#F59E0B",
-  border: "#F0E4D8",
   white: "#FFFFFF",
   lightGray: "#F3F4F6",
 };
-
-// Isolated Axios instance for the exams microservice
-const examClient = axios.create({
-  baseURL: "http://192.168.88.24:8083",
-  timeout: 10000,
-});
-
-// Request Interceptor: Automatically attach the token to ALL requests
-examClient.interceptors.request.use(
-  async (config) => {
-    let token = null;
-    try {
-      if (Platform.OS === "web") {
-        token =
-          localStorage.getItem("userToken") ||
-          localStorage.getItem("token") ||
-          localStorage.getItem("authToken");
-      } else {
-        token =
-          (await AsyncStorage.getItem("userToken")) ||
-          (await AsyncStorage.getItem("token")) ||
-          (await AsyncStorage.getItem("authToken"));
-      }
-    } catch (error) {
-      console.error("Error retrieving token:", error);
-    }
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
 
 export default function ExaminationIndexScreen() {
   const router = useRouter();
@@ -124,22 +90,20 @@ export default function ExaminationIndexScreen() {
     });
   };
 
-  // Fetch Exams & Teacher Data on Mount
+  // Fetch Exams & Teacher Data on Mount (using teacherClient)
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        let currentTeacherId = "TCH2026001"; // Fallback ID
+        let currentTeacherId = "";
         if (Platform.OS === "web") {
-          currentTeacherId =
-            localStorage.getItem("userUsername") || currentTeacherId;
+          currentTeacherId = localStorage.getItem("userUsername") || "";
         } else {
-          currentTeacherId =
-            (await AsyncStorage.getItem("userUsername")) || currentTeacherId;
+          currentTeacherId = (await AsyncStorage.getItem("userUsername")) || "";
         }
         setTeacherId(currentTeacherId);
 
-        // 1. Fetch Teacher Info (Name and Class)
+        // 1. Fetch Teacher Info (Name and Class) from class-sections
         try {
           const classSectionsRes = await teacherClient.get(
             "/api/student/class-sections",
@@ -163,14 +127,14 @@ export default function ExaminationIndexScreen() {
           setAssignedClass("Error");
         }
 
-        // 2. Fetch All Exams for the Teacher
-        const myExamsRes = await examClient.get(
+        // 2. Fetch All Exams for the Teacher using teacherClient
+        const myExamsRes = await teacherClient.get(
           `/api/teacher/${currentTeacherId}`,
         );
         const fetchedMyExams = myExamsRes.data || [];
         setMyExams(fetchedMyExams);
 
-        // Attempt to extract class section IDs from the fetched exams to query class exams
+        // Extract class section IDs from the fetched exams to query class exams
         let classSectionIds = new Set<string>();
         fetchedMyExams.forEach((exam: any) => {
           if (
@@ -187,7 +151,7 @@ export default function ExaminationIndexScreen() {
 
         // 3. Fetch Class specific exams
         if (classIdsQuery) {
-          const classExamsRes = await examClient.get(
+          const classExamsRes = await teacherClient.get(
             `/api/teacher/${currentTeacherId}?classSectionIds=${classIdsQuery}`,
           );
           setClassExams(classExamsRes.data || []);
@@ -305,120 +269,252 @@ export default function ExaminationIndexScreen() {
     }
   }, [activeTab, loading, myExams.length, classExams.length]);
 
+  // Header padding values: reduced for web
+  const headerPaddingTop =
+    Platform.OS === "web" ? 16 : Platform.OS === "android" ? 48 : 40;
+  const headerPaddingBottom = Platform.OS === "web" ? 16 : 20;
+
   return (
-    <View style={styles.container}>
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <StatusBar
         style="dark"
-        backgroundColor={COLORS.bgWhite}
+        backgroundColor={COLORS.navy}
         translucent={false}
       />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerButton}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Examinations</Text>
-        <TouchableOpacity style={styles.headerButton}>
-          <Book size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+      {/* Modern Gradient Header */}
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.navyLight]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: headerPaddingTop,
+          paddingBottom: headerPaddingBottom,
+          paddingHorizontal: 24,
+        }}
+      >
+        <View className="flex-row justify-between items-center">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="p-2 -ml-2 rounded-full bg-white/10"
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={24} color={COLORS.surface} />
+          </TouchableOpacity>
+          <Text
+            className="text-xl font-bold tracking-tight"
+            style={{ color: COLORS.surface }}
+          >
+            Examinations
+          </Text>
+          <TouchableOpacity className="p-2 rounded-full bg-white/10">
+            <Book size={20} color={COLORS.surface} />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
       {/* Teacher Info Bar */}
-      <View style={styles.teacherInfoBar}>
-        <Text style={styles.teacherInfoText} numberOfLines={1}>
+      <View
+        className="flex-row justify-between px-5 py-3 mx-4 mt-4 rounded-2xl"
+        style={{
+          backgroundColor: COLORS.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+            web: { boxShadow: "0px 2px 8px rgba(0,0,0,0.05)" },
+          }),
+        }}
+      >
+        <Text
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary, flex: 1 }}
+          numberOfLines={1}
+        >
           Teacher: {teacherName} ({teacherId || "Loading..."})
         </Text>
-        <Text style={styles.teacherClassText} numberOfLines={1}>
+        <Text
+          className="text-xs font-medium"
+          style={{ color: COLORS.textSecondary }}
+          numberOfLines={1}
+        >
           Class: {assignedClass}
         </Text>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { maxWidth: isDesktop ? 1000 : "100%" },
-        ]}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingVertical: 24,
+          maxWidth: isDesktop ? 1000 : "100%",
+          alignSelf: "center",
+          width: "100%",
+          gap: 24,
+        }}
       >
         {/* Stats Grid */}
-        <View style={styles.statsContainer}>
+        <View className="flex-row justify-between gap-3">
           {[
             {
               icon: GraduationCap,
               label: "Assigned Exams",
               value: myExams.length.toString(),
-              bg: COLORS.primaryLight,
+              bg: `${COLORS.primary}15`,
               iconColor: COLORS.primary,
             },
             {
               icon: Calendar,
               label: "Class Exams",
               value: classExams.length.toString(),
-              bg: `${COLORS.secondary}1A`,
+              bg: `${COLORS.secondary}15`,
               iconColor: COLORS.secondary,
             },
             {
               icon: TrendingUp,
               label: "Avg. Score",
               value: "82%",
-              bg: `${COLORS.success}1A`,
+              bg: `${COLORS.success}15`,
               iconColor: COLORS.success,
             },
           ].map((stat, idx) => (
             <Animated.View
               key={idx}
-              style={[
-                styles.statCard,
-                {
-                  opacity: statAnims[idx],
-                  transform: [{ translateY: statSlideAnims[idx] }],
-                },
-              ]}
+              style={{
+                flex: 1,
+                opacity: statAnims[idx],
+                transform: [{ translateY: statSlideAnims[idx] }],
+              }}
             >
               <View
-                style={[styles.statIconWrapper, { backgroundColor: stat.bg }]}
+                className="items-center p-4 rounded-2xl border"
+                style={{
+                  backgroundColor: COLORS.surface,
+                  borderColor: COLORS.border,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 6,
+                    },
+                    android: { elevation: 2 },
+                    web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                  }),
+                }}
               >
-                <stat.icon size={22} color={stat.iconColor} />
+                <View
+                  className="w-11 h-11 rounded-full justify-center items-center mb-3"
+                  style={{ backgroundColor: stat.bg }}
+                >
+                  <stat.icon size={22} color={stat.iconColor} />
+                </View>
+                <Text
+                  className="text-2xl font-black text-center mb-1"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  {stat.value}
+                </Text>
+                <Text
+                  className="text-xs font-semibold text-center"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  {stat.label}
+                </Text>
               </View>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
             </Animated.View>
           ))}
         </View>
 
         {/* Current Examination Banner */}
-        <View style={styles.bannerContainer}>
-          <View style={styles.bannerHeader}>
-            <View style={styles.bannerIconWrapper}>
-              <GraduationCap size={28} color={COLORS.white} />
+        {/* <View
+          className="p-6 rounded-2xl overflow-hidden"
+          style={{
+            backgroundColor: COLORS.primary,
+            ...Platform.select({
+              ios: {
+                shadowColor: COLORS.primary,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 12,
+              },
+              android: { elevation: 8 },
+              web: { boxShadow: `0px 8px 12px ${COLORS.primary}40` },
+            }),
+          }}
+        >
+          <View className="flex-row justify-between items-center mb-4">
+            <View
+              className="w-12 h-12 rounded-full justify-center items-center"
+              style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+            >
+              <GraduationCap size={28} color={COLORS.surface} />
             </View>
-            <View style={styles.bannerBadge}>
-              <Text style={styles.bannerBadgeText}>Active Term</Text>
+            <View
+              className="px-3 py-1.5 rounded-full"
+              style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+            >
+              <Text
+                className="text-xs font-bold tracking-wide"
+                style={{ color: COLORS.surface }}
+              >
+                Active Term
+              </Text>
             </View>
           </View>
-          <Text style={styles.bannerTitle}>Term Examinations</Text>
-          <Text style={styles.bannerSubtitle}>
+          <Text
+            className="text-xl font-black mb-2"
+            style={{ color: COLORS.surface }}
+          >
+            Term Examinations
+          </Text>
+          <Text
+            className="text-sm font-medium mb-5"
+            style={{ color: "rgba(255,255,255,0.8)" }}
+          >
             Manage your assigned subjects & enter marks
           </Text>
           <View>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressText}>Term Progress</Text>
-              <Text style={styles.progressValue}>65%</Text>
+            <View className="flex-row justify-between mb-2">
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: "rgba(255,255,255,0.8)" }}
+              >
+                Term Progress
+              </Text>
+              <Text
+                className="text-xs font-bold"
+                style={{ color: COLORS.surface }}
+              >
+                65%
+              </Text>
             </View>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: "65%" }]} />
+            <View
+              className="h-1.5 rounded-full overflow-hidden"
+              style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
+            >
+              <View
+                className="h-full rounded-full"
+                style={{ width: "65%", backgroundColor: COLORS.secondary }}
+              />
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionsContainer}>
+        <Text
+          className="text-lg font-bold"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Quick Actions
+        </Text>
+        <View className="flex-row gap-4">
           {[
             {
               title: "Enter Marks",
@@ -437,64 +533,99 @@ export default function ExaminationIndexScreen() {
           ].map((action, idx) => (
             <Animated.View
               key={idx}
-              style={[
-                styles.actionCardWrapper,
-                {
-                  opacity: actionAnims[idx],
-                  transform: [{ translateY: actionSlideAnims[idx] }],
-                },
-              ]}
+              style={{
+                flex: 1,
+                opacity: actionAnims[idx],
+                transform: [{ translateY: actionSlideAnims[idx] }],
+              }}
             >
               <TouchableOpacity
-                style={styles.actionCard}
+                className="items-center p-5 rounded-2xl border"
+                style={{
+                  backgroundColor: COLORS.surface,
+                  borderColor: COLORS.border,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 6,
+                    },
+                    android: { elevation: 2 },
+                    web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                  }),
+                }}
                 activeOpacity={0.8}
                 onPress={() => router.push(action.route as any)}
               >
                 <View
-                  style={[
-                    styles.actionIconWrapper,
-                    { backgroundColor: action.color },
-                  ]}
+                  className="w-14 h-14 rounded-full justify-center items-center mb-4"
+                  style={{ backgroundColor: action.color }}
                 >
-                  <action.icon size={26} color={COLORS.white} />
+                  <action.icon size={26} color={COLORS.surface} />
                 </View>
-                <Text style={styles.actionTitle}>{action.title}</Text>
-                <Text style={styles.actionDesc}>{action.desc}</Text>
+                <Text
+                  className="text-base font-bold text-center mb-2"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  {action.title}
+                </Text>
+                <Text
+                  className="text-xs text-center"
+                  style={{ color: COLORS.textSecondary }}
+                >
+                  {action.desc}
+                </Text>
               </TouchableOpacity>
             </Animated.View>
           ))}
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabContainer}>
+        <View
+          className="flex-row p-1 rounded-xl mb-4"
+          style={{
+            backgroundColor: COLORS.surface,
+            borderWidth: 1,
+            borderColor: COLORS.border,
+          }}
+        >
           <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "my_exams" && styles.tabButtonActive,
-            ]}
+            className="flex-1 py-2.5 rounded-lg items-center"
+            style={{
+              backgroundColor:
+                activeTab === "my_exams" ? COLORS.primary : "transparent",
+            }}
             onPress={() => setActiveTab("my_exams")}
           >
             <Text
-              style={[
-                styles.tabText,
-                activeTab === "my_exams" && styles.tabTextActive,
-              ]}
+              className="text-sm font-semibold"
+              style={{
+                color:
+                  activeTab === "my_exams"
+                    ? COLORS.surface
+                    : COLORS.textSecondary,
+              }}
             >
               My Exams
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "class_exams" && styles.tabButtonActive,
-            ]}
+            className="flex-1 py-2.5 rounded-lg items-center"
+            style={{
+              backgroundColor:
+                activeTab === "class_exams" ? COLORS.primary : "transparent",
+            }}
             onPress={() => setActiveTab("class_exams")}
           >
             <Text
-              style={[
-                styles.tabText,
-                activeTab === "class_exams" && styles.tabTextActive,
-              ]}
+              className="text-sm font-semibold"
+              style={{
+                color:
+                  activeTab === "class_exams"
+                    ? COLORS.surface
+                    : COLORS.textSecondary,
+              }}
             >
               Class Exams
             </Text>
@@ -503,17 +634,20 @@ export default function ExaminationIndexScreen() {
 
         {/* Exam Lists */}
         {loading ? (
-          <View style={{ paddingVertical: 40, alignItems: "center" }}>
+          <View className="py-10 items-center">
             <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={{ marginTop: 12, color: COLORS.textSecondary }}>
+            <Text
+              className="mt-3 text-sm"
+              style={{ color: COLORS.textSecondary }}
+            >
               Loading exams...
             </Text>
           </View>
         ) : (
-          <View style={styles.listContainer}>
+          <View className="gap-4">
             {activeTab === "my_exams" &&
               (myExams.length === 0 ? (
-                <View style={{ padding: 20, alignItems: "center" }}>
+                <View className="py-8 items-center">
                   <Text style={{ color: COLORS.textSecondary }}>
                     No assigned exams found.
                   </Text>
@@ -530,59 +664,89 @@ export default function ExaminationIndexScreen() {
                     }}
                   >
                     <TouchableOpacity
-                      style={styles.examCard}
+                      className="p-5 rounded-2xl border"
+                      style={{
+                        backgroundColor: COLORS.surface,
+                        borderColor: COLORS.border,
+                        ...Platform.select({
+                          ios: {
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 6,
+                          },
+                          android: { elevation: 2 },
+                          web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                        }),
+                      }}
                       activeOpacity={0.7}
                       onPress={() =>
                         router.push("/teacher/examination/marks-entry")
                       }
                     >
-                      <View style={styles.examCardHeader}>
-                        <View style={styles.examCardTitleSection}>
-                          <Text style={styles.examCardTitle}>
+                      <View className="flex-row justify-between items-start mb-4">
+                        <View className="flex-1 pr-3">
+                          <Text
+                            className="text-lg font-bold mb-2"
+                            style={{ color: COLORS.textPrimary }}
+                          >
                             {exam.examName}
                           </Text>
-                          <View style={styles.examCardSubtitleRow}>
+                          <View className="flex-row items-center gap-1.5">
                             <Book size={14} color={COLORS.textSecondary} />
-                            <Text style={styles.examCardSubtitleText}>
+                            <Text
+                              className="text-xs"
+                              style={{ color: COLORS.textSecondary }}
+                            >
                               Academic Year: {exam.academicYear}
                             </Text>
                           </View>
                         </View>
                         <View
-                          style={[
-                            styles.statusBadge,
-                            { backgroundColor: `${COLORS.secondary}1A` },
-                          ]}
+                          className="flex-row items-center px-2 py-1 rounded-md gap-1"
+                          style={{ backgroundColor: `${COLORS.secondary}15` }}
                         >
                           <Award size={12} color={COLORS.secondary} />
                           <Text
-                            style={[
-                              styles.statusBadgeText,
-                              { color: COLORS.secondary },
-                            ]}
+                            className="text-xs font-bold"
+                            style={{ color: COLORS.secondary }}
                           >
                             {exam.status || "Assigned"}
                           </Text>
                         </View>
                       </View>
 
-                      <View style={styles.examDetailsRow}>
-                        <View style={styles.examDetailItem}>
+                      <View className="flex-row flex-wrap gap-4 mb-4">
+                        <View className="flex-row items-center gap-1.5">
                           <Calendar size={16} color={COLORS.textSecondary} />
-                          <Text style={styles.examDetailText}>
+                          <Text
+                            className="text-xs"
+                            style={{ color: COLORS.textSecondary }}
+                          >
                             Start: {formatDate(exam.startDate)}
                           </Text>
                         </View>
-                        <View style={styles.examDetailItem}>
+                        <View className="flex-row items-center gap-1.5">
                           <Clock size={16} color={COLORS.textSecondary} />
-                          <Text style={styles.examDetailText}>
+                          <Text
+                            className="text-xs"
+                            style={{ color: COLORS.textSecondary }}
+                          >
                             End: {formatDate(exam.endDate)}
                           </Text>
                         </View>
                       </View>
 
-                      <View style={styles.actionButton}>
-                        <Text style={styles.actionButtonText}>Enter Marks</Text>
+                      <View
+                        className="py-2.5 rounded-lg items-center"
+                        style={{ backgroundColor: COLORS.primaryLight }}
+                      >
+                        <Text
+                          className="text-sm font-semibold"
+                          style={{ color: COLORS.primary }}
+                        >
+                          Enter Marks
+                        </Text>
                       </View>
                     </TouchableOpacity>
                   </Animated.View>
@@ -591,7 +755,7 @@ export default function ExaminationIndexScreen() {
 
             {activeTab === "class_exams" &&
               (classExams.length === 0 ? (
-                <View style={{ padding: 20, alignItems: "center" }}>
+                <View className="py-8 items-center">
                   <Text style={{ color: COLORS.textSecondary }}>
                     No class exams scheduled.
                   </Text>
@@ -607,32 +771,52 @@ export default function ExaminationIndexScreen() {
                       ],
                     }}
                   >
-                    <View style={styles.examCard}>
-                      <View style={styles.examCardHeader}>
-                        <View style={styles.examCardTitleSection}>
-                          <Text style={styles.examCardTitle}>
+                    <View
+                      className="p-5 rounded-2xl border"
+                      style={{
+                        backgroundColor: COLORS.surface,
+                        borderColor: COLORS.border,
+                        ...Platform.select({
+                          ios: {
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.05,
+                            shadowRadius: 6,
+                          },
+                          android: { elevation: 2 },
+                          web: { boxShadow: "0px 2px 6px rgba(0,0,0,0.05)" },
+                        }),
+                      }}
+                    >
+                      <View className="flex-row justify-between items-start mb-4">
+                        <View className="flex-1 pr-3">
+                          <Text
+                            className="text-lg font-bold mb-2"
+                            style={{ color: COLORS.textPrimary }}
+                          >
                             {exam.examName}
                           </Text>
-                          <View style={styles.examCardSubtitleRow}>
+                          <View className="flex-row items-center gap-1.5">
                             <GraduationCap
                               size={14}
                               color={COLORS.textSecondary}
                             />
-                            <Text style={styles.examCardSubtitleText}>
+                            <Text
+                              className="text-xs"
+                              style={{ color: COLORS.textSecondary }}
+                            >
                               Academic Year: {exam.academicYear}
                             </Text>
                           </View>
                         </View>
                         <View
-                          style={[
-                            styles.statusBadge,
-                            {
-                              backgroundColor:
-                                exam.status === "COMPLETED"
-                                  ? `${COLORS.success}1A`
-                                  : `${COLORS.warning}1A`,
-                            },
-                          ]}
+                          className="flex-row items-center px-2 py-1 rounded-md gap-1"
+                          style={{
+                            backgroundColor:
+                              exam.status === "COMPLETED"
+                                ? `${COLORS.success}15`
+                                : `${COLORS.warning}15`,
+                          }}
                         >
                           <Award
                             size={12}
@@ -643,31 +827,35 @@ export default function ExaminationIndexScreen() {
                             }
                           />
                           <Text
-                            style={[
-                              styles.statusBadgeText,
-                              {
-                                color:
-                                  exam.status === "COMPLETED"
-                                    ? COLORS.success
-                                    : COLORS.warning,
-                              },
-                            ]}
+                            className="text-xs font-bold"
+                            style={{
+                              color:
+                                exam.status === "COMPLETED"
+                                  ? COLORS.success
+                                  : COLORS.warning,
+                            }}
                           >
                             {exam.status || "Upcoming"}
                           </Text>
                         </View>
                       </View>
 
-                      <View style={styles.examDetailsRow}>
-                        <View style={styles.examDetailItem}>
+                      <View className="flex-row flex-wrap gap-4">
+                        <View className="flex-row items-center gap-1.5">
                           <Calendar size={16} color={COLORS.textSecondary} />
-                          <Text style={styles.examDetailText}>
+                          <Text
+                            className="text-xs"
+                            style={{ color: COLORS.textSecondary }}
+                          >
                             Start: {formatDate(exam.startDate)}
                           </Text>
                         </View>
-                        <View style={styles.examDetailItem}>
+                        <View className="flex-row items-center gap-1.5">
                           <Clock size={16} color={COLORS.textSecondary} />
-                          <Text style={styles.examDetailText}>
+                          <Text
+                            className="text-xs"
+                            style={{ color: COLORS.textSecondary }}
+                          >
                             End: {formatDate(exam.endDate)}
                           </Text>
                         </View>
@@ -682,356 +870,3 @@ export default function ExaminationIndexScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bgWarm,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    paddingTop: Platform.OS === "android" ? 50 : 40,
-    backgroundColor: COLORS.bgWhite,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  headerButton: {
-    padding: 8,
-    borderRadius: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-    letterSpacing: -0.5,
-  },
-  teacherInfoBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: COLORS.primaryLight,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  teacherInfoText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: COLORS.primaryDark,
-    flex: 1,
-  },
-  teacherClassText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: COLORS.primaryDark,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    alignSelf: "center",
-    width: "100%",
-    gap: 24,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: "0px 2px 6px rgba(0,0,0,0.05)",
-      },
-    }),
-  },
-  statIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: COLORS.textPrimary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
-    textAlign: "center",
-  },
-  bannerContainer: {
-    padding: 24,
-    borderRadius: 20,
-    backgroundColor: COLORS.primary,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-        shadowColor: COLORS.primary,
-      },
-      web: {
-        boxShadow: `0px 8px 12px ${COLORS.primary}40`,
-      },
-    }),
-  },
-  bannerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  bannerIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.2)",
-  },
-  bannerBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.2)",
-  },
-  bannerBadgeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  bannerTitle: {
-    color: COLORS.white,
-    fontSize: 20,
-    fontWeight: "900",
-    marginBottom: 8,
-  },
-  bannerSubtitle: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 20,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  progressText: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  progressValue: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  progressBarBackground: {
-    height: 6,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: COLORS.secondary,
-    borderRadius: 3,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-  },
-  actionsContainer: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  actionCardWrapper: {
-    flex: 1,
-  },
-  actionCard: {
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: "0px 2px 6px rgba(0,0,0,0.05)",
-      },
-    }),
-  },
-  actionIconWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  actionDesc: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    lineHeight: 16,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    backgroundColor: COLORS.bgWhite,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  tabButtonActive: {
-    backgroundColor: COLORS.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textSecondary,
-  },
-  tabTextActive: {
-    color: COLORS.white,
-  },
-  listContainer: {
-    gap: 16,
-  },
-  examCard: {
-    backgroundColor: COLORS.bgWhite,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-      web: {
-        boxShadow: "0px 2px 6px rgba(0,0,0,0.05)",
-      },
-    }),
-  },
-  examCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  examCardTitleSection: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  examCardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  examCardSubtitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  examCardSubtitleText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  examDetailsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    marginBottom: 16,
-  },
-  examDetailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  examDetailText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  actionButton: {
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    backgroundColor: COLORS.primaryLight,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.primary,
-  },
-});
