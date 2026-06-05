@@ -39,6 +39,7 @@ interface AuthContextType {
   authenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  clearHistoryAndRedirect: (path: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,6 +91,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadStoredData();
   }, []);
 
+  // Clear browser history and redirect (for web)
+  const clearHistoryAndRedirect = (path: string) => {
+    if (Platform.OS === 'web') {
+      // Use window.location.replace to completely replace history
+      window.location.replace(path);
+    } else {
+      router.replace(path as any);
+    }
+  };
+
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
@@ -123,8 +134,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setAuthenticated(true);
       console.log("✅ Login successful:", role);
       
-      // Use REPLACE instead of PUSH to prevent back button to login
-      router.replace("/");
+      // Clear history and redirect to index
+      clearHistoryAndRedirect("/");
     } catch (error: any) {
       console.error("Login error:", error);
       setAuthenticated(false);
@@ -162,8 +173,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     setAuthenticated(false);
     
+    // Clear history and redirect to home
     if (Platform.OS === 'web') {
-      // Use window.location.replace to clear history stack
       window.location.replace('/home');
     } else {
       router.replace('/(public)/home');
@@ -180,6 +191,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         authenticated,
         login,
         logout,
+        clearHistoryAndRedirect,
       }}
     >
       {children}

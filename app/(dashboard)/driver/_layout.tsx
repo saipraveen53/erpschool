@@ -1,21 +1,27 @@
+// app/(dashboard)/driver/_layout.tsx
 import { Stack } from "expo-router";
+import { View } from "react-native";
+import { useBlockBrowserNavigation } from "../../hooks/useBlockBrowserNavigation";
 
 export default function DriverLayout() {
+  // Add this hook to block browser navigation
+  useBlockBrowserNavigation();
+
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="routes/assigned" />
-      <Stack.Screen name="students/pickup-list" />
-      <Stack.Screen name="attendance/confirmation" />
-      <Stack.Screen name="tracking/gps" />
-      <Stack.Screen name="vehicle/reporting" />
-      <Stack.Screen name="alerts/emergency" />
-      <Stack.Screen name="inspection" />
-      <Stack.Screen name="fuel-tracking" />
-      <Stack.Screen name="report-incident" />
-      <Stack.Screen name="profile" />
-      {/* Add common notifications screen accessible from driver */}
-      <Stack.Screen name="common/notifications" options={{ presentation: "modal" }} />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="attendance" />
+        <Stack.Screen name="routes" />
+        <Stack.Screen name="students" />
+        <Stack.Screen name="tracking" />
+        <Stack.Screen name="vehicle" />
+        <Stack.Screen name="emergency-sos" />
+        <Stack.Screen name="fuel-tracking" />
+        <Stack.Screen name="inspection" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="report-incident" />
+      </Stack>
+    </View>
   );
 }

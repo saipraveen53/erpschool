@@ -7,7 +7,7 @@ import { useAuth } from "./contexts/AuthContext";
 
 export default function Index() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, clearHistoryAndRedirect } = useAuth();
   const rootNavigationState = useRootNavigationState();
   const [hasNavigated, setHasNavigated] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -47,49 +47,54 @@ export default function Index() {
       if (role) {
         console.log("🔍 Navigating to role:", role);
         
-        // On web, use replace to prevent back button issues
-        const navigationMethod = Platform.OS === 'web' ? router.replace : router.replace;
-        
+        let dashboardPath = "";
         switch (role) {
           case "SUPER_ADMIN":
-            navigationMethod("/(dashboard)/super-admin");
+            dashboardPath = "/(dashboard)/super-admin";
             break;
           case "ADMIN":
-            navigationMethod("/(dashboard)/admin");
+            dashboardPath = "/(dashboard)/admin";
             break;
           case "PRINCIPAL":
-            navigationMethod("/(dashboard)/principal");
+            dashboardPath = "/(dashboard)/principal";
             break;
           case "VICE_PRINCIPAL":
-            navigationMethod("/(dashboard)/vice-principal");
+            dashboardPath = "/(dashboard)/vice-principal";
             break;
           case "TEACHER":
-            navigationMethod("/(dashboard)/teacher");
+            dashboardPath = "/(dashboard)/teacher";
             break;
           case "STUDENT":
-            navigationMethod("/(dashboard)/student");
+            dashboardPath = "/(dashboard)/student";
             break;
           case "PARENT":
-            navigationMethod("/(dashboard)/parent");
+            dashboardPath = "/(dashboard)/parent";
             break;
           case "DRIVER":
-            navigationMethod("/(dashboard)/driver");
+            dashboardPath = "/(dashboard)/driver";
             break;
           case "HOUSEKEEPING":
-            navigationMethod("/(dashboard)/housekeeping");
+            dashboardPath = "/(dashboard)/housekeeping";
             break;
           case "RECEPTIONIST":
-            navigationMethod("/(dashboard)/receptionist");
+            dashboardPath = "/(dashboard)/receptionist";
             break;
           case "LIBRARIAN":
-            navigationMethod("/(dashboard)/librarian");
+            dashboardPath = "/(dashboard)/librarian";
             break;
           default:
-            navigationMethod("/(dashboard)/admin");
+            dashboardPath = "/(dashboard)/admin";
         }
+        
+        // Use clearHistoryAndRedirect to completely replace history
+        clearHistoryAndRedirect(dashboardPath);
       } else {
         // No valid role → go to public home
-        router.replace("/(public)/home");
+        if (Platform.OS === 'web') {
+          window.location.replace('/home');
+        } else {
+          router.replace("/(public)/home");
+        }
       }
       setHasNavigated(true);
     }, 100);

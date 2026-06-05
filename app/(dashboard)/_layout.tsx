@@ -10,22 +10,87 @@ export default function DashboardLayout() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
 
-  // Handle web browser back button prevention
+  // Handle web browser back button prevention - COMPLETE BLOCK
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
+    // Function to check and fix navigation
+    const checkAndFixNavigation = async () => {
+      const authenticated = await AsyncStorage.getItem("authenticated");
+      const role = await AsyncStorage.getItem("userRole");
+      const currentPath = window.location.pathname;
+      
+      // If authenticated and on public/home, redirect to dashboard
+      if (authenticated === "true" && currentPath === '/home') {
+        const roleMap: Record<string, string> = {
+          SUPER_ADMIN: "/super-admin",
+          ADMIN: "/admin",
+          PRINCIPAL: "/principal",
+          VICE_PRINCIPAL: "/vice-principal",
+          TEACHER: "/teacher",
+          STUDENT: "/student",
+          PARENT: "/parent",
+          DRIVER: "/driver",
+          HOUSEKEEPING: "/housekeeping",
+          RECEPTIONIST: "/receptionist",
+          LIBRARIAN: "/librarian",
+        };
+        const dashboardPath = roleMap[role?.toUpperCase() || ""] || "/admin";
+        window.location.replace(dashboardPath);
+        return;
+      }
+      
+      // If not authenticated and on dashboard, redirect to login
+      const isDashboardPath = currentPath.includes('/super-admin') || 
+                              currentPath.includes('/admin') || 
+                              currentPath.includes('/principal') ||
+                              currentPath.includes('/vice-principal') ||
+                              currentPath.includes('/teacher') ||
+                              currentPath.includes('/student') ||
+                              currentPath.includes('/parent') ||
+                              currentPath.includes('/driver') ||
+                              currentPath.includes('/housekeeping') ||
+                              currentPath.includes('/receptionist') ||
+                              currentPath.includes('/librarian');
+      
+      if (authenticated !== "true" && isDashboardPath) {
+        window.location.replace('/login');
+      }
+    };
+
+    // Handle popstate (browser back button)
     const handlePopState = async (event: PopStateEvent) => {
       const authenticated = await AsyncStorage.getItem("authenticated");
       const role = await AsyncStorage.getItem("userRole");
       const currentPath = window.location.pathname;
       
-      // Check if trying to go back to auth pages while authenticated
+      // Block navigation to home when authenticated
+      if (authenticated === "true" && currentPath === '/home') {
+        const roleMap: Record<string, string> = {
+          SUPER_ADMIN: "/super-admin",
+          ADMIN: "/admin",
+          PRINCIPAL: "/principal",
+          VICE_PRINCIPAL: "/vice-principal",
+          TEACHER: "/teacher",
+          STUDENT: "/student",
+          PARENT: "/parent",
+          DRIVER: "/driver",
+          HOUSEKEEPING: "/housekeeping",
+          RECEPTIONIST: "/receptionist",
+          LIBRARIAN: "/librarian",
+        };
+        const dashboardPath = roleMap[role?.toUpperCase() || ""] || "/admin";
+        window.history.pushState(null, '', dashboardPath);
+        router.replace(dashboardPath);
+        return;
+      }
+      
+      // Block navigation to login/auth pages when authenticated
       const isAuthPath = currentPath.includes('/login') || 
                         currentPath.includes('/register') || 
                         currentPath.includes('/forgot-password');
       
       if (authenticated === "true" && isAuthPath) {
-        // Prevent going back to login by replacing the history state
         const roleMap: Record<string, string> = {
           SUPER_ADMIN: "/super-admin",
           ADMIN: "/admin",
@@ -45,6 +110,10 @@ export default function DashboardLayout() {
       }
     };
 
+    // Initial check
+    checkAndFixNavigation();
+    
+    // Add event listeners
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [router]);
@@ -52,7 +121,11 @@ export default function DashboardLayout() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !pathname.includes('/onboarding')) {
-      router.replace('/(auth)/login');
+      if (Platform.OS === 'web') {
+        window.location.replace('/login');
+      } else {
+        router.replace('/(auth)/login');
+      }
     }
   }, [isLoading, isAuthenticated, pathname, router]);
 
@@ -93,10 +166,15 @@ export default function DashboardLayout() {
 
   // If role is not recognized, redirect to login
   if (!tabName) {
-    // Redirect to login after a short delay
-    setTimeout(() => {
-      router.replace('/(auth)/login');
-    }, 100);
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        window.location.replace('/login');
+      }, 100);
+    } else {
+      setTimeout(() => {
+        router.replace('/(auth)/login');
+      }, 100);
+    }
     
     return (
       <View style={styles.loaderContainer}>
@@ -117,6 +195,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F5F5DC", // Match your theme background
+    backgroundColor: "#F5F5DC",
   },
 });
