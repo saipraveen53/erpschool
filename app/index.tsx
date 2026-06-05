@@ -1,12 +1,12 @@
+// app/index.tsx
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRootNavigationState, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { useAuth } from "./contexts/AuthContext";
 
 export default function Index() {
   const router = useRouter();
-
   const { isAuthenticated, isLoading, user } = useAuth();
   const rootNavigationState = useRootNavigationState();
   const [hasNavigated, setHasNavigated] = useState(false);
@@ -46,42 +46,46 @@ export default function Index() {
 
       if (role) {
         console.log("🔍 Navigating to role:", role);
+        
+        // On web, use replace to prevent back button issues
+        const navigationMethod = Platform.OS === 'web' ? router.replace : router.replace;
+        
         switch (role) {
           case "SUPER_ADMIN":
-            router.replace("/(dashboard)/super-admin");
+            navigationMethod("/(dashboard)/super-admin");
             break;
           case "ADMIN":
-            router.replace("/(dashboard)/admin");
+            navigationMethod("/(dashboard)/admin");
             break;
           case "PRINCIPAL":
-            router.replace("/(dashboard)/principal");
+            navigationMethod("/(dashboard)/principal");
             break;
           case "VICE_PRINCIPAL":
-            router.replace("/(dashboard)/vice-principal");
+            navigationMethod("/(dashboard)/vice-principal");
             break;
           case "TEACHER":
-            router.replace("/(dashboard)/teacher");
+            navigationMethod("/(dashboard)/teacher");
             break;
           case "STUDENT":
-            router.replace("/(dashboard)/student");
+            navigationMethod("/(dashboard)/student");
             break;
           case "PARENT":
-            router.replace("/(dashboard)/parent");
+            navigationMethod("/(dashboard)/parent");
             break;
           case "DRIVER":
-            router.replace("/(dashboard)/driver");
+            navigationMethod("/(dashboard)/driver");
             break;
           case "HOUSEKEEPING":
-            router.replace("/(dashboard)/housekeeping");
+            navigationMethod("/(dashboard)/housekeeping");
             break;
           case "RECEPTIONIST":
-            router.replace("/(dashboard)/receptionist");
+            navigationMethod("/(dashboard)/receptionist");
             break;
           case "LIBRARIAN":
-            router.replace("/(dashboard)/librarian");
+            navigationMethod("/(dashboard)/librarian");
             break;
           default:
-            router.replace("/(dashboard)/admin");
+            navigationMethod("/(dashboard)/admin");
         }
       } else {
         // No valid role → go to public home

@@ -122,42 +122,39 @@ export default function LoginScreen() {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp !== "123456") {
-      Alert.alert("Error", "Invalid OTP. Please try again.");
-      setOtp("");
-      return;
+  if (otp !== "123456") {
+    Alert.alert("Error", "Invalid OTP. Please try again.");
+    setOtp("");
+    return;
+  }
+
+  // OTP verified – manually store user data and navigate
+  if (!demoUserData) return;
+
+  try {
+    // Create fake token and store in AsyncStorage
+    const fakeToken = `fake-jwt-token-${Date.now()}`;
+    await AsyncStorage.setItem("userToken", fakeToken);
+    await AsyncStorage.setItem("userRole", demoUserData.role);
+    await AsyncStorage.setItem("userUsername", demoUserData.username);
+    await AsyncStorage.setItem("userFullName", demoUserData.fullName);
+    await AsyncStorage.setItem("authenticated", "true");
+
+    setShowOtpModal(false);
+    setOtp("");
+
+    // On web, use replace to prevent back button to login
+    if (Platform.OS === 'web') {
+      // Clear the history stack and redirect
+      window.location.replace('/');
+    } else {
+      router.replace("/");
     }
+  } catch (err) {
+    Alert.alert("Error", "Something went wrong. Please try again.");
+  }
+};
 
-    if (!demoUserData) return;
-
-    try {
-      // Clear any existing session to avoid stale AuthContext data
-      await AsyncStorage.multiRemove([
-        "userToken",
-        "refreshToken",
-        "userRole",
-        "userUsername",
-        "authenticated",
-      ]);
-
-      // Create fake token and store new demo session
-      const fakeToken = `fake-jwt-token-${Date.now()}`;
-      await AsyncStorage.setItem("userToken", fakeToken);
-      await AsyncStorage.setItem("userRole", demoUserData.role);
-      await AsyncStorage.setItem("userUsername", demoUserData.username);
-      await AsyncStorage.setItem("userFullName", demoUserData.fullName);
-      await AsyncStorage.setItem("authenticated", "true");
-
-      setShowOtpModal(false);
-      setOtp("");
-
-      // Navigate directly to the role's dashboard (bypass index.tsx)
-      const route = getDashboardRoute(demoUserData.role);
-      router.replace(route as any);
-    } catch (err) {
-      Alert.alert("Error", "Something went wrong. Please try again.");
-    }
-  };
 
   return (
     <KeyboardAvoidingView

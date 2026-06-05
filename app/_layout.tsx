@@ -1,4 +1,6 @@
 // app/_layout.tsx
+// Add the navigation guard at the root level
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient } from '@tanstack/react-query';
@@ -12,6 +14,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import "./globals.css";
+import { useWebNavigationGuard } from './hooks/useWebNavigationGuard';
 
 // Create a QueryClient instance with cache time (e.g., 24 hours)
 const queryClient = new QueryClient({
@@ -27,6 +30,12 @@ const queryClient = new QueryClient({
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
 });
+
+// Navigation Guard Component for Web
+function WebNavigationGuard({ children }: { children: React.ReactNode }) {
+  useWebNavigationGuard();
+  return <>{children}</>;
+}
 
 export default function RootLayout() {
   const router = useRouter();
@@ -123,22 +132,24 @@ export default function RootLayout() {
         <ThemeProvider>
           <AuthProvider>
             <NotificationProvider>
-              <StatusBar 
-                style="light" 
-                backgroundColor="#2563eb"
-                translucent={false}
-              />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: 'slide_from_right',
-                }}
-              >
-                <Stack.Screen name="(public)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-              </Stack>
+              <WebNavigationGuard>
+                <StatusBar 
+                  style="light" 
+                  backgroundColor="#2563eb"
+                  translucent={false}
+                />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                  }}
+                >
+                  <Stack.Screen name="(public)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
+                  <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+                </Stack>
+              </WebNavigationGuard>
             </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
