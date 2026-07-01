@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator, Modal, Alert } from "react-native";
-import { ArrowLeft, UserCircle, IndianRupee, CheckCircle, AlertCircle, X } from "lucide-react-native";
-import { useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowLeft, IndianRupee, UserCircle, X } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { rootApi } from "../../../utils/axiosInstance";
 
-const BILLING_BASE_URL = "http://192.168.88.20:8081";
+const BILLING_BASE_URL = "https://school-management-crba.onrender.com";
 
 export default function ClassBillingDetails() {
   const { classSectionId } = useLocalSearchParams();

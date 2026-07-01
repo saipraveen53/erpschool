@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, useWindowDimensions, ActivityIndicator, Platform } from "react-native";
-import { Search, Plus, X, Megaphone, Calendar, Clock } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { Calendar, Megaphone, Plus, Search, X } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { rootApi } from "../../../utils/axiosInstance";
 
-const NOTICE_BASE_URL = "http://192.168.88.20:8081";
+const NOTICE_BASE_URL = "https://school-management-crba.onrender.com";
 
 export default function NoticesManagement() {
   const { width } = useWindowDimensions();

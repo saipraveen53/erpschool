@@ -1,39 +1,26 @@
-import { useRouter } from "expo-router";
-import { 
-  AlertCircle, 
-  ChevronDown, 
-  Clock, 
-  ServerCrash, 
-  ShieldAlert, 
-  Star, 
-  HardDrive, 
-  Cpu, 
-  Activity, 
-  ArrowUpRight,
-  User,
-  Users,
-  Bell,
-  Calendar,
-  Megaphone,
-  Truck,
-  BookOpen,
-  IndianRupee,
-  TrendingUp,
-  CheckCircle,
-  Shield,
-  CircleCheck,
-  CircleX,
-  FileText,
-  Table,
-  Award
-} from "lucide-react-native";
-import { useState, useEffect } from "react";
-import { LayoutAnimation, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, UIManager, useWindowDimensions, View, Alert, Switch, ActivityIndicator } from "react-native";
-import Svg, { Circle, Defs, LinearGradient, Path, Stop, G, Text as SvgText } from "react-native-svg";
-import { rootApi } from "../../utils/axiosInstance";
-import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import { useRouter } from "expo-router";
+import * as Sharing from 'expo-sharing';
+import {
+    AlertCircle,
+    Award,
+    Bell,
+    Calendar,
+    CheckCircle,
+    CircleX,
+    Clock,
+    Megaphone,
+    Shield,
+    ShieldAlert,
+    Table,
+    TrendingUp,
+    User
+} from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, UIManager, useWindowDimensions, View } from "react-native";
+import Svg, { Circle, G, Text as SvgText } from "react-native-svg";
 import * as XLSX from 'xlsx';
+import { rootApi } from "../../utils/axiosInstance";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -108,7 +95,7 @@ export default function SuperAdminDashboard() {
 
   const fetchBillingStats = async () => {
     try {
-      const response = await rootApi.get(`http://192.168.88.20:8081/api/student/fee/admin/dashboard/stats`);
+      const response = await rootApi.get(`https://school-management-crba.onrender.com/api/student/fee/admin/dashboard/stats`);
       if (response.data && Array.isArray(response.data)) {
         const expected = response.data.reduce((sum, item) => sum + (item.totalExpectedFee || 0), 0);
         const collected = response.data.reduce((sum, item) => sum + (item.totalCollectedFee || 0), 0);
@@ -122,7 +109,7 @@ export default function SuperAdminDashboard() {
 
   const fetchNotices = async () => {
     try {
-      const response = await rootApi.get('http://192.168.88.20:8081/api/student/notice/all');
+      const response = await rootApi.get('https://school-management-crba.onrender.com/api/student/notice/all');
       if (response.data && Array.isArray(response.data)) {
         const sorted = response.data.sort((a, b) => new Date(b.noticeDate).getTime() - new Date(a.noticeDate).getTime());
         setRecentNotices(sorted.slice(0, 3));
@@ -146,7 +133,7 @@ export default function SuperAdminDashboard() {
         });
       }
 
-      const overviewRes = await rootApi.get('http://192.168.88.20:8081/api/superAdmin/dashboard').catch(() => ({ data: {} }));
+      const overviewRes = await rootApi.get('https://school-management-crba.onrender.com/api/superAdmin/dashboard').catch(() => ({ data: {} }));
       
       setOverviewStats({
         students: String(overviewRes.data?.totalStudents || 0),
@@ -162,7 +149,7 @@ export default function SuperAdminDashboard() {
   const fetchDashboardUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await rootApi.get(`http://192.168.88.20:8081/api/superAdmin/users`);
+      const response = await rootApi.get(`https://school-management-crba.onrender.com/api/superAdmin/users`);
       if (response.data && Array.isArray(response.data)) {
         const filtered = response.data.filter(u => u.role !== "SUPER_ADMIN");
         setDashboardUsers(filtered);
@@ -187,7 +174,7 @@ export default function SuperAdminDashboard() {
             const newStatus = !currentStatus;
             setTogglingUser(username);
             try {
-              await rootApi.put(`http://192.168.88.20:8081/api/superAdmin/users/${username}/status?active=${newStatus}`);
+              await rootApi.put(`https://school-management-crba.onrender.com/api/superAdmin/users/${username}/status?active=${newStatus}`);
               setDashboardUsers(prev => prev.map(u => u.username === username ? { ...u, isAvailable: newStatus } : u));
             } catch (error) {
               console.error("Failed to toggle user status:", error);
@@ -221,7 +208,7 @@ export default function SuperAdminDashboard() {
       Alert.alert("Exporting", "Gathering full school data...");
       
       // Fetch Detailed Data for Export
-      const feesRes = await rootApi.get(`http://192.168.88.20:8081/api/student/fee/admin/dashboard/stats`).catch(() => ({data: []}));
+      const feesRes = await rootApi.get(`https://school-management-crba.onrender.com/api/student/fee/admin/dashboard/stats`).catch(() => ({data: []}));
       const detailedFees = Array.isArray(feesRes.data) ? feesRes.data : [];
 
       const pendingLeavesRes = await rootApi.get(`/api/teacher/leave/byStatus?status=PENDING`).catch(() => ({data: []}));
@@ -233,7 +220,7 @@ export default function SuperAdminDashboard() {
         ...(Array.isArray(rejectedLeavesRes.data) ? rejectedLeavesRes.data : [])
       ];
 
-      const usersRes = await rootApi.get(`http://192.168.88.20:8081/api/superAdmin/users`).catch(() => ({data: []}));
+      const usersRes = await rootApi.get(`https://school-management-crba.onrender.com/api/superAdmin/users`).catch(() => ({data: []}));
       const allUsers = Array.isArray(usersRes.data) ? usersRes.data : [];
 
       // 1. Prepare data

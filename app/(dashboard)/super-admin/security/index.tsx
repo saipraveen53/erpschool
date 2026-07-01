@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator, Alert, Switch, TextInput } from "react-native";
-import { ShieldAlert, Search, Shield, User, CircleCheck, CircleX } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { CircleCheck, CircleX, Search, Shield, ShieldAlert, User } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { rootApi } from "../../../utils/axiosInstance";
 
-const SECURITY_BASE_URL = "http://192.168.88.20:8081";
+const SECURITY_BASE_URL = "https://school-management-crba.onrender.com";
 
 export default function SecurityManagement() {
   const { width } = useWindowDimensions();

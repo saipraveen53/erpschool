@@ -58,7 +58,7 @@ const refreshToken = async (): Promise<string | null> => {
 
     console.log('🔄 Attempting to refresh access token...');
     const response = await axios.post(
-      'http://192.168.88.20:8081/api/student/auth/refresh-token',
+      'https://school-management-crba.onrender.com/api/student/auth/refresh-token',
       { refreshToken }
     );
     const { accessToken, refreshToken: newRefreshToken } = response.data;
@@ -173,17 +173,17 @@ const createAxiosInstance = (baseURL: string): AxiosInstance => {
 
 
 export const subjectApi: AxiosInstance = createAxiosInstance(
-  "http://192.168.88.20:8081",
+  "https://school-management-crba.onrender.com",
 );
-export const sectionApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+export const sectionApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com",
 );
-export const teachersApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+export const teachersApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com",
 );
-export const classApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+export const classApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com",
 );
-export const studentApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+export const studentApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com",
 );
-export const staffApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+export const staffApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com",
 );
 export const createExamApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8081",
 );
@@ -197,7 +197,7 @@ export const holidayApi: AxiosInstance = createAxiosInstance("http://192.168.88.
 );
 export const getHolidaysApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083",
 );
-export const noticeApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081",
+export const noticeApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com",
 );
 export const createTimetableApi: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083",
 );
@@ -208,7 +208,7 @@ export const teacherAttendanceApi: AxiosInstance = createAxiosInstance("http://1
 export const studentAttendanceApi: AxiosInstance = createAxiosInstance("http://192.168.88.13:8081",
 );
 export const root2Api: AxiosInstance = createAxiosInstance("http://192.168.88.24:8083");
-export const rootApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081");
-export const studentdashboardApi: AxiosInstance = createAxiosInstance("http://192.168.88.20:8081");
+export const rootApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com");
+export const studentdashboardApi: AxiosInstance = createAxiosInstance("https://school-management-crba.onrender.com");
 export const examsApi: AxiosInstance = createAxiosInstance("http://192.168.88.19:8081");
 export const root1Api = createAxiosInstance('http://192.168.88.19:8081');

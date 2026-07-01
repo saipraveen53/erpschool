@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator } from "react-native";
-import { Search, IndianRupee, TrendingUp, AlertCircle, CheckCircle } from "lucide-react-native";
-import { useState, useEffect } from "react";
-import { rootApi } from "../../../utils/axiosInstance";
 import { useRouter } from "expo-router";
+import { AlertCircle, CheckCircle, IndianRupee, TrendingUp } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { rootApi } from "../../../utils/axiosInstance";
 
-const BILLING_BASE_URL = "http://192.168.88.20:8081";
+const BILLING_BASE_URL = "https://school-management-crba.onrender.com";
 
 export default function BillingDashboard() {
   const { width } = useWindowDimensions();

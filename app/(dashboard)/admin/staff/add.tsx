@@ -1,18 +1,18 @@
 import React, {
-  useState,
+    useState,
 } from "react";
 
 import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  FlatList,
-  Alert,
-  Dimensions,
+    Alert,
+    Dimensions,
+    FlatList,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,15 +20,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 
 import {
-  Users,
-  Search,
-  X,
-  Mail,
-  Phone,
-  UserCircle2,
-  GraduationCap,
-  BriefcaseBusiness,
-  MapPin,
+    BriefcaseBusiness,
+    GraduationCap,
+    Mail,
+    MapPin,
+    Phone,
+    Search,
+    UserCircle2,
+    Users,
+    X,
 } from "lucide-react-native";
 
 import { staffApi } from "@/app/utils/axiosInstance";
@@ -171,7 +171,7 @@ export default function AddStaff() {
       }
 
       const response = await fetch(
-        `http://192.168.88.20:8081/api/principle/complete-onboarding?token=${token}`,
+        `https://school-management-crba.onrender.com/api/principle/complete-onboarding?token=${token}`,
         {
           method: "POST",
 

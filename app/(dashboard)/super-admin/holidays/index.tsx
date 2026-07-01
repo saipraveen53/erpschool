@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, ActivityIndicator, Alert, useWindowDimensions, Platform, Switch } from "react-native";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, Info } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { rootApi } from "../../../utils/axiosInstance";
 
-const HOLIDAY_BASE_URL = "http://192.168.88.20:8081";
+const HOLIDAY_BASE_URL = "https://school-management-crba.onrender.com";
 
 export default function HolidaysManagement() {
   const { width } = useWindowDimensions();

@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, useWindowDimensions, ActivityIndicator, Platform } from "react-native";
-import { Search, Edit, X, Plus, Trash2, Truck, Phone, MapPin, BadgeInfo } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import { BadgeInfo, Edit, MapPin, Phone, Search, Truck, X } from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { rootApi } from "../../../utils/axiosInstance";
 
-const DRIVER_BASE_URL = "http://192.168.88.20:8081";
+const DRIVER_BASE_URL = "https://school-management-crba.onrender.com";
 
 export default function DriversManagement() {
   const { width } = useWindowDimensions();

@@ -67,13 +67,13 @@ export default function RouteDetails() {
   useEffect(() => {
     fetchDetails();
     // Fetch all students for the searchable dropdown
-    rootApi.get('http://192.168.88.20:8081/api/student/allStudents').then(res => {
+    rootApi.get('https://school-management-crba.onrender.com/api/student/allStudents').then(res => {
       if (res.data && Array.isArray(res.data)) {
         setAllStudents(res.data);
       }
     }).catch(err => console.error("Failed to fetch all students", err));
     // Fetch all drivers for the searchable dropdown
-    rootApi.get('http://192.168.88.20:8081/api/driver/all').then(res => {
+    rootApi.get('https://school-management-crba.onrender.com/api/driver/all').then(res => {
       if (res.data && Array.isArray(res.data)) {
         setAllDrivers(res.data);
       }
